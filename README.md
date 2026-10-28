@@ -1,56 +1,69 @@
 # MailPort
 
-A personal macOS workspace for Gmail and Google Calendar, with shortcuts to the rest of your Google apps. This is an early working prototype for replacing part of a Mailplane workflow.
+A native macOS app that puts Gmail, Calendar, and other Google services directly inside one macOS window. Each account gets Mail and Calendar tabs in a compact, color-coded strip, matching the essential Mailplane behavior in the reference screenshot. Switching tabs keeps the page alive. Google service tabs do not launch Chrome. External links can open the default browser.
 
-MailPort is a native Swift Mac app. It opens Google services in dedicated Google Chrome app-mode windows, keeping Google's complete web interfaces and browser-managed sign-in. Each account gets a separate Chrome profile. Chrome is required and should be kept updated.
+**This remains a compatibility preview.** The user completed Google sign-in for two accounts on this Mac during testing. Gmail and the account's Calendar have loaded inside the same window. Google may still reject embedded browsers or require additional identity checks; this result is not a guarantee for every account or future sign-in.
 
 ## Run
 
-Open `dist/MailPort.app`. Add an account label, then open Gmail and sign in directly to Google in its browser window. Use that same account's Calendar or other shortcuts to share the session. An account label is only for navigation; adding one does not authenticate an account.
+Open `dist/MailPort.app`. It requires Apple silicon and macOS 14 or later. The build is signed locally and is not notarized for public distribution.
 
-You can move the app to your Applications folder. This build is signed locally with an ad hoc signature, suitable for use on this Mac; it is not notarized for public distribution. It runs natively on Apple silicon and requires macOS 14 or later. It does not need Rosetta.
+This is the sole active MailPort implementation. Add accounts and sign in on Google's page inside each account's Mail tab. The label alone does not authenticate an account. Existing accounts and sign-ins from the single-window preview are preserved.
 
-MailPort registers support for `mailto:` links, but does not change your default email app automatically. Select it as your default email reader in Apple Mail's General settings if desired.
+Each account uses an identifier-backed persistent `WKWebsiteDataStore`. Its Mail and Calendar tabs share the same store; other accounts have separate stores. WebKit owns website data storage. The preview does not export credentials or copy Chrome cookies. Account labels are saved in `~/Library/Application Support/MailPortPreview/accounts.json`.
 
-Workspace shortcuts work while MailPort is active:
+Use the toolbar to go back, forward, reload, return to the service home page, compose, or open another Google service in an in-app tab. Right-click an account tab to edit its label/color or remove its tabs. Removing account tabs preserves the website session.
 
-| Shortcut | Action |
-| --- | --- |
-| ⌘N | New message |
-| ⇧⌘A | Add account |
-| ⇧⌘O | Open Gmail and Calendar |
-| ⌘1 through ⌘6 | Open Gmail, Calendar, Drive, Contacts, Chat, or Meet |
-| ⌥⌘[ / ⌥⌘] | Previous / next account |
-| ⌘0 | Show the MailPort workspace |
-| ⌘, | Notification setup |
+Drag any tab left or right over another tab to rearrange it. Each tab moves independently, including Mail and Calendar tabs for the same account. Reordering keeps the active page loaded and saves the new order for the next launch.
 
-The menu bar icon also opens account shortcuts when the workspace is closed.
+Every tab has an × close button and a Close Tab context-menu action. ⌘W closes the active tab; ⇧⌘T reopens the last closed tab. Closing a tab preserves its account sign-in. Open tabs are restored across app restarts, including an intentionally empty tab strip. Reopen services for any saved account from the Google Apps menu.
+
+Shortcuts: ⌘1–9 select tabs; ⇧⌘[ / ⇧⌘] switch tabs; ⌘R reloads; ⌘N composes; ⇧⌘A adds an account. External website links open in the system browser; Google service pages and sign-in navigation remain in the app. Popups are handled in the current tab.
+
+## Current limits
+
+Passkeys for Google are not supported by this preview: WebKit requires a matching associated domain or Apple's managed browser passkey entitlement, neither of which is configured here. Google's existing "Try another way" flow may offer another method already configured on the account. Account security settings should remain unchanged.
+
+Version 0.2.1 adds an experimental WebKit compatibility identity. The system WebKit build is checked against a narrow set of known engine-family release baselines from Apple's Safari release notes. For known family 624 builds, the app adds conservative Version/Safari compatibility tokens while retaining MailPortPreview's identity. The normal WebKit-generated OS/engine tokens are left unchanged. Unknown engine families keep the ordinary app identity. This targets website version detection; it does not make MailPort officially supported by Google, add missing browser APIs, or enable passkeys. No warning is hidden with CSS or page scripts.
+
+Background notifications, native unread badges, and dependable Calendar reminders are not implemented. New permission requests, OAuth setup, security setting changes, or session exports are not used to work around Google restrictions. Browser-based OAuth for a native API client would not log Gmail's website into this WebKit store.
+
+This preview supports native download and upload dialogs, browser navigation, JavaScript dialogs, and account/service tabs. It does not yet reproduce Mailplane's extension system or attachment tools.
 
 ## Build
 
-Requires Xcode or Apple's command-line developer tools, with Swift 6 or newer.
+With Xcode and Swift 6:
 
 ```sh
 ./scripts/build.sh --test
 ```
 
-The script runs tests, builds a release executable for the current Mac's architecture, generates an original icon, creates `dist/MailPort.app`, and signs the bundle locally. Omit `--test` to build without running tests. Build caches stay inside `.build`. The icon generator provides native ICNS packaging when Apple's `iconutil` cannot run in a restricted build environment.
+Set `MAILPORT_BUILD_DIR` to place build caches elsewhere. `MAILPORT_PREVIEW_DATA_DIR` selects an isolated account-label directory for testing; WebKit stores remain isolated by the app bundle identifier and account UUID.
 
-## Data
+The single-window implementation lives at the repository root. Run builds and tests here; `SingleWindowPreview` is no longer a separate project. The retired multi-window launcher is archived outside the active repository.
 
-MailPort stores its files in `~/Library/Application Support/MailPort/`:
+The bundle identifier `com.chriswilson.mailport.embedded`, the existing WebKit store identifiers, preferences domain, and `MailPortPreview` support directory are deliberately retained so promoting the app does not reset sign-ins or tab settings.
 
-- `accounts.json` contains account IDs, labels, optional email addresses, and colors. The selected account ID is stored in macOS preferences.
-- `BrowserProfiles/<account UUID>/` contains that account's browser session, cookies, site storage, and other Chrome profile data.
+## Verified in version 0.2.1
 
-Sign-in happens on Google's pages. MailPort does not ask for your password, export credentials, or copy existing Mailplane or Chrome cookies. Treat profile folders as private account data. For isolated app testing, set `MAILPORT_DATA_DIR` to a separate directory before launching the executable.
+On this Mac, all 17 core and browser-identity tests passed. After restarting with the compatibility suffix, Gmail and Calendar loaded with the saved sign-in and neither displayed the unsupported-browser warning. Calendar opened an unsaved event editor with an enabled Save button; the empty draft was closed without saving. Actual event writes, notification delivery, passkeys, and broader daily functionality are not validated by that check.
 
-Removing an account shortcut preserves its browser session. Sign out in the corresponding Google window before removing its shortcut if you want that session to end.
+Sources: [Google supported browser guidance](https://support.google.com/accounts/answer/7675428), [Google OAuth secure-browser policy](https://developers.google.com/identity/protocols/oauth2/policies), [Apple identifier-backed website data stores](https://developer.apple.com/documentation/webkit/wkwebsitedatastore/init(foridentifier:)), [Apple passkey requirements](https://developer.apple.com/documentation/authenticationservices/supporting-passkeys), [WebKit's macOS user-agent issue](https://bugs.webkit.org/show_bug.cgi?id=278284), and [Apple Safari 26.4–26.6 release notes](https://developer.apple.com/documentation/safari-release-notes/safari-26_4-release-notes).
 
-## Current limits
+## Verified in version 0.2.2
 
-Service windows are owned by Chrome and open separately from the native workspace. This prototype does not provide embedded service tabs, Mailplane's extension integrations, an unread badge, native quick replies, or automatic migration of existing sessions. Website notifications are handled by Google and Chrome and depend on site and macOS permission settings; MailPort does not guarantee notifications. Signing in and everyday mail/calendar use still need validation with your own accounts.
+All 26 tests passed. In the running app, the × button closed a background tab, Command-W closed the active tab while keeping the window open, and closing the last tab showed an empty workspace with reopen controls. Shift-Command-T restored closed tabs. Existing account sign-ins were preserved.
 
-Google blocks OAuth sign-in in embedded webviews. Running the installed browser avoids making a promise that an embedded Gmail view can support. A future fully native mail client would need Google API authorization and substantially more mail/calendar functionality.
+## Verified in version 0.2.3
 
-References: [Google's secure browser policy](https://developers.google.com/identity/protocols/oauth2/policies), [Chromium's profile directory documentation](https://github.com/chromium/chromium/blob/main/docs/user_data_dir.md), and [Chrome web apps](https://support.google.com/chrome/answer/9658361).
+All 29 tests passed. Native UI checks moved a tab from first to last, verified the reordered strip after restarting the app, and moved it back from last to first. Existing tab identities, account sessions, and the active page remain intact while reordering.
+
+## Version 0.2.4
+
+Gemini is available in Google Apps, every account submenu, and Navigate. It opens gemini.google.com/app as an in-app tab using that account’s existing website data store. Gemini tabs support closing, reopening, rearranging, and restoring across launches like other service tabs.
+
+Validation: all 29 tests passed after adding Gemini. The Google Apps menu showed Gemini for the current account and all account submenus. Selecting it opened Google Gemini at gemini.google.com/app in the same app window with the existing selected-account sign-in. No prompt submission was needed for this check.
+
+## Version 0.3.0
+
+The single-window application is now the main MailPort project and builds as `dist/MailPort.app`. The old Chrome launcher has been retired. This organizational change does not remove the existing limitations listed above.

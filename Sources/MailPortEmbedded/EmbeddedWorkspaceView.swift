@@ -53,7 +53,7 @@ struct EmbeddedWorkspaceView: View {
             }
             ToolbarItem(placement: .principal) {
                 if let browser = model.currentBrowser { BrowserLocation(browser: browser) }
-                else { Text("MailPort Preview").font(.headline) }
+                else { Text("MailPort").font(.headline) }
             }
             ToolbarItemGroup(placement: .automatic) {
                 Button { model.home() } label: { Label("Inbox / Calendar Home", systemImage: "house") }.disabled(model.selection == nil)
@@ -83,7 +83,7 @@ struct EmbeddedWorkspaceView: View {
                 HStack { Spacer(); Button("Cancel") { model.pendingCompose = nil }.keyboardShortcut(.cancelAction) }
             }.padding(28).frame(width: 430)
         }
-        .alert("MailPort Preview", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+        .alert("MailPort", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("OK") { model.errorMessage = nil }
         } message: { Text(model.errorMessage ?? "") }
         .confirmationDialog("Remove \(removing?.name ?? "account") from this preview?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {

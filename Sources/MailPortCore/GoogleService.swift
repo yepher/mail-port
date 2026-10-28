@@ -1,7 +1,7 @@
 import Foundation
 
 public enum GoogleService: String, CaseIterable, Codable, Identifiable, Sendable {
-    case gmail, calendar, drive, contacts, chat, meet
+    case gmail, calendar, drive, contacts, chat, meet, gemini
     public var id: String { rawValue }
 
     public var title: String {
@@ -12,6 +12,7 @@ public enum GoogleService: String, CaseIterable, Codable, Identifiable, Sendable
         case .contacts: "Contacts"
         case .chat: "Chat"
         case .meet: "Meet"
+        case .gemini: "Gemini"
         }
     }
 
@@ -23,6 +24,7 @@ public enum GoogleService: String, CaseIterable, Codable, Identifiable, Sendable
         case .contacts: "The people in your world."
         case .chat: "Keep the conversation going."
         case .meet: "Meet face to face, from anywhere."
+        case .gemini: "Think, write, and explore with Gemini."
         }
     }
 
@@ -34,6 +36,7 @@ public enum GoogleService: String, CaseIterable, Codable, Identifiable, Sendable
         case .contacts: "person.crop.rectangle.fill"
         case .chat: "bubble.left.and.bubble.right.fill"
         case .meet: "video.fill"
+        case .gemini: "sparkles"
         }
     }
 
@@ -45,6 +48,7 @@ public enum GoogleService: String, CaseIterable, Codable, Identifiable, Sendable
         case .contacts: "4"
         case .chat: "5"
         case .meet: "6"
+        case .gemini: "7"
         }
     }
 
@@ -57,6 +61,7 @@ public enum GoogleService: String, CaseIterable, Codable, Identifiable, Sendable
         case .contacts: address = "https://contacts.google.com/u/0/"
         case .chat: address = "https://chat.google.com/"
         case .meet: address = "https://meet.google.com/"
+        case .gemini: address = "https://gemini.google.com/app"
         }
         return URL(string: address)!
     }

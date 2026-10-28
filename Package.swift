@@ -4,13 +4,10 @@ import PackageDescription
 let package = Package(
     name: "MailPort",
     platforms: [.macOS(.v14)],
-    products: [
-        .library(name: "MailPortCore", targets: ["MailPortCore"]),
-        .executable(name: "MailPort", targets: ["MailPort"])
-    ],
+    products: [.executable(name: "MailPort", targets: ["MailPortEmbedded"])],
     targets: [
         .target(name: "MailPortCore"),
-        .executableTarget(name: "MailPort", dependencies: ["MailPortCore"]),
+        .executableTarget(name: "MailPortEmbedded", dependencies: ["MailPortCore"]),
         .testTarget(name: "MailPortCoreTests", dependencies: ["MailPortCore"])
     ],
     swiftLanguageModes: [.v5]

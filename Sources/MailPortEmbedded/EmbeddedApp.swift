@@ -38,7 +38,7 @@ struct EmbeddedApp: App {
     @StateObject private var model = EmbeddedWorkspace()
 
     var body: some Scene {
-        Window("MailPort Preview", id: "mailport") {
+        Window("MailPort", id: "mailport") {
             EmbeddedWorkspaceView(model: model)
                 .frame(minWidth: 1000, minHeight: 700)
                 .background(WindowReader { model.mainWindow = $0 })

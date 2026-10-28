@@ -37,12 +37,6 @@ final class EmbeddedWorkspace: ObservableObject {
         accountStore = AccountStore(directory: directory)
         preferences = override == nil ? .standard : (UserDefaults(suiteName: "com.chriswilson.mailport.embedded.testing") ?? .standard)
         do {
-            if !FileManager.default.fileExists(atPath: accountStore.fileURL.path), override == nil {
-                // Import account labels only. Chrome cookies and credentials stay untouched.
-                let previous = AccountStore(directory: support.appendingPathComponent("MailPort", isDirectory: true))
-                let labels = try previous.load()
-                if !labels.isEmpty { try accountStore.save(labels) }
-            }
             accounts = try accountStore.load()
             lastAccountID = preferences.string(forKey: "lastAccount").flatMap(UUID.init(uuidString:))
             if let saved = preferences.data(forKey: "openTabs"), let restored = try? JSONDecoder().decode([WorkspaceTab].self, from: saved) {

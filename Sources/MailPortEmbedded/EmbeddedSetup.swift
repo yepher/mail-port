@@ -68,7 +68,7 @@ struct PreviewHelp: View {
                 Label("WebKit compatibility", systemImage: "globe").font(.headline)
                 Text("The preview adds a conservative Safari-compatible version suffix for a recognized system WebKit build while keeping its MailPort identity. This helps website feature detection; it does not grant official Google support or additional browser capabilities.")
                 Label("Sessions are separate", systemImage: "lock.shield").font(.headline)
-                Text("The preview imports account labels from the earlier app. WebKit keeps each account’s website data separate; Mail and Calendar for that account share a session. Your Chrome sign-ins are not transferred.")
+                Text("WebKit keeps each account’s website data separate; Mail and Calendar for that account share a session. Existing single-window account sessions and tab settings are preserved as MailPort becomes the main app.")
                 Label("Notifications are not implemented yet", systemImage: "bell.slash").font(.headline)
                 Text("This preview is for checking the single-window experience and Google sign-in. Background mail checks, an unread badge, and dependable Calendar reminders still need implementation.")
             }.font(.callout).fixedSize(horizontal: false, vertical: true)
