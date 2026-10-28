@@ -5,6 +5,20 @@ import MailPortCore
 
 @MainActor
 final class EmbeddedDelegate: NSObject, NSApplicationDelegate {
+    func configureCloseShortcut() {
+        // Reserve Command-W for the tab command; keep window closing available.
+        DispatchQueue.main.async {
+            func update(_ menu: NSMenu) {
+                for item in menu.items {
+                    if item.keyEquivalent == "w", item.title != "Close Tab" {
+                        item.keyEquivalentModifierMask = [.command, .shift]
+                    }
+                    if let submenu = item.submenu { update(submenu) }
+                }
+            }
+            if let menu = NSApp.mainMenu { update(menu) }
+        }
+    }
     var model: EmbeddedWorkspace? {
         didSet { queued.forEach { model?.receive($0) }; queued.removeAll() }
     }
@@ -28,7 +42,7 @@ struct EmbeddedApp: App {
             EmbeddedWorkspaceView(model: model)
                 .frame(minWidth: 1000, minHeight: 700)
                 .background(WindowReader { model.mainWindow = $0 })
-                .onAppear { delegate.model = model }
+                .onAppear { delegate.model = model; delegate.configureCloseShortcut() }
         }
         .defaultSize(width: 1380, height: 900)
         .windowToolbarStyle(.unifiedCompact)
@@ -36,6 +50,9 @@ struct EmbeddedApp: App {
             CommandGroup(replacing: .newItem) {
                 Button("New Message") { model.compose() }.keyboardShortcut("n")
                 Button("Add Account…") { model.addAccount() }.keyboardShortcut("a", modifiers: [.command, .shift])
+                Divider()
+                Button("Close Tab") { model.closeCurrentTab() }.keyboardShortcut("w").disabled(model.selection == nil)
+                Button("Reopen Closed Tab") { model.reopenClosedTab() }.keyboardShortcut("t", modifiers: [.command, .shift]).disabled(model.recentlyClosed.isEmpty)
             }
             CommandGroup(replacing: .appSettings) {
                 Button("Preview Information…") { model.showingHelp = true }.keyboardShortcut(",")

@@ -14,6 +14,10 @@ Each account uses an identifier-backed persistent `WKWebsiteDataStore`. Its Mail
 
 Use the toolbar to go back, forward, reload, return to the service home page, compose, or open another Google service in an in-app tab. Right-click an account tab to edit its label/color or remove its tabs. Removing account tabs preserves the website session.
 
+Drag any tab left or right over another tab to rearrange it. Each tab moves independently, including Mail and Calendar tabs for the same account. Reordering keeps the active page loaded and saves the new order for the next launch.
+
+Every tab has an × close button and a Close Tab context-menu action. ⌘W closes the active tab; ⇧⌘T reopens the last closed tab. Closing a tab preserves its account sign-in. Open tabs are restored across app restarts, including an intentionally empty tab strip. Reopen services for any saved account from the Google Apps menu.
+
 Shortcuts: ⌘1–9 select tabs; ⇧⌘[ / ⇧⌘] switch tabs; ⌘R reloads; ⌘N composes; ⇧⌘A adds an account. External website links open in the system browser; Google service pages and sign-in navigation remain in the app. Popups are handled in the current tab.
 
 ## Current limits
@@ -43,3 +47,11 @@ The original launcher remains the parent project. This preview is packaged separ
 On this Mac, all 17 core and browser-identity tests passed. After restarting with the compatibility suffix, Gmail and Calendar loaded with the saved sign-in and neither displayed the unsupported-browser warning. Calendar opened an unsaved event editor with an enabled Save button; the empty draft was closed without saving. Actual event writes, notification delivery, passkeys, and broader daily functionality are not validated by that check.
 
 Sources: [Google supported browser guidance](https://support.google.com/accounts/answer/7675428), [Google OAuth secure-browser policy](https://developers.google.com/identity/protocols/oauth2/policies), [Apple identifier-backed website data stores](https://developer.apple.com/documentation/webkit/wkwebsitedatastore/init(foridentifier:)), [Apple passkey requirements](https://developer.apple.com/documentation/authenticationservices/supporting-passkeys), [WebKit's macOS user-agent issue](https://bugs.webkit.org/show_bug.cgi?id=278284), and [Apple Safari 26.4–26.6 release notes](https://developer.apple.com/documentation/safari-release-notes/safari-26_4-release-notes).
+
+## Verified in version 0.2.2
+
+All 26 tests passed. In the running app, the × button closed a background tab, Command-W closed the active tab while keeping the window open, and closing the last tab showed an empty workspace with reopen controls. Shift-Command-T restored closed tabs. Existing account sign-ins were preserved.
+
+## Verified in version 0.2.3
+
+All 29 tests passed. Native UI checks moved a tab from first to last, verified the reordered strip after restarting the app, and moved it back from last to first. Existing tab identities, account sessions, and the active page remain intact while reordering.

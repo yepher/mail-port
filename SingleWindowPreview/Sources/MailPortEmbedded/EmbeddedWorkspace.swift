@@ -15,6 +15,7 @@ final class EmbeddedWorkspace: ObservableObject {
     @Published var errorMessage: String?
     @Published var pendingCompose: URL?
     @Published private(set) var storageAvailable = true
+    @Published private(set) var recentlyClosed: [WorkspaceTab] = []
     weak var mainWindow: NSWindow?
 
     let directory: URL
@@ -23,8 +24,9 @@ final class EmbeddedWorkspace: ObservableObject {
     private var browsers: [WorkspaceTab: BrowserTab] = [:]
     private var browserChanges: AnyCancellable?
     private var preferences: UserDefaults
+    private var lastAccountID: UUID?
 
-    var selectedAccount: Account? { accounts.first { $0.id == selection?.accountID } }
+    var selectedAccount: Account? { accounts.first { $0.id == (selection?.accountID ?? lastAccountID) } }
 
     init() {
         let override = ProcessInfo.processInfo.environment["MAILPORT_PREVIEW_DATA_DIR"]
@@ -42,8 +44,15 @@ final class EmbeddedWorkspace: ObservableObject {
                 if !labels.isEmpty { try accountStore.save(labels) }
             }
             accounts = try accountStore.load()
-            tabs = WorkspaceTab.pinnedTabs(for: accounts)
+            lastAccountID = preferences.string(forKey: "lastAccount").flatMap(UUID.init(uuidString:))
+            if let saved = preferences.data(forKey: "openTabs"), let restored = try? JSONDecoder().decode([WorkspaceTab].self, from: saved) {
+                var seen = Set<WorkspaceTab>()
+                tabs = restored.filter { tab in accounts.contains { $0.id == tab.accountID } && seen.insert(tab).inserted }
+            } else { tabs = WorkspaceTab.pinnedTabs(for: accounts) }
             let previousID = preferences.string(forKey: "selectedTab")
+            if preferences.data(forKey: "openTabs") == nil,
+               let previous = accounts.flatMap({ account in GoogleService.allCases.map { WorkspaceTab(accountID: account.id, service: $0) } }).first(where: { $0.id == previousID }),
+               !tabs.contains(previous) { tabs.append(previous) }
             if let tab = tabs.first(where: { $0.id == previousID }) ?? tabs.first { select(tab) }
         } catch {
             storageAvailable = false
@@ -62,14 +71,54 @@ final class EmbeddedWorkspace: ObservableObject {
             browsers[tab] = browser
         }
         selection = tab
+        lastAccountID = tab.accountID
+        preferences.set(tab.accountID.uuidString, forKey: "lastAccount")
         currentBrowser = browsers[tab]
         browserChanges = currentBrowser?.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
         preferences.set(tab.id, forKey: "selectedTab")
+        persistTabs()
     }
 
-    func open(_ service: GoogleService) {
-        guard let account = selectedAccount ?? accounts.first else { addAccount(); return }
+    func open(_ service: GoogleService, account: Account? = nil) {
+        guard let account = account ?? selectedAccount ?? accounts.first else { addAccount(); return }
         select(WorkspaceTab(accountID: account.id, service: service))
+    }
+
+    func close(_ tab: WorkspaceTab) {
+        guard tabs.contains(tab) else { return }
+        let next = WorkspaceTab.selection(afterClosing: tab, in: tabs, selected: selection)
+        tabs.removeAll { $0 == tab }
+        if selection == tab {
+            browserChanges = nil
+            currentBrowser = nil
+            selection = nil
+            preferences.removeObject(forKey: "selectedTab")
+            if let next { select(next) }
+        }
+        browsers.removeValue(forKey: tab)?.webView.stopLoading()
+        recentlyClosed.removeAll { $0 == tab }
+        recentlyClosed.append(tab)
+        if recentlyClosed.count > 20 { recentlyClosed.removeFirst() }
+        persistTabs()
+    }
+
+    func closeCurrentTab() { if let selection { close(selection) } }
+
+    func moveTab(_ source: WorkspaceTab, over target: WorkspaceTab) {
+        let reordered = WorkspaceTab.reordered(tabs, moving: source, over: target)
+        guard reordered != tabs else { return }
+        tabs = reordered
+        persistTabs()
+    }
+
+    func reopenClosedTab() {
+        while let tab = recentlyClosed.popLast() {
+            if accounts.contains(where: { $0.id == tab.accountID }) { select(tab); return }
+        }
+    }
+
+    private func persistTabs() {
+        if let data = try? JSONEncoder().encode(tabs) { preferences.set(data, forKey: "openTabs") }
     }
 
     func nextTab(_ delta: Int) {
@@ -95,14 +144,17 @@ final class EmbeddedWorkspace: ObservableObject {
         guard storageAvailable else { throw CocoaError(.fileReadCorruptFile) }
         let validated = try account.validated()
         var updated = accounts
+        let isNew = !accounts.contains { $0.id == validated.id }
         if let index = updated.firstIndex(where: { $0.id == validated.id }) { updated[index] = validated }
         else { updated.append(validated) }
         try accountStore.save(updated)
         accounts = updated
-        let extras = tabs.filter { $0.service != .gmail && $0.service != .calendar }
-        tabs = WorkspaceTab.pinnedTabs(for: accounts) + extras
         showingAccountEditor = false
-        select(WorkspaceTab(accountID: validated.id, service: .gmail))
+        if isNew {
+            tabs.append(contentsOf: WorkspaceTab.pinnedTabs(for: [validated]))
+            select(WorkspaceTab(accountID: validated.id, service: .gmail))
+        }
+        persistTabs()
     }
 
     func removeAccount(_ account: Account) {
@@ -111,6 +163,7 @@ final class EmbeddedWorkspace: ObservableObject {
             try accountStore.save(updated)
             accounts = updated
             tabs.removeAll { $0.accountID == account.id }
+            recentlyClosed.removeAll { $0.accountID == account.id }
             browsers = browsers.filter { $0.key.accountID != account.id }
             stores.removeValue(forKey: account.id)
             if selection?.accountID == account.id {
@@ -119,6 +172,7 @@ final class EmbeddedWorkspace: ObservableObject {
                 selection = nil
                 if let first = tabs.first { select(first) }
             }
+            persistTabs()
         } catch { errorMessage = error.localizedDescription }
     }
 
