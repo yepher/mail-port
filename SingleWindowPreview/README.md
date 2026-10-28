@@ -55,3 +55,9 @@ All 26 tests passed. In the running app, the × button closed a background tab, 
 ## Verified in version 0.2.3
 
 All 29 tests passed. Native UI checks moved a tab from first to last, verified the reordered strip after restarting the app, and moved it back from last to first. Existing tab identities, account sessions, and the active page remain intact while reordering.
+
+## Version 0.2.4
+
+Gemini is available in Google Apps, every account submenu, and Navigate. It opens gemini.google.com/app as an in-app tab using that account’s existing website data store. Gemini tabs support closing, reopening, rearranging, and restoring across launches like other service tabs.
+
+Validation: all 29 tests passed after adding Gemini. The Google Apps menu showed Gemini for the current account and all account submenus. Selecting it opened Google Gemini at gemini.google.com/app in the same app window with the existing selected-account sign-in. No prompt submission was needed for this check.
