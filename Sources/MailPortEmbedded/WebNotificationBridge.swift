@@ -11,6 +11,7 @@ final class WebNotificationBridge: NSObject, WKScriptMessageHandler {
     private weak var controller: WKUserContentController?
     private var source: String?
     private var installedPermission: String?
+    private var installedScript: WKUserScript?
     private let logger = Logger(subsystem: "com.chriswilson.mailport.embedded", category: "NotificationBridge")
 
     init(tab: BrowserTab) { self.tab = tab }
@@ -29,11 +30,14 @@ final class WebNotificationBridge: NSObject, WKScriptMessageHandler {
 
     private func refreshUserScript() {
         guard installedPermission != notifications.permission, let controller, let source else { return }
-        // This controller belongs to this tab and contains only our notification script.
-        // Keep the next document's initial permission current, before Google bootstraps.
+        // Preserve the independent activity observer when refreshing notification permission.
+        let others = controller.userScripts.filter { $0 !== installedScript }
         controller.removeAllUserScripts()
-        controller.addUserScript(WKUserScript(source: source.replacingOccurrences(of: "__MAILPORT_PERMISSION__", with: notifications.permission),
-            injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        let script = WKUserScript(source: source.replacingOccurrences(of: "__MAILPORT_PERMISSION__", with: notifications.permission),
+            injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        controller.addUserScript(script)
+        others.forEach(controller.addUserScript)
+        installedScript = script
         installedPermission = notifications.permission
     }
 

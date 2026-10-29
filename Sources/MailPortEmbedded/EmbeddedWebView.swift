@@ -24,15 +24,19 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     @Published private(set) var canGoForward = false
     @Published private(set) var errorMessage: String?
     var onMailto: ((URL) -> Void)?
+    var onActivity: ((TabActivity?) -> Void)?
     private(set) var notificationBridge: WebNotificationBridge!
+    private var activityBridge: TabActivityBridge?
+    private let activityOnly: Bool
 
     private var observations: [NSKeyValueObservation] = []
     private var downloads: [ObjectIdentifier: WKDownload] = [:]
     private var downloadDestinations: [ObjectIdentifier: (temporary: URL, final: URL, replacing: Bool)] = [:]
 
-    init(account: Account, service: GoogleService, store: WKWebsiteDataStore) {
+    init(account: Account, service: GoogleService, store: WKWebsiteDataStore, activityOnly: Bool = false) {
         self.account = account
         self.service = service
+        self.activityOnly = activityOnly
         title = service.title
         let configuration = WKWebViewConfiguration()
         let contentController = WKUserContentController()
@@ -41,15 +45,22 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         // WebKit's base UA deliberately freezes OS/engine tokens and omits a
         // Version/Safari suffix. Keep the generated base and MailPort identity.
         configuration.applicationNameForUserAgent = Self.browserIdentity.applicationNameForUserAgent
-        webView = WKWebView(frame: .zero, configuration: configuration)
+        webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 1200, height: 900), configuration: configuration)
         super.init()
         notificationBridge = WebNotificationBridge(tab: self)
-        notificationBridge.install(on: contentController)
+        if !activityOnly { notificationBridge.install(on: contentController) }
+        if service == .gmail || activityOnly {
+            let bridge = TabActivityBridge(tab: self)
+            activityBridge = bridge
+            bridge.install(on: contentController)
+        }
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
         observeState()
-        if service == .calendar || service == .gmail {
+        if activityOnly {
+            load(URL(string: "https://calendar.google.com/calendar/u/0/r/day")!)
+        } else if service == .calendar || service == .gmail {
             Task { [weak self] in
                 await MailPortNotifications.shared.refresh()
                 guard let self else { return }
@@ -177,12 +188,13 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         errorMessage = nil
+        onActivity?(nil)
         updateState()
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         updateState()
-        notificationBridge.updatePermission()
+        if !activityOnly { notificationBridge.updatePermission() }
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
@@ -204,6 +216,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        onActivity?(nil)
         errorMessage = "This page’s web process stopped. Reload the page to continue."
         updateState()
     }

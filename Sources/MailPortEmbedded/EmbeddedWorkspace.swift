@@ -17,6 +17,7 @@ final class EmbeddedWorkspace: ObservableObject {
     @Published var pendingCompose: URL?
     @Published private(set) var storageAvailable = true
     @Published private(set) var recentlyClosed: [WorkspaceTab] = []
+    @Published private(set) var tabActivity: [WorkspaceTab: TabActivity] = [:]
     weak var mainWindow: NSWindow?
     var reopenWindow: (() -> Void)?
 
@@ -24,6 +25,9 @@ final class EmbeddedWorkspace: ObservableObject {
     private let accountStore: AccountStore
     private var stores: [UUID: WKWebsiteDataStore] = [:]
     private var browsers: [WorkspaceTab: BrowserTab] = [:]
+    private var calendarMonitors: [UUID: BrowserTab] = [:]
+    private var activityDay = Calendar.current.startOfDay(for: Date())
+    private var activityTimer: Timer?
     private var browserChanges: AnyCancellable?
     private var preferences: UserDefaults
     private var lastAccountID: UUID?
@@ -72,6 +76,19 @@ final class EmbeddedWorkspace: ObservableObject {
             if let webID { self.currentBrowser?.notificationBridge.clicked(webID) }
         }
         Task { await notifications.refresh() }
+        prepareTabActivity()
+        activityTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let today = Calendar.current.startOfDay(for: Date())
+                if today != self.activityDay {
+                    self.activityDay = today
+                    for monitor in self.calendarMonitors.values {
+                        monitor.load(URL(string: "https://calendar.google.com/calendar/u/0/r/day")!)
+                    }
+                }
+            }
+        }
     }
 
     func select(_ tab: WorkspaceTab) {
@@ -85,6 +102,7 @@ final class EmbeddedWorkspace: ObservableObject {
         browserChanges = currentBrowser?.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
         preferences.set(tab.id, forKey: "selectedTab")
         persistTabs()
+        prepareTabActivity()
     }
 
     func open(_ service: GoogleService, account: Account? = nil) {
@@ -106,6 +124,8 @@ final class EmbeddedWorkspace: ObservableObject {
         if tab.service != .calendar || MailPortNotifications.shared.permission != "granted" {
             browsers.removeValue(forKey: tab)?.webView.stopLoading()
         }
+        tabActivity.removeValue(forKey: tab)
+        if tab.service == .calendar { calendarMonitors.removeValue(forKey: tab.accountID)?.webView.stopLoading() }
         recentlyClosed.removeAll { $0 == tab }
         recentlyClosed.append(tab)
         if recentlyClosed.count > 20 { recentlyClosed.removeFirst() }
@@ -127,7 +147,26 @@ final class EmbeddedWorkspace: ObservableObject {
         stores[account.id] = store
         let browser = BrowserTab(account: account, service: tab.service, store: store)
         browser.onMailto = { [weak self] url in self?.receive(url) }
+        if tab.service == .gmail {
+            browser.onActivity = { [weak self] sample in self?.tabActivity[tab] = sample }
+        }
         browsers[tab] = browser
+    }
+
+    private func prepareTabActivity() {
+        for tab in tabs {
+            guard let account = accounts.first(where: { $0.id == tab.accountID }) else { continue }
+            if tab.service == .gmail { ensureBrowser(for: tab, account: account) }
+            if tab.service == .calendar, calendarMonitors[account.id] == nil {
+                let store = stores[account.id] ?? WKWebsiteDataStore(forIdentifier: account.id)
+                stores[account.id] = store
+                // Observe today's view independently of whichever date the user is browsing.
+                // This page has no native notification bridge, so it cannot duplicate alerts.
+                let monitor = BrowserTab(account: account, service: .calendar, store: store, activityOnly: true)
+                monitor.onActivity = { [weak self] sample in self?.tabActivity[tab] = sample }
+                calendarMonitors[account.id] = monitor
+            }
+        }
     }
 
     func prepareCalendarReminders() {
@@ -194,6 +233,8 @@ final class EmbeddedWorkspace: ObservableObject {
             tabs.removeAll { $0.accountID == account.id }
             recentlyClosed.removeAll { $0.accountID == account.id }
             browsers = browsers.filter { $0.key.accountID != account.id }
+            calendarMonitors.removeValue(forKey: account.id)?.webView.stopLoading()
+            tabActivity = tabActivity.filter { $0.key.accountID != account.id }
             stores.removeValue(forKey: account.id)
             if selection?.accountID == account.id {
                 browserChanges = nil

@@ -100,6 +100,12 @@ struct EmbeddedWorkspaceView: View {
     }
 
     private var tabs: some View {
+        TimelineView(.periodic(from: .now, by: 15)) { context in
+            tabStrip(at: context.date)
+        }
+    }
+
+    private func tabStrip(at now: Date) -> some View {
         HStack(spacing: 0) {
             ScrollView(.horizontal) {
                 HStack(spacing: 4) {
@@ -110,6 +116,7 @@ struct EmbeddedWorkspaceView: View {
                                     Image(systemName: tab.service.symbol).foregroundStyle(Color(nsColor: account.color.nsColor)).font(.system(size: 13))
                                     Text(account.name).font(.system(size: 12, weight: model.selection == tab ? .semibold : .regular)).lineLimit(1)
                                     Text(tab.service == .gmail ? "Mail" : tab.service.title).font(.system(size: 10)).foregroundStyle(.secondary)
+                                    TabActivityBadge(activity: model.tabActivity[tab], service: tab.service, now: now)
                               }.padding(.leading, 13).padding(.trailing, 8).frame(height: 38).contentShape(Rectangle())
                                 .onTapGesture { model.select(tab) }
                                 .accessibilityElement(children: .combine)
@@ -197,4 +204,28 @@ private struct WebContent: NSViewRepresentable {
     let webView: WKWebView
     func makeNSView(context: Context) -> WKWebView { webView }
     func updateNSView(_ view: WKWebView, context: Context) {}
+}
+
+private struct TabActivityBadge: View {
+    let activity: TabActivity?
+    let service: GoogleService
+    let now: Date
+    private var unreadLabel: String {
+        let count = activity?.unreadCount ?? 0
+        return "\(count) unread \(count == 1 ? "message" : "messages")"
+    }
+
+    var body: some View {
+        if service == .gmail, let badge = activity?.unreadBadge(at: now) {
+            Text(badge).font(.system(size: 10, weight: .bold)).monospacedDigit()
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .background(.primary.opacity(0.14), in: Capsule())
+                .accessibilityLabel(unreadLabel)
+                .help(unreadLabel + " in inbox")
+        } else if service == .calendar, activity?.hasCurrentEvent(at: now) == true {
+            Circle().fill(.green).frame(width: 7, height: 7)
+                .accessibilityLabel("Event in progress")
+                .help("An event is happening now")
+        }
+    }
 }

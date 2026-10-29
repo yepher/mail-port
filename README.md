@@ -26,7 +26,7 @@ Passkeys for Google are not supported by this preview: WebKit requires a matchin
 
 Version 0.2.1 adds an experimental WebKit compatibility identity. The system WebKit build is checked against a narrow set of known engine-family release baselines from Apple's Safari release notes. For known family 624 builds, the app adds conservative Version/Safari compatibility tokens while retaining MailPortPreview's identity. The normal WebKit-generated OS/engine tokens are left unchanged. Unknown engine families keep the ordinary app identity. This targets website version detection; it does not make MailPort officially supported by Google, add missing browser APIs, or enable passkeys. No warning is hidden with CSS or page scripts.
 
-Calendar notifications require MailPort to remain running, signed in, and online, with desktop notifications and event reminders enabled in Google Calendar. They are not an independent scheduling service: quitting MailPort or sleeping the Mac can prevent reminders. Focus and screen-sharing settings can suppress banners. Native unread badges and independent background mail polling are not implemented. Browser-based OAuth for a native API client would not log Gmail's website into this WebKit store.
+Calendar notifications require MailPort to remain running, signed in, and online, with desktop notifications and event reminders enabled in Google Calendar. They are not an independent scheduling service: quitting MailPort or sleeping the Mac can prevent reminders. Focus and screen-sharing settings can suppress banners. Dock unread badges and independent mail polling are not implemented; tab unread counts use the loaded Gmail pages. Browser-based OAuth for a native API client would not log Gmail's website into this WebKit store.
 
 This preview supports native download and upload dialogs, browser navigation, JavaScript dialogs, and account/service tabs. It does not yet reproduce Mailplane's extension system or attachment tools.
 
@@ -83,4 +83,22 @@ Run the JavaScript tests separately with Node (development only):
 
 ```sh
 node --test scripts/test-notification-bridge.cjs
+```
+
+
+## Tab activity (version 0.5.0)
+
+Mail tabs show their unread inbox count, hide the badge at zero, and display 999+ for large counts. Open Mail tabs load in the background so their counts can update while another account or service is selected. These are unread counts, not total inbox message counts.
+
+Calendar tabs show a green dot while a timed event is in progress. The dot clears at the event’s end, within the tab strip’s 15-second refresh interval. All-day and declined events are excluded. Each open Calendar tab has a background view of today using the same account session, so browsing another date does not change the indicator. These observer pages do not have the native notification bridge and cannot duplicate MailPort alerts.
+
+The observers read Gmail’s inbox counter/title and Google Calendar’s accessible event labels. Only counts and event time ranges reach the native tab UI; message bodies and event titles are not retained or sent by the activity bridge. Observations expire after five minutes without an update. Sign-in, offline periods, or website layout changes can make an indicator unavailable. Calendar label parsing currently supports the English interface used on this Mac; it uses the displayed GMT offset when available, otherwise the Mac’s local time zone.
+
+Validation: 34 Swift tests and 10 JavaScript tests pass, covering zero/unread counts, expiration, overlapping events, exact start/end boundaries, displayed time zones, overnight events, excluded all-day/declined entries, and malformed input. Live UI checks showed Yepher’s unread badge while another tab was active, a live increase from 1 to 2 unread messages, and a Calendar dot during a temporary event, including while browsing a different week. The dot cleared at the event end without needing a page reload; the temporary event was then deleted.
+
+Development checks:
+
+```sh
+./scripts/build.sh --test
+node --test scripts/test-tab-activity.cjs scripts/test-notification-bridge.cjs
 ```
