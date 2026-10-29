@@ -12,11 +12,13 @@ final class EmbeddedWorkspace: ObservableObject {
     @Published var showingAccountEditor = false
     @Published var editingAccount: Account?
     @Published var showingHelp = false
+    @Published var showingNotifications = false
     @Published var errorMessage: String?
     @Published var pendingCompose: URL?
     @Published private(set) var storageAvailable = true
     @Published private(set) var recentlyClosed: [WorkspaceTab] = []
     weak var mainWindow: NSWindow?
+    var reopenWindow: (() -> Void)?
 
     let directory: URL
     private let accountStore: AccountStore
@@ -52,18 +54,30 @@ final class EmbeddedWorkspace: ObservableObject {
             storageAvailable = false
             errorMessage = "MailPort couldn’t read the account list. Your saved files have been preserved. \(error.localizedDescription)"
         }
+        let notifications = MailPortNotifications.shared
+        notifications.onPermissionChanged = { [weak self] in
+            guard let self else { return }
+            if notifications.permission == "granted" { self.prepareCalendarReminders() }
+            else {
+                for tab in Array(self.browsers.keys) where tab.service == .calendar && !self.tabs.contains(tab) {
+                    self.browsers.removeValue(forKey: tab)?.webView.stopLoading()
+                }
+            }
+            for browser in self.browsers.values { browser.notificationBridge.updatePermission() }
+        }
+        notifications.attachOpenHandler { [weak self] accountID, service, webID in
+            guard let self, self.accounts.contains(where: { $0.id == accountID }) else { return }
+            self.select(WorkspaceTab(accountID: accountID, service: service))
+            self.showWindow()
+            if let webID { self.currentBrowser?.notificationBridge.clicked(webID) }
+        }
+        Task { await notifications.refresh() }
     }
 
     func select(_ tab: WorkspaceTab) {
         guard let account = accounts.first(where: { $0.id == tab.accountID }) else { return }
         if !tabs.contains(tab) { tabs.append(tab) }
-        if browsers[tab] == nil {
-            let store = stores[account.id] ?? WKWebsiteDataStore(forIdentifier: account.id)
-            stores[account.id] = store
-            let browser = BrowserTab(account: account, service: tab.service, store: store)
-            browser.onMailto = { [weak self] url in self?.receive(url) }
-            browsers[tab] = browser
-        }
+        ensureBrowser(for: tab, account: account)
         selection = tab
         lastAccountID = tab.accountID
         preferences.set(tab.accountID.uuidString, forKey: "lastAccount")
@@ -89,7 +103,9 @@ final class EmbeddedWorkspace: ObservableObject {
             preferences.removeObject(forKey: "selectedTab")
             if let next { select(next) }
         }
-        browsers.removeValue(forKey: tab)?.webView.stopLoading()
+        if tab.service != .calendar || MailPortNotifications.shared.permission != "granted" {
+            browsers.removeValue(forKey: tab)?.webView.stopLoading()
+        }
         recentlyClosed.removeAll { $0 == tab }
         recentlyClosed.append(tab)
         if recentlyClosed.count > 20 { recentlyClosed.removeFirst() }
@@ -103,6 +119,24 @@ final class EmbeddedWorkspace: ObservableObject {
         guard reordered != tabs else { return }
         tabs = reordered
         persistTabs()
+    }
+
+    private func ensureBrowser(for tab: WorkspaceTab, account: Account) {
+        guard browsers[tab] == nil else { return }
+        let store = stores[account.id] ?? WKWebsiteDataStore(forIdentifier: account.id)
+        stores[account.id] = store
+        let browser = BrowserTab(account: account, service: tab.service, store: store)
+        browser.onMailto = { [weak self] url in self?.receive(url) }
+        browsers[tab] = browser
+    }
+
+    func prepareCalendarReminders() {
+        for account in accounts { ensureBrowser(for: WorkspaceTab(accountID: account.id, service: .calendar), account: account) }
+    }
+
+    func openCalendarNotificationSettings(account: Account) {
+        select(WorkspaceTab(accountID: account.id, service: .calendar))
+        currentBrowser?.load(URL(string: "https://calendar.google.com/calendar/u/0/r/settings")!)
     }
 
     func reopenClosedTab() {
@@ -149,6 +183,7 @@ final class EmbeddedWorkspace: ObservableObject {
             select(WorkspaceTab(accountID: validated.id, service: .gmail))
         }
         persistTabs()
+        if MailPortNotifications.shared.permission == "granted" { prepareCalendarReminders() }
     }
 
     func removeAccount(_ account: Account) {
@@ -197,6 +232,7 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     func showWindow() {
+        if mainWindow?.isVisible != true { reopenWindow?() }
         mainWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

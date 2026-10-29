@@ -11,6 +11,8 @@ private struct TabFrames: PreferenceKey {
 
 struct EmbeddedWorkspaceView: View {
     @ObservedObject var model: EmbeddedWorkspace
+    @ObservedObject private var notifications = MailPortNotifications.shared
+    @Environment(\.openWindow) private var openWindow
     @State private var removing: Account?
     @State private var tabFrames: [WorkspaceTab: CGRect] = [:]
 
@@ -37,7 +39,7 @@ struct EmbeddedWorkspaceView: View {
             Divider()
             HStack {
                 Label("Single-window preview", systemImage: "rectangle.inset.filled").font(.system(size: 10, weight: .medium))
-                Text("Google compatibility is being tested. Background notifications aren’t implemented yet.").font(.system(size: 10)).foregroundStyle(.secondary)
+                Text(notifications.permission == "granted" ? "Calendar reminders enabled while MailPort is running." : "Enable notifications for Calendar reminders.").font(.system(size: 10)).foregroundStyle(.secondary)
                 Spacer()
                 Button("Details") { model.showingHelp = true }.buttonStyle(.link).font(.system(size: 10))
             }.padding(.horizontal, 14).padding(.vertical, 7).background(.bar)
@@ -56,6 +58,7 @@ struct EmbeddedWorkspaceView: View {
                 else { Text("MailPort").font(.headline) }
             }
             ToolbarItemGroup(placement: .automatic) {
+                Button { model.showingNotifications = true } label: { Label("Notifications", systemImage: notifications.permission == "granted" ? "bell.badge" : "bell") }
                 Button { model.home() } label: { Label("Inbox / Calendar Home", systemImage: "house") }.disabled(model.selection == nil)
                 Button { model.compose() } label: { Label("Compose", systemImage: "square.and.pencil") }.disabled(model.selectedAccount == nil)
                 Menu {
@@ -70,7 +73,12 @@ struct EmbeddedWorkspaceView: View {
                 Button { model.addAccount() } label: { Label("Add Account", systemImage: "person.crop.circle.badge.plus") }.disabled(!model.storageAvailable)
             }
         }
+        .onAppear {
+            let action = openWindow
+            model.reopenWindow = { action(id: "mailport") }
+        }
         .sheet(isPresented: $model.showingAccountEditor) { EmbeddedAccountEditor(model: model, existing: model.editingAccount) }
+        .sheet(isPresented: $model.showingNotifications) { NotificationsSetup(model: model) }
         .sheet(isPresented: $model.showingHelp) { PreviewHelp() }
         .sheet(isPresented: Binding(get: { model.pendingCompose != nil }, set: { if !$0 { model.pendingCompose = nil } })) {
             VStack(alignment: .leading, spacing: 18) {

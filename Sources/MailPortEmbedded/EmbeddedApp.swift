@@ -5,6 +5,10 @@ import MailPortCore
 
 @MainActor
 final class EmbeddedDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+    func applicationDidBecomeActive(_ notification: Notification) {
+        Task { await MailPortNotifications.shared.refresh() }
+    }
     func configureCloseShortcut() {
         // Reserve Command-W for the tab command; keep window closing available.
         DispatchQueue.main.async {
@@ -55,7 +59,8 @@ struct EmbeddedApp: App {
                 Button("Reopen Closed Tab") { model.reopenClosedTab() }.keyboardShortcut("t", modifiers: [.command, .shift]).disabled(model.recentlyClosed.isEmpty)
             }
             CommandGroup(replacing: .appSettings) {
-                Button("Preview Information…") { model.showingHelp = true }.keyboardShortcut(",")
+                Button("Notifications…") { model.showWindow(); model.showingNotifications = true }.keyboardShortcut(",")
+                Button("Preview Information…") { model.showingHelp = true }
             }
             CommandMenu("Tabs") {
                 Button("Next Tab") { model.nextTab(1) }.keyboardShortcut("]", modifiers: [.command, .shift])

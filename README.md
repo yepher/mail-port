@@ -26,7 +26,7 @@ Passkeys for Google are not supported by this preview: WebKit requires a matchin
 
 Version 0.2.1 adds an experimental WebKit compatibility identity. The system WebKit build is checked against a narrow set of known engine-family release baselines from Apple's Safari release notes. For known family 624 builds, the app adds conservative Version/Safari compatibility tokens while retaining MailPortPreview's identity. The normal WebKit-generated OS/engine tokens are left unchanged. Unknown engine families keep the ordinary app identity. This targets website version detection; it does not make MailPort officially supported by Google, add missing browser APIs, or enable passkeys. No warning is hidden with CSS or page scripts.
 
-Background notifications, native unread badges, and dependable Calendar reminders are not implemented. New permission requests, OAuth setup, security setting changes, or session exports are not used to work around Google restrictions. Browser-based OAuth for a native API client would not log Gmail's website into this WebKit store.
+Calendar notifications require MailPort to remain running, signed in, and online, with desktop notifications and event reminders enabled in Google Calendar. They are not an independent scheduling service: quitting MailPort or sleeping the Mac can prevent reminders. Focus and screen-sharing settings can suppress banners. Native unread badges and independent background mail polling are not implemented. Browser-based OAuth for a native API client would not log Gmail's website into this WebKit store.
 
 This preview supports native download and upload dialogs, browser navigation, JavaScript dialogs, and account/service tabs. It does not yet reproduce Mailplane's extension system or attachment tools.
 
@@ -67,3 +67,20 @@ Validation: all 29 tests passed after adding Gemini. The Google Apps menu showed
 ## Version 0.3.0
 
 The single-window application is now the main MailPort project and builds as `dist/MailPort.app`. The old Chrome launcher has been retired. This organizational change does not remove the existing limitations listed above.
+
+
+## Calendar notifications (version 0.4.0)
+
+Open the toolbar bell or MailPort → Notifications… and choose Enable notifications. Allow alerts in macOS, then choose an account and Open Calendar settings. In Google Calendar, select General → Notification settings → Desktop notifications. Repeat for each account and check that the calendars/events you use have reminder rules. Send test reminder checks native Mac delivery; a real Google event is required to validate the complete reminder path.
+
+When enabled, Calendar pages are kept alive for all saved accounts, including accounts whose Calendar tab is closed. Notifications identify the account; clicking one opens that account’s Calendar tab. Gmail web notifications are also bridged when its page is loaded and Gmail desktop notifications are enabled.
+
+Only top-level HTTPS pages on calendar.google.com and mail.google.com can request this bridge. The bridge does not accept arbitrary navigation URLs. Google generates the notification content and timing; MailPort delivers it through macOS UserNotifications. No Calendar API credentials or server are required.
+
+Validation: 31 Swift tests and 4 JavaScript bridge tests passed. Native UI checks enabled MailPort alerts, verified macOS desktop/sound permissions, and sent a test reminder that macOS recorded as delivered. LiveKit already used Desktop notifications; GMail and Yepher were switched from Alerts to Desktop notifications. A temporary Google Calendar event produced a native macOS notification, confirmed in MailPort and the system notification delivery log. The same event was moved forward and produced another native reminder while its Calendar tab was closed and a different account’s Gemini tab was active. All temporary test events were removed. Notification-click routing remains unverified.
+
+Run the JavaScript tests separately with Node (development only):
+
+```sh
+node --test scripts/test-notification-bridge.cjs
+```

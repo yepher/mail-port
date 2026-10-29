@@ -24,6 +24,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     @Published private(set) var canGoForward = false
     @Published private(set) var errorMessage: String?
     var onMailto: ((URL) -> Void)?
+    private(set) var notificationBridge: WebNotificationBridge!
 
     private var observations: [NSKeyValueObservation] = []
     private var downloads: [ObjectIdentifier: WKDownload] = [:]
@@ -34,17 +35,28 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         self.service = service
         title = service.title
         let configuration = WKWebViewConfiguration()
+        let contentController = WKUserContentController()
+        configuration.userContentController = contentController
         configuration.websiteDataStore = store
         // WebKit's base UA deliberately freezes OS/engine tokens and omits a
         // Version/Safari suffix. Keep the generated base and MailPort identity.
         configuration.applicationNameForUserAgent = Self.browserIdentity.applicationNameForUserAgent
         webView = WKWebView(frame: .zero, configuration: configuration)
         super.init()
+        notificationBridge = WebNotificationBridge(tab: self)
+        notificationBridge.install(on: contentController)
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
         observeState()
-        load(service.url)
+        if service == .calendar || service == .gmail {
+            Task { [weak self] in
+                await MailPortNotifications.shared.refresh()
+                guard let self else { return }
+                self.notificationBridge.updatePermission()
+                self.load(service.url)
+            }
+        } else { load(service.url) }
     }
 
     func load(_ url: URL) {
@@ -168,7 +180,10 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         updateState()
     }
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { updateState() }
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        updateState()
+        notificationBridge.updatePermission()
+    }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         reportNavigationError(error)
