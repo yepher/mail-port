@@ -38,7 +38,7 @@ With Xcode and Swift 6:
 ./scripts/build.sh --test
 ```
 
-Set `MAILPORT_BUILD_DIR` to place build caches elsewhere. `MAILPORT_PREVIEW_DATA_DIR` selects an isolated account-label directory for testing; WebKit stores remain isolated by the app bundle identifier and account UUID.
+Set `MAILPORT_BUILD_DIR` to place build caches elsewhere. `MAILPORT_PREVIEW_DATA_DIR` selects an isolated test profile in debug builds only; release builds ignore it. WebKit stores remain isolated by the app bundle identifier and account UUID.
 
 The single-window implementation lives at the repository root. Run builds and tests here; `SingleWindowPreview` is no longer a separate project. The retired multi-window launcher is archived outside the active repository.
 
@@ -118,3 +118,18 @@ Validation: all 34 Swift tests passed. Native UI checks confirmed both services 
 Links to other websites open in the system default browser instead of replacing the current MailPort page. The rule covers direct links, JavaScript-created popup requests, Google URL redirect wrappers, and server redirects, including links to Google products other than the current tab’s service. Gmail’s own navigation remains in the tab. Normal Google sign-in/SSO redirects, embedded frames, mailto account selection, and attachment downloads retain their app handling. Plain HTTP website links are handed to the system browser; MailPort continues to load only HTTPS pages internally.
 
 Validation: all 39 Swift tests pass, including new regression cases for scripted external links, same-frame and new-window handling, Google redirect wrappers, other Google products, SSO, and attachment exceptions. In the live app, Gmail’s public Program Policies link opened Gmail Help in the Mac’s default Chrome browser while the MailPort inbox remained open. The temporary browser tab was closed after the check.
+
+
+## PIN privacy lock (version 0.6.0)
+
+Open MailPort → Settings… (⌘,) and select **Require a PIN after sleep**. Choose and confirm a six-digit PIN, acknowledge the local-data reset rule, and select Enable PIN lock. The feature is off by default. Once enabled, MailPort requires the PIN after Mac sleep/wake and when launching the app. **Lock MailPort** (⌃⌘L) also locks immediately. Turning the setting off requires the current PIN.
+
+While locked, MailPort removes its account pages from the window and memory, pauses media, and suppresses MailPort notifications. Unlocking restores the saved workspace and sign-ins. Notification reminders can be missed while locked.
+
+**Ten consecutive incorrect PIN submissions erase MailPort’s local accounts and saved Google sessions.** The reset clears its website cookies/storage/cache, account file, tab and app preferences, delivered/pending notifications, and saved window state. It then returns to an empty workspace with PIN protection off. A correct PIN resets the failure count; closing or restarting the app does not. Attempts to turn protection off share the same counter. Cleanup that is interrupted or fails keeps access locked and resumes on the next launch.
+
+The reset does not delete your Google accounts, email, calendar events, or online files. It does not delete downloaded files outside MailPort, backups, snapshots, the system clipboard, or OS swap. This is an app privacy lock, not encryption or a forensic secure-erase guarantee; continue using the Mac login password and FileVault for device protection.
+
+The PIN is never saved as plaintext. Its salted PBKDF2-HMAC-SHA256 verifier (200,000 rounds) and persistent failure counter are stored in the local Keychain. Verification and counter updates are serialized across running app copies. Missing or inaccessible security records leave the app locked. Locally signed updates can require renewed Keychain access.
+
+Validation: all 55 Swift tests and 10 JavaScript tests pass. Disposable profiles and test Keychain records cover correct/incorrect PINs, persistent and concurrent failure counts, the tenth-attempt reset, cookie removal, interrupted cleanup, launch locking, sleep/wake notification handling, sleep during verification, and duplicate submissions. The native settings screen was checked with an empty test profile. These checks did not put the Mac to sleep or clear any real accounts, and PIN protection remains off for you to configure.

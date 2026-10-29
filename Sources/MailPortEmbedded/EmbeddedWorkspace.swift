@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import WebKit
 import MailPortCore
+import MailPortSecurity
 
 @MainActor
 final class EmbeddedWorkspace: ObservableObject {
@@ -13,6 +14,7 @@ final class EmbeddedWorkspace: ObservableObject {
     @Published var editingAccount: Account?
     @Published var showingHelp = false
     @Published var showingNotifications = false
+    @Published var showingSecuritySettings = false
     @Published var errorMessage: String?
     @Published var pendingCompose: URL?
     @Published private(set) var storageAvailable = true
@@ -21,6 +23,9 @@ final class EmbeddedWorkspace: ObservableObject {
     weak var mainWindow: NSWindow?
     var reopenWindow: (() -> Void)?
 
+    let security: AppSecurity
+    let preferenceDomain: String
+    private let testingMode: Bool
     let directory: URL
     private let accountStore: AccountStore
     private var stores: [UUID: WKWebsiteDataStore] = [:]
@@ -29,19 +34,87 @@ final class EmbeddedWorkspace: ObservableObject {
     private var activityDay = Calendar.current.startOfDay(for: Date())
     private var activityTimer: Timer?
     private var browserChanges: AnyCancellable?
+    private var securityChanges: AnyCancellable?
     private var preferences: UserDefaults
     private var lastAccountID: UUID?
+    private var incomingAfterUnlock: URL?
 
     var selectedAccount: Account? { accounts.first { $0.id == (selection?.accountID ?? lastAccountID) } }
 
-    init() {
-        let override = ProcessInfo.processInfo.environment["MAILPORT_PREVIEW_DATA_DIR"]
+    init(testingDirectory: URL? = nil, securityEngine: PINLockEngine? = nil) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
+        #if DEBUG
+        let qaBundle = Bundle.main.bundleIdentifier?.hasSuffix(".securityqa") == true
+        let qaRequested = qaBundle ? Bundle.main.object(forInfoDictionaryKey: "MailPortTestingDataDirectory") as? String : nil
+        let validQAPath = qaRequested.flatMap { URL(fileURLWithPath: $0).lastPathComponent.hasPrefix("MailPortSecurityTest-") ? $0 : nil }
+        let qaDirectory = qaBundle ? (validQAPath ?? support.appendingPathComponent("MailPortSecurityTest-securityqa").path) : nil
+        let override = testingDirectory?.path ?? qaDirectory ?? ProcessInfo.processInfo.environment["MAILPORT_PREVIEW_DATA_DIR"]
+        #else
+        // Release builds never accept environment overrides that could sidestep
+        // the production Keychain record or substitute an unprotected account list.
+        let override = testingDirectory?.path
+        #endif
+        testingMode = override != nil
         directory = override.map { URL(fileURLWithPath: $0, isDirectory: true) }
             ?? support.appendingPathComponent("MailPortPreview", isDirectory: true)
         accountStore = AccountStore(directory: directory)
-        preferences = override == nil ? .standard : (UserDefaults(suiteName: "com.chriswilson.mailport.embedded.testing") ?? .standard)
+        preferenceDomain = override == nil ? (Bundle.main.bundleIdentifier ?? "com.chriswilson.mailport.embedded")
+            : "com.chriswilson.mailport.testing." + AppSecurity.testingSuffix(for: directory)
+        preferences = override == nil ? .standard : (UserDefaults(suiteName: preferenceDomain) ?? .standard)
+        security = AppSecurity(preferences: preferences, testingDirectory: override == nil ? nil : directory, engine: securityEngine)
+        securityChanges = security.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
+        security.onLock = { [weak self] in self?.suspendForLock() }
+        security.onUnlock = { [weak self] in
+            guard let self else { return }
+            MailPortNotifications.shared.setPrivacyLocked(false)
+            self.restoreWorkspace()
+            if let incoming = self.incomingAfterUnlock {
+                self.incomingAfterUnlock = nil
+                self.receive(incoming)
+            }
+        }
+        security.onErase = { [weak self] in
+            guard let self else { throw PINLockError.invalidState }
+            try await self.eraseLocalData()
+        }
+        let notifications = MailPortNotifications.shared
+        notifications.setPrivacyLocked(true, clearDelivered: false)
+        notifications.onPermissionChanged = { [weak self] in
+            guard let self, !self.security.blocksAccess else { return }
+            if notifications.permission == "granted" { self.prepareCalendarReminders() }
+            else {
+                for tab in Array(self.browsers.keys) where tab.service == .calendar && !self.tabs.contains(tab) {
+                    self.browsers.removeValue(forKey: tab)?.webView.stopLoading()
+                }
+            }
+            for browser in self.browsers.values { browser.notificationBridge.updatePermission() }
+        }
+        notifications.attachOpenHandler { [weak self] accountID, service, webID in
+            guard let self, self.accounts.contains(where: { $0.id == accountID }) else { return }
+            self.select(WorkspaceTab(accountID: accountID, service: service))
+            self.showWindow()
+            if let webID { self.currentBrowser?.notificationBridge.clicked(webID) }
+        }
+        Task { await notifications.refresh() }
+        security.start()
+        activityTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let today = Calendar.current.startOfDay(for: Date())
+                if today != self.activityDay {
+                    self.activityDay = today
+                    for monitor in self.calendarMonitors.values {
+                        monitor.load(URL(string: "https://calendar.google.com/calendar/u/0/r/day")!)
+                    }
+                }
+            }
+        }
+    }
+
+    private func restoreWorkspace() {
+        guard !security.blocksAccess else { return }
+        storageAvailable = true
         do {
             accounts = try accountStore.load()
             lastAccountID = preferences.string(forKey: "lastAccount").flatMap(UUID.init(uuidString:))
@@ -58,40 +131,43 @@ final class EmbeddedWorkspace: ObservableObject {
             storageAvailable = false
             errorMessage = "MailPort couldn’t read the account list. Your saved files have been preserved. \(error.localizedDescription)"
         }
-        let notifications = MailPortNotifications.shared
-        notifications.onPermissionChanged = { [weak self] in
-            guard let self else { return }
-            if notifications.permission == "granted" { self.prepareCalendarReminders() }
-            else {
-                for tab in Array(self.browsers.keys) where tab.service == .calendar && !self.tabs.contains(tab) {
-                    self.browsers.removeValue(forKey: tab)?.webView.stopLoading()
-                }
-            }
-            for browser in self.browsers.values { browser.notificationBridge.updatePermission() }
-        }
-        notifications.attachOpenHandler { [weak self] accountID, service, webID in
-            guard let self, self.accounts.contains(where: { $0.id == accountID }) else { return }
-            self.select(WorkspaceTab(accountID: accountID, service: service))
-            self.showWindow()
-            if let webID { self.currentBrowser?.notificationBridge.clicked(webID) }
-        }
-        Task { await notifications.refresh() }
         prepareTabActivity()
-        activityTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                let today = Calendar.current.startOfDay(for: Date())
-                if today != self.activityDay {
-                    self.activityDay = today
-                    for monitor in self.calendarMonitors.values {
-                        monitor.load(URL(string: "https://calendar.google.com/calendar/u/0/r/day")!)
-                    }
-                }
-            }
-        }
+        if MailPortNotifications.shared.permission == "granted" { prepareCalendarReminders() }
+    }
+
+    private func suspendForLock() {
+        // Remove sensitive views and AppKit sheets before returning from the sleep hook.
+        showingAccountEditor = false; editingAccount = nil
+        showingHelp = false; showingNotifications = false; showingSecuritySettings = false
+        pendingCompose = nil; errorMessage = nil
+        for sheet in mainWindow?.sheets ?? [] { mainWindow?.endSheet(sheet); sheet.orderOut(nil) }
+        MailPortNotifications.shared.setPrivacyLocked(true)
+        browserChanges = nil
+        for browser in Array(browsers.values) + Array(calendarMonitors.values) { browser.discardForSecurity() }
+        currentBrowser = nil
+        browsers.removeAll(); calendarMonitors.removeAll(); stores.removeAll()
+        accounts.removeAll(); tabs.removeAll(); recentlyClosed.removeAll(); tabActivity.removeAll()
+        selection = nil; lastAccountID = nil
+    }
+
+    private func eraseLocalData() async throws {
+        suspendForLock()
+        incomingAfterUnlock = nil
+        MailPortNotifications.shared.clearForLocalReset()
+        // Let SwiftUI release the detached web views before removing WebKit stores.
+        await withCheckedContinuation { continuation in DispatchQueue.main.async { continuation.resume() } }
+        let identifiers = testingMode ? try accountStore.load().map(\.id) : await LocalDataReset.allWebsiteIdentifiers()
+        try await LocalDataReset.erase(directory: directory, preferenceDomain: preferenceDomain,
+            websiteIdentifiers: identifiers, includeDefaultStore: !testingMode)
+    }
+
+    func openSecuritySettings() {
+        showWindow()
+        if !security.blocksAccess { showingSecuritySettings = true }
     }
 
     func select(_ tab: WorkspaceTab) {
+        guard !security.blocksAccess else { return }
         guard let account = accounts.first(where: { $0.id == tab.accountID }) else { return }
         if !tabs.contains(tab) { tabs.append(tab) }
         ensureBrowser(for: tab, account: account)
@@ -106,11 +182,13 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     func open(_ service: GoogleService, account: Account? = nil) {
+        guard !security.blocksAccess else { return }
         guard let account = account ?? selectedAccount ?? accounts.first else { addAccount(); return }
         select(WorkspaceTab(accountID: account.id, service: service))
     }
 
     func close(_ tab: WorkspaceTab) {
+        guard !security.blocksAccess else { return }
         guard tabs.contains(tab) else { return }
         let next = WorkspaceTab.selection(afterClosing: tab, in: tabs, selected: selection)
         tabs.removeAll { $0 == tab }
@@ -135,6 +213,7 @@ final class EmbeddedWorkspace: ObservableObject {
     func closeCurrentTab() { if let selection { close(selection) } }
 
     func moveTab(_ source: WorkspaceTab, over target: WorkspaceTab) {
+        guard !security.blocksAccess else { return }
         let reordered = WorkspaceTab.reordered(tabs, moving: source, over: target)
         guard reordered != tabs else { return }
         tabs = reordered
@@ -154,6 +233,7 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     private func prepareTabActivity() {
+        guard !security.blocksAccess else { return }
         for tab in tabs {
             guard let account = accounts.first(where: { $0.id == tab.accountID }) else { continue }
             if tab.service == .gmail { ensureBrowser(for: tab, account: account) }
@@ -170,15 +250,18 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     func prepareCalendarReminders() {
+        guard !security.blocksAccess else { return }
         for account in accounts { ensureBrowser(for: WorkspaceTab(accountID: account.id, service: .calendar), account: account) }
     }
 
     func openCalendarNotificationSettings(account: Account) {
+        guard !security.blocksAccess else { return }
         select(WorkspaceTab(accountID: account.id, service: .calendar))
         currentBrowser?.load(URL(string: "https://calendar.google.com/calendar/u/0/r/settings")!)
     }
 
     func reopenClosedTab() {
+        guard !security.blocksAccess else { return }
         while let tab = recentlyClosed.popLast() {
             if accounts.contains(where: { $0.id == tab.accountID }) { select(tab); return }
         }
@@ -189,6 +272,7 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     func nextTab(_ delta: Int) {
+        guard !security.blocksAccess else { return }
         guard !tabs.isEmpty else { return }
         let index = tabs.firstIndex(where: { $0 == selection }) ?? 0
         select(tabs[(index + delta + tabs.count) % tabs.count])
@@ -197,17 +281,20 @@ final class EmbeddedWorkspace: ObservableObject {
     func selectTab(number: Int) { if tabs.indices.contains(number - 1) { select(tabs[number - 1]) } }
 
     func addAccount() {
+        guard !security.blocksAccess else { return }
         guard storageAvailable else { return }
         editingAccount = nil
         showingAccountEditor = true
     }
 
     func editAccount(_ account: Account) {
+        guard !security.blocksAccess else { return }
         editingAccount = account
         showingAccountEditor = true
     }
 
     func saveAccount(_ account: Account) throws {
+        guard !security.blocksAccess else { throw PINLockError.unavailable }
         guard storageAvailable else { throw CocoaError(.fileReadCorruptFile) }
         let validated = try account.validated()
         var updated = accounts
@@ -226,6 +313,7 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     func removeAccount(_ account: Account) {
+        guard !security.blocksAccess else { return }
         do {
             let updated = accounts.filter { $0.id != account.id }
             try accountStore.save(updated)
@@ -247,6 +335,7 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     func compose() {
+        guard !security.blocksAccess else { return }
         guard let account = selectedAccount else { addAccount(); return }
         select(WorkspaceTab(accountID: account.id, service: .gmail))
         if let compose = try? GmailCompose() { currentBrowser?.load(compose.url) }
@@ -255,6 +344,11 @@ final class EmbeddedWorkspace: ObservableObject {
     func home() { if let selection { currentBrowser?.load(selection.service.url) } }
 
     func receive(_ url: URL) {
+        guard !security.blocksAccess else {
+            if url.scheme?.lowercased() == "mailto", (try? GmailCompose(mailto: url)) != nil { incomingAfterUnlock = url }
+            showWindow()
+            return
+        }
         if url.scheme?.lowercased() == "mailto" {
             do { _ = try GmailCompose(mailto: url); pendingCompose = url }
             catch { errorMessage = error.localizedDescription }
@@ -263,6 +357,7 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     func composePending(with account: Account) {
+        guard !security.blocksAccess else { return }
         guard let url = pendingCompose else { return }
         do {
             let compose = try GmailCompose(mailto: url)
@@ -275,7 +370,7 @@ final class EmbeddedWorkspace: ObservableObject {
     func showWindow() {
         if mainWindow?.isVisible != true { reopenWindow?() }
         mainWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp?.activate(ignoringOtherApps: true)
     }
 }
 

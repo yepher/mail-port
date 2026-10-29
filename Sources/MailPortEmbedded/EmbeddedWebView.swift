@@ -31,6 +31,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     private let activityOnly: Bool
     private var authenticating = false
     private var openingAttachment = false
+    private var discardedForSecurity = false
     private let navigationLogger = Logger(subsystem: "com.chriswilson.mailport.embedded", category: "BrowserNavigation")
 
     private var observations: [NSKeyValueObservation] = []
@@ -75,6 +76,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
 
     func load(_ url: URL) {
+        guard !discardedForSecurity else { return }
         guard isSecureWebURL(url) else {
             if url.scheme?.lowercased() == "mailto" { onMailto?(url) }
             else { errorMessage = "MailPort can load only secure web pages." }
@@ -87,6 +89,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
 
     func reload() {
+        guard !discardedForSecurity else { return }
         errorMessage = nil
         if webView.url == nil { load(service.url) }
         else { webView.reload() }
@@ -94,6 +97,21 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
 
     func back() { if webView.canGoBack { webView.goBack() } }
     func forward() { if webView.canGoForward { webView.goForward() } }
+
+    func discardForSecurity() {
+        discardedForSecurity = true
+        onActivity = nil; onMailto = nil
+        webView.stopLoading()
+        webView.pauseAllMediaPlayback(completionHandler: nil)
+        webView.navigationDelegate = nil; webView.uiDelegate = nil
+        webView.configuration.userContentController.removeAllScriptMessageHandlers()
+        webView.configuration.userContentController.removeAllUserScripts()
+        observations.forEach { $0.invalidate() }; observations.removeAll()
+        for download in downloads.values { download.delegate = nil; download.cancel { _ in } }
+        for destination in downloadDestinations.values { try? FileManager.default.removeItem(at: destination.temporary) }
+        downloads.removeAll(); downloadDestinations.removeAll()
+        webView.loadHTMLString("", baseURL: nil)
+    }
 
     func printPage() {
         guard let window = webView.window else {

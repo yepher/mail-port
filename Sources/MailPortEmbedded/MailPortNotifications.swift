@@ -13,32 +13,53 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
     @Published private(set) var lastDelivery: String?
     var onPermissionChanged: (() -> Void)?
     var onOpen: ((UUID, GoogleService, String?) -> Void)?
-    private let center = UNUserNotificationCenter.current()
+    // Command-line XCTest has no application bundle proxy. The production
+    // app always uses its real notification center; tests have no OS alerts.
+    private let center: UNUserNotificationCenter? = Bundle.main.bundleURL.pathExtension == "app" ? .current() : nil
     private var activity: NSObjectProtocol?
     private var pendingOpen: (UUID, GoogleService, String?)?
+    private var privacyLocked = true
 
     var permission: String {
+        if privacyLocked { return "default" }
         if authorization == .denied { return "denied" }
         return enabled && (authorization == .authorized || authorization == .provisional) ? "granted" : "default"
     }
 
     private override init() {
         super.init()
-        center.delegate = self
+        center?.delegate = self
         Task { await refresh() }
     }
 
     func refresh() async {
-        authorization = await center.notificationSettings().authorizationStatus
+        authorization = await center?.notificationSettings().authorizationStatus ?? .denied
         updateActivity()
         onPermissionChanged?()
     }
 
     func reportError(_ message: String) { lastError = message }
 
+    func setPrivacyLocked(_ locked: Bool, clearDelivered: Bool = true) {
+        privacyLocked = locked
+        if locked && clearDelivered {
+            center?.removeAllPendingNotificationRequests()
+            center?.removeAllDeliveredNotifications()
+            lastDelivery = nil; lastError = nil; pendingOpen = nil
+        }
+        updateActivity()
+    }
+
+    func clearForLocalReset() {
+        setPrivacyLocked(true)
+        enabled = false
+        UserDefaults.standard.set(false, forKey: "notificationsEnabled")
+    }
+
     func enable() async {
         lastError = nil
         do {
+            guard let center else { throw CocoaError(.featureUnsupported) }
             let allowed = try await center.requestAuthorization(options: [.alert, .sound, .badge])
             enabled = allowed
             UserDefaults.standard.set(allowed, forKey: "notificationsEnabled")
@@ -64,7 +85,7 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
     }
 
     func deliver(_ message: WebNotificationMessage, account: Account, service: GoogleService) async -> String? {
-        guard permission == "granted" else { return nil }
+        guard permission == "granted", let center else { return nil }
         let key = message.tag.isEmpty ? message.id : message.tag
         let digest = SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined()
         let identifier = "mailport.\(account.id.uuidString).\(service.rawValue).\(digest)"
@@ -83,8 +104,8 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
     }
 
     func close(_ identifier: String) {
-        center.removePendingNotificationRequests(withIdentifiers: [identifier])
-        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+        center?.removePendingNotificationRequests(withIdentifiers: [identifier])
+        center?.removeDeliveredNotifications(withIdentifiers: [identifier])
     }
 
     func sendTest(account: Account) async {
@@ -101,7 +122,7 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .sound, .list])
+        Task { @MainActor in completionHandler(self.privacyLocked ? [] : [.banner, .sound, .list]) }
     }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,

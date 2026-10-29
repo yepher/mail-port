@@ -9,6 +9,9 @@ final class EmbeddedDelegate: NSObject, NSApplicationDelegate {
     func applicationDidBecomeActive(_ notification: Notification) {
         Task { await MailPortNotifications.shared.refresh() }
     }
+    func applicationWillTerminate(_ notification: Notification) {
+        if model?.security.enabled == true { model?.security.lock() }
+    }
     func configureCloseShortcut() {
         // Reserve Command-W for the tab command; keep window closing available.
         DispatchQueue.main.async {
@@ -52,31 +55,35 @@ struct EmbeddedApp: App {
         .windowToolbarStyle(.unifiedCompact)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("New Message") { model.compose() }.keyboardShortcut("n")
-                Button("Add Account…") { model.addAccount() }.keyboardShortcut("a", modifiers: [.command, .shift])
+                Button("New Message") { model.compose() }.keyboardShortcut("n").disabled(model.security.blocksAccess)
+                Button("Add Account…") { model.addAccount() }.keyboardShortcut("a", modifiers: [.command, .shift]).disabled(model.security.blocksAccess)
                 Divider()
-                Button("Close Tab") { model.closeCurrentTab() }.keyboardShortcut("w").disabled(model.selection == nil)
-                Button("Reopen Closed Tab") { model.reopenClosedTab() }.keyboardShortcut("t", modifiers: [.command, .shift]).disabled(model.recentlyClosed.isEmpty)
+                Button("Close Tab") { model.closeCurrentTab() }.keyboardShortcut("w").disabled(model.security.blocksAccess || model.selection == nil)
+                Button("Reopen Closed Tab") { model.reopenClosedTab() }.keyboardShortcut("t", modifiers: [.command, .shift]).disabled(model.security.blocksAccess || model.recentlyClosed.isEmpty)
             }
             CommandGroup(replacing: .appSettings) {
-                Button("Notifications…") { model.showWindow(); model.showingNotifications = true }.keyboardShortcut(",")
-                Button("Preview Information…") { model.showingHelp = true }
+                Button("Settings…") { model.openSecuritySettings() }.keyboardShortcut(",")
+                Button("Lock MailPort") { model.security.lock() }.keyboardShortcut("l", modifiers: [.command, .control])
+                    .disabled(!model.security.enabled || model.security.blocksAccess)
+                Divider()
+                Button("Notifications…") { model.showWindow(); model.showingNotifications = true }.disabled(model.security.blocksAccess)
+                Button("Preview Information…") { model.showingHelp = true }.disabled(model.security.blocksAccess)
             }
             CommandMenu("Tabs") {
-                Button("Next Tab") { model.nextTab(1) }.keyboardShortcut("]", modifiers: [.command, .shift])
-                Button("Previous Tab") { model.nextTab(-1) }.keyboardShortcut("[", modifiers: [.command, .shift])
+                Button("Next Tab") { model.nextTab(1) }.keyboardShortcut("]", modifiers: [.command, .shift]).disabled(model.security.blocksAccess)
+                Button("Previous Tab") { model.nextTab(-1) }.keyboardShortcut("[", modifiers: [.command, .shift]).disabled(model.security.blocksAccess)
                 Divider()
                 ForEach(1...9, id: \.self) { number in
                     Button("Select Tab \(number)") { model.selectTab(number: number) }
-                        .keyboardShortcut(KeyEquivalent(String(number).first!), modifiers: .command)
+                        .keyboardShortcut(KeyEquivalent(String(number).first!), modifiers: .command).disabled(model.security.blocksAccess)
                 }
             }
             CommandMenu("Navigate") {
-                Button("Reload Page") { model.currentBrowser?.reload() }.keyboardShortcut("r")
-                Button("Service Home") { model.home() }.keyboardShortcut("h", modifiers: [.command, .shift])
+                Button("Reload Page") { model.currentBrowser?.reload() }.keyboardShortcut("r").disabled(model.security.blocksAccess)
+                Button("Service Home") { model.home() }.keyboardShortcut("h", modifiers: [.command, .shift]).disabled(model.security.blocksAccess)
                 Divider()
                 ForEach(GoogleService.allCases) { service in
-                    Button("Open \(service.title)") { model.open(service) }
+                    Button("Open \(service.title)") { model.open(service) }.disabled(model.security.blocksAccess)
                 }
             }
         }

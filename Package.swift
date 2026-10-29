@@ -7,8 +7,11 @@ let package = Package(
     products: [.executable(name: "MailPort", targets: ["MailPortEmbedded"])],
     targets: [
         .target(name: "MailPortCore"),
-        .executableTarget(name: "MailPortEmbedded", dependencies: ["MailPortCore"], exclude: ["Resources"]),
-        .testTarget(name: "MailPortCoreTests", dependencies: ["MailPortCore"])
+        .target(name: "MailPortSecurity"),
+        .executableTarget(name: "MailPortEmbedded", dependencies: ["MailPortCore", "MailPortSecurity"], exclude: ["Resources"]),
+        .testTarget(name: "MailPortCoreTests", dependencies: ["MailPortCore"]),
+        .testTarget(name: "MailPortSecurityTests", dependencies: ["MailPortSecurity"]),
+        .testTarget(name: "MailPortEmbeddedTests", dependencies: ["MailPortEmbedded", "MailPortSecurity", "MailPortCore"])
     ],
     swiftLanguageModes: [.v5]
 )

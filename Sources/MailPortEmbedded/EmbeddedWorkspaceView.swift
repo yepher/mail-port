@@ -11,13 +11,31 @@ private struct TabFrames: PreferenceKey {
 
 struct EmbeddedWorkspaceView: View {
     @ObservedObject var model: EmbeddedWorkspace
+    @ObservedObject private var security: AppSecurity
+    init(model: EmbeddedWorkspace) { self.model = model; self.security = model.security }
     @ObservedObject private var notifications = MailPortNotifications.shared
     @Environment(\.openWindow) private var openWindow
     @State private var removing: Account?
     @State private var tabFrames: [WorkspaceTab: CGRect] = [:]
 
     var body: some View {
+        Group {
+            if security.blocksAccess { PINLockScreen(security: security) }
+            else { workspaceContent }
+        }
+        .transaction { $0.disablesAnimations = security.blocksAccess }
+        .onAppear {
+            let action = openWindow
+            model.reopenWindow = { action(id: "mailport") }
+        }
+    }
+
+    private var workspaceContent: some View {
         VStack(spacing: 0) {
+            if security.didReset {
+                Text("MailPort was reset after 10 incorrect PIN entries. Its local accounts and saved sign-ins have been cleared.")
+                    .font(.callout).padding(12).frame(maxWidth: .infinity).background(.orange.opacity(0.1))
+            }
             tabs
             Divider()
             if let browser = model.currentBrowser {
@@ -77,6 +95,7 @@ struct EmbeddedWorkspaceView: View {
             let action = openWindow
             model.reopenWindow = { action(id: "mailport") }
         }
+        .sheet(isPresented: $model.showingSecuritySettings) { SecuritySettingsView(security: security) }
         .sheet(isPresented: $model.showingAccountEditor) { EmbeddedAccountEditor(model: model, existing: model.editingAccount) }
         .sheet(isPresented: $model.showingNotifications) { NotificationsSetup(model: model) }
         .sheet(isPresented: $model.showingHelp) { PreviewHelp() }
