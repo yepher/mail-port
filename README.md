@@ -111,3 +111,10 @@ Colab and NotebookLM are available in Google Apps, every account submenu, and Na
 Colab opens https://colab.research.google.com/. NotebookLM opens https://notebook.google.com/, Google’s current destination for the former notebooklm.google.com address. The MailPort label remains NotebookLM for easy recognition; Google’s website may show the [Gemini Notebook name](https://workspaceupdates.googleblog.com/2026/07/notebooklm-now-gemini-notebook.html). Service access still depends on the account’s Google permissions.
 
 Validation: all 34 Swift tests passed. Native UI checks confirmed both services in the current-account menu and all account submenus. Colab loaded with the existing account control, and NotebookLM loaded Google’s Gemini Notebook page inside MailPort. No notebook was created, uploaded, or executed for these checks.
+
+
+## External links (version 0.5.2)
+
+Links to other websites open in the system default browser instead of replacing the current MailPort page. The rule covers direct links, JavaScript-created popup requests, Google URL redirect wrappers, and server redirects, including links to Google products other than the current tab’s service. Gmail’s own navigation remains in the tab. Normal Google sign-in/SSO redirects, embedded frames, mailto account selection, and attachment downloads retain their app handling. Plain HTTP website links are handed to the system browser; MailPort continues to load only HTTPS pages internally.
+
+Validation: all 39 Swift tests pass, including new regression cases for scripted external links, same-frame and new-window handling, Google redirect wrappers, other Google products, SSO, and attachment exceptions. In the live app, Gmail’s public Program Policies link opened Gmail Help in the Mac’s default Chrome browser while the MailPort inbox remained open. The temporary browser tab was closed after the check.

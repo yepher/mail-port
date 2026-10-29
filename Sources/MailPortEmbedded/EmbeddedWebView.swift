@@ -3,6 +3,7 @@ import Combine
 import Foundation
 import MailPortCore
 import WebKit
+import OSLog
 
 /// An experimental WebKit page. Its compatibility suffix retains MailPort's
 /// identity and uses a conservative baseline for a known system WebKit build.
@@ -28,6 +29,9 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     private(set) var notificationBridge: WebNotificationBridge!
     private var activityBridge: TabActivityBridge?
     private let activityOnly: Bool
+    private var authenticating = false
+    private var openingAttachment = false
+    private let navigationLogger = Logger(subsystem: "com.chriswilson.mailport.embedded", category: "BrowserNavigation")
 
     private var observations: [NSKeyValueObservation] = []
     private var downloads: [ObjectIdentifier: WKDownload] = [:]
@@ -77,6 +81,8 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             return
         }
         errorMessage = nil
+        authenticating = BrowserLinkRouting.isAuthenticationURL(url)
+        openingAttachment = BrowserLinkRouting.isGmailAttachmentURL(url)
         webView.load(URLRequest(url: url))
     }
 
@@ -139,6 +145,12 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         else { NSWorkspace.shared.open(url) }
     }
 
+    private func openExternal(_ url: URL) {
+        let opened = NSWorkspace.shared.open(url)
+        navigationLogger.info("External navigation handed to default browser: \(opened)")
+        if !opened { errorMessage = "macOS couldn’t open this link in your default browser." }
+    }
+
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let destination = navigationAction.request.url else { decisionHandler(.cancel); return }
@@ -162,18 +174,26 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             decisionHandler(.allow)
             return
         }
+        if let external = BrowserLinkRouting.externalURL(for: destination, service: service,
+            topLevel: isTopLevel, download: navigationAction.shouldPerformDownload,
+            authenticating: authenticating, userLink: navigationAction.navigationType == .linkActivated,
+            attachment: openingAttachment) {
+            decisionHandler(.cancel)
+            openExternal(external)
+            return
+        }
         guard isSecureWebURL(destination) else {
             if isTopLevel { errorMessage = "This page tried to open an unsupported or insecure address." }
             decisionHandler(.cancel)
             return
         }
-        if navigationAction.navigationType == .linkActivated, !isGoogleHost(destination.host) {
-            decisionHandler(.cancel)
-            NSWorkspace.shared.open(destination)
-            return
+        if isTopLevel {
+            if BrowserLinkRouting.isAuthenticationURL(destination) { authenticating = true }
+            if BrowserLinkRouting.isGmailAttachmentURL(destination) { openingAttachment = true }
+            else if destination.host == service.url.host { openingAttachment = false }
         }
-        // HTTPS redirects and form submissions are allowed for Workspace SSO.
-        // They retain the visible URL and normal WebKit certificate validation.
+        // Redirects, scripted links and new-window requests follow the same
+        // routing policy; WebKit doesn't always label Gmail clicks linkActivated.
         decisionHandler(navigationAction.shouldPerformDownload ? .download : .allow)
     }
 
@@ -183,7 +203,19 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             .value(forHTTPHeaderField: "Content-Disposition")?.lowercased() ?? ""
         if !navigationResponse.canShowMIMEType || disposition.hasPrefix("attachment") {
             decisionHandler(.download)
-        } else { decisionHandler(.allow) }
+            return
+        }
+        // Server redirects can reach the response delegate without another
+        // navigation-action callback. Don't let their final page replace Gmail.
+        if let destination = navigationResponse.response.url,
+           let external = BrowserLinkRouting.externalURL(for: destination, service: service,
+               topLevel: navigationResponse.isForMainFrame, authenticating: authenticating,
+               attachment: openingAttachment) {
+            decisionHandler(.cancel)
+            openExternal(external)
+            return
+        }
+        decisionHandler(.allow)
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
@@ -193,6 +225,8 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        if webView.url?.host == service.url.host { authenticating = false }
+        openingAttachment = false
         updateState()
         if !activityOnly { notificationBridge.updatePermission() }
     }
@@ -225,13 +259,17 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
                  for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         guard let destination = navigationAction.request.url else { return nil }
         if destination.scheme?.lowercased() == "mailto" { openMailto(destination); return nil }
-        guard isSecureWebURL(destination) else { return nil }
-        if navigationAction.navigationType == .linkActivated, !isGoogleHost(destination.host) {
-            NSWorkspace.shared.open(destination)
-        } else {
-            // Keep requested popups in this tab rather than opening more windows.
-            webView.load(navigationAction.request)
+        if let external = BrowserLinkRouting.externalURL(for: destination, service: service,
+            topLevel: true, download: navigationAction.shouldPerformDownload,
+            authenticating: authenticating, userLink: navigationAction.navigationType == .linkActivated,
+            attachment: openingAttachment) {
+            openExternal(external)
+            return nil
         }
+        guard isSecureWebURL(destination) else { return nil }
+        if BrowserLinkRouting.isAuthenticationURL(destination) { authenticating = true }
+        // Only the current service and its sign-in flow may reuse this tab.
+        webView.load(navigationAction.request)
         return nil
     }
 
@@ -302,6 +340,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
 
     private func retainDownload(_ download: WKDownload) {
+        openingAttachment = false
         downloads[ObjectIdentifier(download)] = download
         download.delegate = self
     }
