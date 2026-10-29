@@ -102,3 +102,12 @@ Development checks:
 ./scripts/build.sh --test
 node --test scripts/test-tab-activity.cjs scripts/test-notification-bridge.cjs
 ```
+
+
+## Colab and NotebookLM (version 0.5.1)
+
+Colab and NotebookLM are available in Google Apps, every account submenu, and Navigate. They open as normal in-app tabs using the selected account’s existing website data store, with closing, reopening, rearranging, and restoration across launches.
+
+Colab opens https://colab.research.google.com/. NotebookLM opens https://notebook.google.com/, Google’s current destination for the former notebooklm.google.com address. The MailPort label remains NotebookLM for easy recognition; Google’s website may show the [Gemini Notebook name](https://workspaceupdates.googleblog.com/2026/07/notebooklm-now-gemini-notebook.html). Service access still depends on the account’s Google permissions.
+
+Validation: all 34 Swift tests passed. Native UI checks confirmed both services in the current-account menu and all account submenus. Colab loaded with the existing account control, and NotebookLM loaded Google’s Gemini Notebook page inside MailPort. No notebook was created, uploaded, or executed for these checks.
