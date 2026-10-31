@@ -17,6 +17,7 @@ fileGroups:
   - Package.swift
   - project.yml
   - README.md
+  - CONTRIBUTING.md
   - Resources
   - scripts
 targets:

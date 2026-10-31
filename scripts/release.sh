@@ -5,7 +5,7 @@
 #   ./scripts/release.sh 0.7.0       Bump to 0.7.0, then release it
 #   ./scripts/release.sh --dry-run   Build and package only; no Apple or GitHub steps
 #
-# Setup and environment overrides are described in README.md under Releasing.
+# Setup and environment overrides are described in CONTRIBUTING.md under Release.
 set -euo pipefail
 task_root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$task_root"
@@ -53,8 +53,8 @@ if $dry_run; then
     sign_identity="-"
 else
     sign_identity="${MAILPORT_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | grep -o '"Developer ID Application: [^"]*"' | head -1 | tr -d '"' || true)}"
-    [[ -n "$sign_identity" ]] || fail "no valid Developer ID Application certificate in the Keychain (see README.md, Releasing)"
-    xcrun notarytool history --keychain-profile "$notary_profile" >/dev/null 2>&1 || fail "notary profile '$notary_profile' is missing or rejected (see README.md, Releasing)"
+    [[ -n "$sign_identity" ]] || fail "no valid Developer ID Application certificate in the Keychain (see CONTRIBUTING.md, Release)"
+    xcrun notarytool history --keychain-profile "$notary_profile" >/dev/null 2>&1 || fail "notary profile '$notary_profile' is missing or rejected (see CONTRIBUTING.md, Release)"
     gh auth status >/dev/null 2>&1 || fail "gh is not logged in"
     [[ -z "$(git status --porcelain)" ]] || fail "working tree has uncommitted changes"
     [[ "$(git branch --show-current)" == "main" ]] || fail "releases are cut from main"

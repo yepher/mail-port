@@ -110,6 +110,7 @@
 		3FBCD7D5DB9F94634463CF4B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		3FBFE144135AA7A8A3584E9A /* MailPortEmbeddedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MailPortEmbeddedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F493D0D90D9E3BC92778D2F /* GoogleService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleService.swift; sourceTree = "<group>"; };
+		6150344F821805DF6E0D2195 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
 		61F157D647D552B06917D139 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		6DE6018611FAC4C97006520D /* TabClosingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabClosingTests.swift; sourceTree = "<group>"; };
 		6FACCDA15101A7799D8BFD17 /* QuickSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSwitcherView.swift; sourceTree = "<group>"; };
@@ -243,6 +244,7 @@
 		6C5FF5633DD0F50F44B97948 = {
 			isa = PBXGroup;
 			children = (
+				6150344F821805DF6E0D2195 /* CONTRIBUTING.md */,
 				61F157D647D552B06917D139 /* Package.swift */,
 				C9DAF4EE8C34AC2B9CDEAFC1 /* project.yml */,
 				3FBCD7D5DB9F94634463CF4B /* README.md */,
