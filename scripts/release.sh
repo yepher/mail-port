@@ -13,6 +13,8 @@ cd "$task_root"
 plist="Resources/Info.plist"
 repo="${MAILPORT_RELEASE_REPO:-yepher/mail-port}"
 notary_profile="${MAILPORT_NOTARY_PROFILE:-mailport-notary}"
+sparkle_account="${MAILPORT_SPARKLE_ACCOUNT:-mailport}"
+sparkle_bin="${MAILPORT_BUILD_DIR:-$task_root/.build}/artifacts/sparkle/Sparkle/bin"
 release_dir="$task_root/dist/release"
 
 fail() { printf 'release: %s\n' "$1" >&2; exit 1; }
@@ -31,11 +33,13 @@ done
 current_version="$(plutil -extract CFBundleShortVersionString raw "$plist")"
 current_build="$(plutil -extract CFBundleVersion raw "$plist")"
 
+latest_version() { git tag --list 'v0.*' | sed -n 's/^v\(0\.[0-9]*\.[0-9]*\)$/\1/p' | sort -V | tail -1; }
+
 # Without a version, add one to the latest release. An unreleased higher version
 # already set in Info.plist wins, so the version never moves backward.
 next_version() {
     local latest
-    latest="$(git tag --list 'v0.*' | sed -n 's/^v\(0\.[0-9]*\.[0-9]*\)$/\1/p' | sort -V | tail -1)"
+    latest="$(latest_version)"
     if [[ -z "$latest" ]]; then printf '%s\n' "$current_version"; return; fi
     local next="${latest%.*}.$((${latest##*.} + 1))"
     printf '%s\n%s\n' "$next" "$current_version" | sort -V | tail -1
@@ -74,15 +78,26 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [[ "$version" != "$current_version" ]]; then
-    step "Bumping $current_version to $version"
-    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" -c "Set :CFBundleVersion $((current_build + 1))" "$plist"
+# Sparkle compares build numbers, so a release must always raise it or nobody is offered the update.
+build="$current_build"
+[[ "$version" == "$current_version" ]] || build=$((build + 1))
+last_version="$(latest_version)"
+if [[ -n "$last_version" ]]; then
+    last_build="$(git show "v$last_version:$plist" | sed -n '/CFBundleVersion/{n;s/.*<string>\(.*\)<\/string>.*/\1/p;}')"
+    if [[ "$last_build" =~ ^[0-9]+$ ]] && (( build <= last_build )); then build=$((last_build + 1)); fi
+fi
+if [[ "$version" != "$current_version" || "$build" != "$current_build" ]]; then
+    step "Setting version $version, build $build"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" -c "Set :CFBundleVersion $build" "$plist"
 fi
 
 step "Building and testing $version"
 rm -rf "$release_dir"
 for script_test in scripts/test-*.cjs; do node "$script_test"; done
 MAILPORT_DIST_DIR="$release_dir" MAILPORT_SIGN_IDENTITY="$sign_identity" ./scripts/build.sh --test
+if ! $dry_run; then
+    "$sparkle_bin/generate_keys" --account "$sparkle_account" -p >/dev/null 2>&1 || fail "no Sparkle signing key '$sparkle_account' in the Keychain (see CONTRIBUTING.md, Release)"
+fi
 app="$release_dir/MailPort.app"
 architecture="$(lipo -archs "$app/Contents/MacOS/MailPort" | tr ' ' '-')"
 dmg="$release_dir/MailPort-$version-$architecture.dmg"
@@ -132,6 +147,40 @@ spctl --assess --type execute --verbose=2 "$app"
 spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg"
 xcrun stapler validate "$dmg"
 
+step "Writing the update feed"
+# Sparkle reads this from the latest GitHub release, so publishing it is what offers the update.
+dmg_name="$(basename "$dmg")"
+sparkle_signature="$("$sparkle_bin/sign_update" --account "$sparkle_account" "$dmg")"
+signature_value="$(printf '%s' "$sparkle_signature" | sed -n 's/.*edSignature="\([^"]*\)".*/\1/p')"
+[[ -n "$signature_value" ]] || fail "sign_update returned no signature"
+"$sparkle_bin/sign_update" --verify --account "$sparkle_account" "$dmg" "$signature_value" >/dev/null || fail "the update signature didn't verify"
+previous_tag="$(git describe --tags --abbrev=0 --match 'v0.*' HEAD 2>/dev/null || true)"
+changes="$(git log --format=%s ${previous_tag:+"$previous_tag..HEAD"} | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/.*/<li>&<\/li>/')"
+minimum_system="$(plutil -extract LSMinimumSystemVersion raw "$plist")"
+appcast="$release_dir/appcast.xml"
+cat >"$appcast" <<APPCAST
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <channel>
+        <title>MailPort</title>
+        <link>https://github.com/$repo</link>
+        <item>
+            <title>Version $version</title>
+            <pubDate>$(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S +0000')</pubDate>
+            <sparkle:version>$build</sparkle:version>
+            <sparkle:shortVersionString>$version</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>$minimum_system</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<ul>
+$changes
+</ul>]]></description>
+            <enclosure url="https://github.com/$repo/releases/download/$tag/$dmg_name" type="application/x-apple-diskimage" $sparkle_signature/>
+        </item>
+    </channel>
+</rss>
+APPCAST
+xmllint --noout "$appcast"
+
 step "Publishing $tag to $repo"
 # The tag must name what was built, so only a version bump may land during a run.
 git diff --quiet "$start_commit" HEAD -- . ":(exclude)$plist" || fail "other commits landed during this run; run it again so the release includes them"
@@ -147,7 +196,7 @@ notes="MailPort is a compatibility preview. It requires macOS 14 or later on $ar
 Open the disk image and drag MailPort to Applications.
 
 SHA-256 of $(basename "$dmg"): \`$checksum\`"
-gh release create "$tag" "$dmg" --repo "$repo" --verify-tag --title "MailPort $version" --notes "$notes" --generate-notes \
-    || fail "$tag was pushed but the release failed; retry with: gh release create $tag '$dmg' --repo $repo --verify-tag --generate-notes"
+gh release create "$tag" "$dmg" "$appcast" --repo "$repo" --verify-tag --title "MailPort $version" --notes "$notes" --generate-notes \
+    || fail "$tag was pushed but the release failed; retry with: gh release create $tag '$dmg' '$appcast' --repo $repo --verify-tag --generate-notes"
 
 printf '\nPublished %s\n' "$(gh release view "$tag" --repo "$repo" --json url --jq .url)"

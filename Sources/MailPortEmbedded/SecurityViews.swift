@@ -42,6 +42,7 @@ struct PINLockScreen: View {
 struct SecuritySettingsView: View {
     @ObservedObject var model: EmbeddedWorkspace
     @ObservedObject var security: AppSecurity
+    @ObservedObject private var updates = AppUpdates.shared
     @Environment(\.dismiss) private var dismiss
     @State private var wantsPIN = false
     @State private var pin = ""
@@ -52,6 +53,9 @@ struct SecuritySettingsView: View {
         VStack(alignment: .leading, spacing: 18) {
             Label("MailPort settings", systemImage: "gearshape").font(.title2.bold())
             Toggle("Show keyboard shortcuts next to views", isOn: Binding(get: { model.showsShortcutHints }, set: { model.setShowsShortcutHints($0) }))
+            if updates.isAvailable {
+                Toggle("Check for updates automatically", isOn: $updates.checksAutomatically)
+            }
             Divider()
             Label("Security", systemImage: "lock.shield").font(.headline)
             Text("Require a PIN after your Mac sleeps and whenever MailPort launches.")

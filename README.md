@@ -13,7 +13,7 @@ MailPort needs macOS 14 or later on Apple silicon.
 1. Download the latest `.dmg` from [Releases](https://github.com/yepher/mail-port/releases/latest).
 2. Open it and drag MailPort to Applications.
 
-MailPort doesn't update itself. To update, quit it and repeat these steps. Your accounts and sign-ins are kept.
+MailPort then keeps itself up to date. If your copy is version 0.6.1 or earlier, repeat these steps once to get the version that can.
 
 ## Using MailPort
 
@@ -77,6 +77,10 @@ PIN lock is off by default. To turn it on, open Settings (⌘,), select **Requir
 
 The lock keeps people out of the app. It isn't encryption, so keep using your Mac login password and FileVault.
 
+### Update MailPort
+
+MailPort checks for new versions automatically and asks before installing one. Your accounts and sign-ins are kept. To check now, choose MailPort > Check for Updates. To stop automatic checks, turn off **Check for updates automatically** in Settings.
+
 ### Keyboard shortcuts
 
 | Action | Shortcut |
@@ -97,7 +101,7 @@ The lock keeps people out of the app. It isn't encryption, so keep using your Ma
 
 ## Privacy
 
-MailPort has no server and doesn't use a Google API. Sign-ins are handled by Google's own pages and stored locally by WebKit, with each account kept separate. Unread counts and Calendar dots read only counts and event times, not message contents or event titles.
+MailPort has no server and doesn't use a Google API. Its only other connection is the update check, which reads the latest release from GitHub. Sign-ins are handled by Google's own pages and stored locally by WebKit, with each account kept separate. Unread counts and Calendar dots read only counts and event times, not message contents or event titles.
 
 ## Current limits
 

@@ -13,6 +13,10 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     DEVELOPMENT_TEAM: ""
     ENABLE_USER_SCRIPT_SANDBOXING: NO
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.6.0
 fileGroups:
   - Package.swift
   - project.yml
@@ -45,6 +49,7 @@ targets:
     dependencies:
       - target: MailPortCore
       - target: MailPortSecurity
+      - package: Sparkle
     settings:
       base:
         PRODUCT_NAME: MailPort

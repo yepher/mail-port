@@ -43,6 +43,7 @@ final class EmbeddedDelegate: NSObject, NSApplicationDelegate {
 struct EmbeddedApp: App {
     @NSApplicationDelegateAdaptor(EmbeddedDelegate.self) private var delegate
     @StateObject private var model = EmbeddedWorkspace()
+    @ObservedObject private var updates = AppUpdates.shared
 
     var body: some Scene {
         Window("MailPort", id: "mailport") {
@@ -58,6 +59,11 @@ struct EmbeddedApp: App {
         .windowToolbarStyle(.unifiedCompact)
         .commands {
             SidebarCommands()
+            CommandGroup(after: .appInfo) {
+                if updates.isAvailable {
+                    Button("Check for Updates…") { updates.check() }.disabled(!updates.canCheck)
+                }
+            }
             CommandGroup(after: .sidebar) {
                 Toggle("Use Tab Bar", isOn: Binding(get: { model.layout == .tabBar }, set: { model.layout = $0 ? .tabBar : .sidebar }))
                     .disabled(model.security.blocksAccess)

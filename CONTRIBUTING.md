@@ -8,7 +8,7 @@ You need Xcode with Swift 6 on an Apple silicon Mac.
 ./scripts/build.sh --test
 ```
 
-This runs the Swift tests and writes a locally signed app to `dist/MailPort.app`. No Apple certificate is needed. Local builds aren't notarized, so they only run on the Mac that built them.
+This runs the Swift tests and writes a locally signed app to `dist/MailPort.app`. No Apple certificate is needed. Local builds aren't notarized or hardened, so they only run on the Mac that built them, and they never check for updates. For the hardened runtime, run from Xcode.
 
 | Variable | Effect |
 | --- | --- |
@@ -91,6 +91,8 @@ Maintainers publish from a clean `main` that matches `origin/main`.
 
 The script runs the tests, signs and notarizes the app, builds a stapled disk image in `dist/release/`, tags the commit, and publishes a GitHub release. Versions stay on `0.x.y`. With no version, it adds one to the latest `v0.x.y` tag unless `Resources/Info.plist` already has a higher version. The build number goes up whenever the version changes.
 
+Each release also uploads `appcast.xml`, which [Sparkle](https://sparkle-project.org) reads from `releases/latest/download/appcast.xml`, so publishing a release is what offers it to users. The release's disk image is the update. Sparkle compares build numbers, so the script always raises the build number above the last release's. Only builds signed with a real certificate include the update feed; debug and local builds skip updates.
+
 Don't commit anything while a release is running. A version bump committed mid-run is accepted, but any other commit stops the release before it publishes, because the tag wouldn't match what was built. Dry-run disk images aren't notarized, so don't share them.
 
 ### One-time setup
@@ -102,6 +104,15 @@ Don't commit anything while a release is running. A version bump committed mid-r
    xcrun notarytool store-credentials mailport-notary --apple-id YOUR_APPLE_ID --team-id YOUR_TEAM_ID
    ```
 
-`MAILPORT_SIGN_IDENTITY`, `MAILPORT_NOTARY_PROFILE`, and `MAILPORT_RELEASE_REPO` override the certificate, notary profile, and target repository.
+3. Install the Sparkle signing key. It's stored in the Keychain under the `mailport` account, and its public half is in `scripts/build.sh`. To back it up or move it to another Mac, run these from Sparkle's `bin` folder in `.build/artifacts/sparkle/Sparkle`:
+
+   ```sh
+   ./generate_keys --account mailport -x mailport-sparkle.key   # On the Mac with the key
+   ./generate_keys --account mailport -f mailport-sparkle.key   # On the new Mac
+   ```
+
+   Keep that file private. Without this key, existing installs can't receive updates, so back it up. Changing the key needs one final release signed with the old key.
+
+`MAILPORT_SIGN_IDENTITY`, `MAILPORT_NOTARY_PROFILE`, `MAILPORT_SPARKLE_ACCOUNT`, and `MAILPORT_RELEASE_REPO` override the certificate, notary profile, Sparkle key, and target repository.
 
 Moving from a local build to a Developer ID build changes the app's signature, so macOS may ask again for Keychain, notification, camera, and microphone access. Later Developer ID releases keep the same identity.
