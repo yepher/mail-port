@@ -115,6 +115,8 @@ struct EmbeddedApp: App {
                     .disabled(model.security.blocksAccess || model.accounts.isEmpty)
                 Button("Pin Current Page…") { model.showingPinEditor = true }.keyboardShortcut("d")
                     .disabled(model.security.blocksAccess || !model.canPinCurrentPage)
+                Button("Save YouTube Video…") { model.saveMedia(audio: false) }.disabled(!model.canSaveMedia)
+                Button("Save YouTube Audio…") { model.saveMedia(audio: true) }.disabled(!model.canSaveMedia)
                 Button("Save Video Transcript…") { model.saveTranscript() }
                     .disabled(model.security.blocksAccess || !model.canSaveTranscript)
                 Divider()

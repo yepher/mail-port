@@ -65,6 +65,30 @@ struct SecuritySettingsView: View {
                 Toggle("Check for updates automatically", isOn: $updates.checksAutomatically)
             }
             Divider()
+            Label("YouTube", systemImage: "play.rectangle").font(.headline)
+            Toggle("Automatically skip skippable ads", isOn: Binding(get: { model.skipsYouTubeAds }, set: { model.setSkipsYouTubeAds($0) }))
+            Text("Clicks YouTube’s Skip button when it becomes available. Unskippable ads still play.").font(.caption).foregroundStyle(.secondary)
+            Toggle("Enable video and audio downloads", isOn: Binding(get: { model.allowsYouTubeDownloads }, set: { model.setAllowsYouTubeDownloads($0) }))
+            Text("Requires a one-time installation of yt-dlp, Deno, and FFmpeg using Homebrew. These tools are only used to save video and audio; other YouTube features work without them.")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if model.allowsYouTubeDownloads {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Open Terminal and run:").font(.callout)
+                    HStack {
+                        Text("brew install yt-dlp deno ffmpeg").font(.system(.callout, design: .monospaced)).textSelection(.enabled)
+                        Spacer()
+                        Button("Copy") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString("brew install yt-dlp deno ffmpeg", forType: .string)
+                        }
+                    }
+                    Link("Need Homebrew?", destination: URL(string: "https://brew.sh")!)
+                    Text("After installation finishes, use Save Media in the YouTube toolbar. MailPort does not install these tools automatically.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }.padding(10).background(.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
+            }
+            Text("Choose from the available MP4 resolutions before saving video. FFmpeg merges video and audio without re-encoding; audio-only saves M4A. Account cookies are never exported; videos requiring sign-in may not download.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Divider()
             DefaultMailSettings(model: model)
             Divider()
             if !model.accounts.isEmpty {

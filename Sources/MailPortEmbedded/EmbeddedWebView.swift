@@ -67,6 +67,10 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             activityBridge = bridge
             bridge.install(on: contentController)
         }
+        if service == .youtube, let scriptURL = Bundle.main.url(forResource: "YouTubeSkipAds", withExtension: "js"),
+           let source = try? String(contentsOf: scriptURL, encoding: .utf8) {
+            contentController.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true, in: .defaultClient))
+        }
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
@@ -120,6 +124,13 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         // The player lives in the page's world, so its result is untrusted; VideoTranscript checks it.
         let result = try await webView.callAsyncJavaScript(source, contentWorld: .page)
         return (result as? [String: Any]).flatMap { VideoTranscript(message: $0, url: url) }
+    }
+
+    var skipsYouTubeAds = false { didSet { updateYouTubeAdSkipping() } }
+
+    func updateYouTubeAdSkipping() {
+        guard service == .youtube, !discardedForSecurity else { return }
+        webView.evaluateJavaScript("globalThis.__mailportSkipEnabled = \(skipsYouTubeAds ? "true" : "false");", in: nil, in: .defaultClient, completionHandler: nil)
     }
 
     func showFind() {
@@ -295,6 +306,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        updateYouTubeAdSkipping()
         if webView.url?.host == service.url.host { authenticating = false }
         openingAttachment = false
         updateState()

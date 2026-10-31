@@ -10,6 +10,7 @@
 		024CDE773EC540315734EF6C /* WebNotificationBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85883367DCD92552E5FC5F0B /* WebNotificationBridge.swift */; };
 		046358AA7B270128A6A6D67D /* AppUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45BB599B680703968A23EC20 /* AppUpdates.swift */; };
 		08E3AC649706768CE09EB887 /* GoogleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F493D0D90D9E3BC92778D2F /* GoogleService.swift */; };
+		0BC8FD71CC4FFFC66775C17C /* YouTubeSkipAds.js in Resources */ = {isa = PBXBuildFile; fileRef = 5AE957D36DABB2D546B61149 /* YouTubeSkipAds.js */; };
 		0D9DDF8EE07E0752A722A8E4 /* HexColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C6F8F6A069CEF2961E41C5 /* HexColor.swift */; };
 		18B295784A97BABFEA4C68C4 /* QuickSwitch.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF6529FFFE31FE5588FCB954 /* QuickSwitch.swift */; };
 		1A4E548386E1F925F2B478F7 /* EmbeddedWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CC5358895BFE47CB6C82723 /* EmbeddedWebView.swift */; };
@@ -20,18 +21,23 @@
 		24B28E4D663E0481D8BD8C2F /* EmbeddedCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BF505FAEE4CB1FC4FDA850 /* EmbeddedCoreTests.swift */; };
 		25B18AD7312CA3E590193B9F /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E804CC5C96509C8DB267CD42 /* Sparkle */; };
 		25D937F96249ED3C1211F416 /* libMailPortSecurity.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DE9D96863BF1E20B6106D395 /* libMailPortSecurity.a */; };
+		271B1298F6651BE12981F5FD /* WebViewHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79545A925107BEBB488A2372 /* WebViewHost.swift */; };
 		28DAA1BCD0D81EAE12677A28 /* VideoTranscript.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6A3990848349494CE73A0DB /* VideoTranscript.swift */; };
+		34F4822A099A399DB939B41D /* YouTubeResolutionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8697441397590C91DCA394C /* YouTubeResolutionView.swift */; };
 		36C023708EDED7EF413797E1 /* AppSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87641FCBF1B788076E5B0B3A /* AppSecurity.swift */; };
 		4AF5281DEF46BEE0BDDF673C /* TabActivity.js in Resources */ = {isa = PBXBuildFile; fileRef = C0E13B5EA7B9F7825479BCDC /* TabActivity.js */; };
 		4B08AEEA8AE24A8863B64397 /* LocalDataReset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DE255287BCD9FEEDE571C2D /* LocalDataReset.swift */; };
 		4E0C8D95E459A60FCCA1339E /* NotificationsSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1923421427A4680301247026 /* NotificationsSetup.swift */; };
+		584B0B80F814A4C646FD32BF /* YouTubeDownload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B067BA938C88D16521ED3CD /* YouTubeDownload.swift */; };
 		5AFA7A3F076262C8937CD392 /* TabActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325430994E30A62DD6956256 /* TabActivity.swift */; };
 		61B33A205D78C271D23ECC5E /* libMailPortCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */; };
 		62C82EC857DD740BDE5B1904 /* EmbeddedWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0F57055B338CBD857C7B9 /* EmbeddedWorkspace.swift */; };
 		66E52A9E5081325D4058B310 /* TranscriptReader.js in Resources */ = {isa = PBXBuildFile; fileRef = 89122E4657495243355BA744 /* TranscriptReader.js */; };
 		7358E7B28A7EC1FCD9F74B4F /* TabActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98F4707D712E1B8018D3D066 /* TabActivityTests.swift */; };
+		7A1487D06BF7C4CBB7175672 /* YouTubeMediaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35796A32111918D779E422A5 /* YouTubeMediaTests.swift */; };
 		7DAC619BC36B6D7CCE646A4A /* SecurityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B412E7924DA1FB249B8D3F6C /* SecurityViews.swift */; };
 		82A8EC640AD55D0D4520CFB2 /* PINLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8BF2579E9F516506906FA6 /* PINLockTests.swift */; };
+		8482361146A5A050902CDB95 /* YouTubeDownloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D3B65C35434B2D3767D9284 /* YouTubeDownloadTests.swift */; };
 		8797DA7BD9EC979BCE36BA35 /* WorkspaceSidebarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0543294F1195DD243413A7C2 /* WorkspaceSidebarTests.swift */; };
 		8929BFFA38B43BB736DA518B /* libMailPortCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */; };
 		9178E564B788B92CC7569A4B /* AppSecurityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D6CA6C5C429FD4DE000D63C /* AppSecurityTests.swift */; };
@@ -50,6 +56,7 @@
 		BB4D7FB0B44E311EDF747CE2 /* PINLockEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E37E0B156A217996992FBDA6 /* PINLockEngine.swift */; };
 		BF97FE9AA8563AD3275246D0 /* TabClosingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DE6018611FAC4C97006520D /* TabClosingTests.swift */; };
 		C07E8B9BD77AB2AAE1F47721 /* AccountNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11BE17380D8E5E691454D15C /* AccountNotifications.swift */; };
+		C22079B8C0D85750B969392B /* YouTubeMedia.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE034367492853A53B156A66 /* YouTubeMedia.swift */; };
 		CB33BE43347D0BEE8F6A0FF7 /* WorkspacePin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EC74623562558A49CCED29D /* WorkspacePin.swift */; };
 		CC77DCB12DA1096F87135590 /* GmailCompose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0EF13258A768492CD2840A /* GmailCompose.swift */; };
 		CD9D84A9E0FBDB40147016B5 /* libMailPortSecurity.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DE9D96863BF1E20B6106D395 /* libMailPortSecurity.a */; };
@@ -104,12 +111,14 @@
 		0A2AB001E9F3C29AB9EC144B /* MailPortCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MailPortCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		11BE17380D8E5E691454D15C /* AccountNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountNotifications.swift; sourceTree = "<group>"; };
 		1923421427A4680301247026 /* NotificationsSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsSetup.swift; sourceTree = "<group>"; };
+		1D3B65C35434B2D3767D9284 /* YouTubeDownloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeDownloadTests.swift; sourceTree = "<group>"; };
 		1D6CA6C5C429FD4DE000D63C /* AppSecurityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSecurityTests.swift; sourceTree = "<group>"; };
 		2040025A6CD1B5641269AFF6 /* WebNotificationMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebNotificationMessage.swift; sourceTree = "<group>"; };
 		26A0F57055B338CBD857C7B9 /* EmbeddedWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedWorkspace.swift; sourceTree = "<group>"; };
 		2CE8703A72E5A438F9188E42 /* MailPort.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MailPort.entitlements; sourceTree = "<group>"; };
 		325430994E30A62DD6956256 /* TabActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabActivity.swift; sourceTree = "<group>"; };
 		32F3F83A4E871DA68243A00D /* AccountStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountStore.swift; sourceTree = "<group>"; };
+		35796A32111918D779E422A5 /* YouTubeMediaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeMediaTests.swift; sourceTree = "<group>"; };
 		3A8BF2579E9F516506906FA6 /* PINLockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINLockTests.swift; sourceTree = "<group>"; };
 		3C0EF13258A768492CD2840A /* GmailCompose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailCompose.swift; sourceTree = "<group>"; };
 		3CC5358895BFE47CB6C82723 /* EmbeddedWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedWebView.swift; sourceTree = "<group>"; };
@@ -117,6 +126,8 @@
 		3FBCD7D5DB9F94634463CF4B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		3FBFE144135AA7A8A3584E9A /* MailPortEmbeddedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MailPortEmbeddedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		45BB599B680703968A23EC20 /* AppUpdates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdates.swift; sourceTree = "<group>"; };
+		5AE957D36DABB2D546B61149 /* YouTubeSkipAds.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = YouTubeSkipAds.js; sourceTree = "<group>"; };
+		5B067BA938C88D16521ED3CD /* YouTubeDownload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeDownload.swift; sourceTree = "<group>"; };
 		5F493D0D90D9E3BC92778D2F /* GoogleService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleService.swift; sourceTree = "<group>"; };
 		6137C7C653FA6A99D9404206 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
 		6150344F821805DF6E0D2195 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
@@ -126,6 +137,7 @@
 		6FACCDA15101A7799D8BFD17 /* QuickSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSwitcherView.swift; sourceTree = "<group>"; };
 		77B3651654916A1DBDC3D25B /* BrowserIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserIdentity.swift; sourceTree = "<group>"; };
 		77BF505FAEE4CB1FC4FDA850 /* EmbeddedCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedCoreTests.swift; sourceTree = "<group>"; };
+		79545A925107BEBB488A2372 /* WebViewHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewHost.swift; sourceTree = "<group>"; };
 		7B4BC0B57397618885A4FF34 /* test-tab-activity.cjs */ = {isa = PBXFileReference; path = "test-tab-activity.cjs"; sourceTree = "<group>"; };
 		7E8175C9A9BBEC8228AA6A00 /* MailPort.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MailPort.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EC74623562558A49CCED29D /* WorkspacePin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacePin.swift; sourceTree = "<group>"; };
@@ -147,12 +159,14 @@
 		ACD6F18697343300E747345A /* make-icon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "make-icon.swift"; sourceTree = "<group>"; };
 		B412E7924DA1FB249B8D3F6C /* SecurityViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityViews.swift; sourceTree = "<group>"; };
 		B6A3990848349494CE73A0DB /* VideoTranscript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoTranscript.swift; sourceTree = "<group>"; };
+		BE034367492853A53B156A66 /* YouTubeMedia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeMedia.swift; sourceTree = "<group>"; };
 		C0E13B5EA7B9F7825479BCDC /* TabActivity.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = TabActivity.js; sourceTree = "<group>"; };
 		C9B0F5BDD7978127AF92CDD8 /* NotificationBridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = NotificationBridge.js; sourceTree = "<group>"; };
 		C9DAF4EE8C34AC2B9CDEAFC1 /* project.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = project.yml; sourceTree = "<group>"; };
 		D0A1E6CC0461A31076C40435 /* WorkspaceSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSidebar.swift; sourceTree = "<group>"; };
 		D1B82EBF40C9446051E93EB0 /* build.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build.sh; sourceTree = "<group>"; };
 		D2C6F8F6A069CEF2961E41C5 /* HexColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HexColor.swift; sourceTree = "<group>"; };
+		DB61A0D5125C50D38D30BD81 /* test-youtube-skip.cjs */ = {isa = PBXFileReference; path = "test-youtube-skip.cjs"; sourceTree = "<group>"; };
 		DE9D96863BF1E20B6106D395 /* libMailPortSecurity.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libMailPortSecurity.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		E2C140DE07BAC971334340C4 /* release.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = release.sh; sourceTree = "<group>"; };
 		E37E0B156A217996992FBDA6 /* PINLockEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINLockEngine.swift; sourceTree = "<group>"; };
@@ -160,6 +174,7 @@
 		EA220AF94AABA60833038D09 /* WorkspaceTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceTab.swift; sourceTree = "<group>"; };
 		EF6529FFFE31FE5588FCB954 /* QuickSwitch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSwitch.swift; sourceTree = "<group>"; };
 		F41A79D91C725EA5C38DF929 /* TabReorderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabReorderingTests.swift; sourceTree = "<group>"; };
+		F8697441397590C91DCA394C /* YouTubeResolutionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeResolutionView.swift; sourceTree = "<group>"; };
 		FD894A4A5C039D43139D129C /* TabActivityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabActivityBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -250,6 +265,7 @@
 				F41A79D91C725EA5C38DF929 /* TabReorderingTests.swift */,
 				995F812918F343A86128DB65 /* WebNotificationTests.swift */,
 				9C2DDC586AF731FC2854514C /* WorkspaceNavigationTests.swift */,
+				35796A32111918D779E422A5 /* YouTubeMediaTests.swift */,
 			);
 			path = MailPortCoreTests;
 			sourceTree = "<group>";
@@ -286,7 +302,10 @@
 				B412E7924DA1FB249B8D3F6C /* SecurityViews.swift */,
 				FD894A4A5C039D43139D129C /* TabActivityBridge.swift */,
 				85883367DCD92552E5FC5F0B /* WebNotificationBridge.swift */,
+				79545A925107BEBB488A2372 /* WebViewHost.swift */,
 				D0A1E6CC0461A31076C40435 /* WorkspaceSidebar.swift */,
+				5B067BA938C88D16521ED3CD /* YouTubeDownload.swift */,
+				F8697441397590C91DCA394C /* YouTubeResolutionView.swift */,
 				C485CE8DC87F778D96C6686E /* Resources */,
 			);
 			path = MailPortEmbedded;
@@ -297,6 +316,7 @@
 			children = (
 				1D6CA6C5C429FD4DE000D63C /* AppSecurityTests.swift */,
 				0543294F1195DD243413A7C2 /* WorkspaceSidebarTests.swift */,
+				1D3B65C35434B2D3767D9284 /* YouTubeDownloadTests.swift */,
 			);
 			path = MailPortEmbeddedTests;
 			sourceTree = "<group>";
@@ -322,6 +342,7 @@
 				E2C140DE07BAC971334340C4 /* release.sh */,
 				A27960EBCECCF096B6929BA6 /* test-notification-bridge.cjs */,
 				7B4BC0B57397618885A4FF34 /* test-tab-activity.cjs */,
+				DB61A0D5125C50D38D30BD81 /* test-youtube-skip.cjs */,
 			);
 			path = scripts;
 			sourceTree = "<group>";
@@ -332,6 +353,7 @@
 				C9B0F5BDD7978127AF92CDD8 /* NotificationBridge.js */,
 				C0E13B5EA7B9F7825479BCDC /* TabActivity.js */,
 				89122E4657495243355BA744 /* TranscriptReader.js */,
+				5AE957D36DABB2D546B61149 /* YouTubeSkipAds.js */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -354,6 +376,7 @@
 				2040025A6CD1B5641269AFF6 /* WebNotificationMessage.swift */,
 				7EC74623562558A49CCED29D /* WorkspacePin.swift */,
 				EA220AF94AABA60833038D09 /* WorkspaceTab.swift */,
+				BE034367492853A53B156A66 /* YouTubeMedia.swift */,
 			);
 			path = MailPortCore;
 			sourceTree = "<group>";
@@ -546,6 +569,7 @@
 				D9FE5E45785008457574E66B /* NotificationBridge.js in Resources */,
 				4AF5281DEF46BEE0BDDF673C /* TabActivity.js in Resources */,
 				66E52A9E5081325D4058B310 /* TranscriptReader.js in Resources */,
+				0BC8FD71CC4FFFC66775C17C /* YouTubeSkipAds.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -623,7 +647,10 @@
 				7DAC619BC36B6D7CCE646A4A /* SecurityViews.swift in Sources */,
 				925AD56301191B4E869B7603 /* TabActivityBridge.swift in Sources */,
 				024CDE773EC540315734EF6C /* WebNotificationBridge.swift in Sources */,
+				271B1298F6651BE12981F5FD /* WebViewHost.swift in Sources */,
 				966F8F4BEC490A4F5AEA209B /* WorkspaceSidebar.swift in Sources */,
+				584B0B80F814A4C646FD32BF /* YouTubeDownload.swift in Sources */,
+				34F4822A099A399DB939B41D /* YouTubeResolutionView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -633,6 +660,7 @@
 			files = (
 				9178E564B788B92CC7569A4B /* AppSecurityTests.swift in Sources */,
 				8797DA7BD9EC979BCE36BA35 /* WorkspaceSidebarTests.swift in Sources */,
+				8482361146A5A050902CDB95 /* YouTubeDownloadTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -657,6 +685,7 @@
 				B20A539CE753D40A9ACFFCBB /* TabReorderingTests.swift in Sources */,
 				A3F51387CEC2F6F3DC6CCDB1 /* WebNotificationTests.swift in Sources */,
 				AC157D43348D6F8677B62A20 /* WorkspaceNavigationTests.swift in Sources */,
+				7A1487D06BF7C4CBB7175672 /* YouTubeMediaTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -679,6 +708,7 @@
 				A1E230B8246EDBE5E76690FE /* WebNotificationMessage.swift in Sources */,
 				CB33BE43347D0BEE8F6A0FF7 /* WorkspacePin.swift in Sources */,
 				F143CAF226B1A7B683A43B5C /* WorkspaceTab.swift in Sources */,
+				C22079B8C0D85750B969392B /* YouTubeMedia.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

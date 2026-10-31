@@ -31,6 +31,16 @@ final class EmbeddedWorkspace: ObservableObject {
     @Published private(set) var pins: [WorkspacePin] = []
     @Published private(set) var collapsedAccounts: Set<UUID> = []
     @Published private(set) var showsShortcutHints = true
+    @Published private(set) var savingMedia = false
+    @Published var mediaStatus: String?
+    @Published var showingVideoOptions = false
+    private(set) var videoOptionsURL: URL?
+    private var pendingVideoSelection = false
+    private var pendingVideoHeight: Int?
+    private var mediaDownload: YouTubeDownload?
+    private var videoOptionsReader: YouTubeDownload?
+    @Published private(set) var skipsYouTubeAds = false
+    @Published private(set) var allowsYouTubeDownloads = false
     @Published private(set) var savingTranscript = false
     @Published private(set) var accountsNeedingSignIn: Set<UUID> = []
     @Published private(set) var serviceZoom: [GoogleService: Double] = [:]
@@ -153,6 +163,8 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     private func restoreWorkspace() {
+        skipsYouTubeAds = preferences.bool(forKey: "youtubeAutoSkipAds")
+        allowsYouTubeDownloads = preferences.bool(forKey: "youtubeMediaDownloads")
         guard !security.blocksAccess else { return }
         storageAvailable = true
         do {
@@ -194,6 +206,9 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     private func suspendForLock() {
+        cancelMediaDownload()
+        showingVideoOptions = false; videoOptionsURL = nil; pendingVideoSelection = false; pendingVideoHeight = nil
+        skipsYouTubeAds = false; allowsYouTubeDownloads = false
         // Remove sensitive views and AppKit sheets before returning from the sleep hook.
         showingAccountEditor = false; editingAccount = nil
         showingHelp = false; showingNotifications = false; showingSecuritySettings = false
@@ -287,6 +302,7 @@ final class EmbeddedWorkspace: ObservableObject {
         let store = stores[account.id] ?? WKWebsiteDataStore(forIdentifier: account.id)
         stores[account.id] = store
         let browser = BrowserTab(account: account, service: tab.service, store: store)
+        browser.skipsYouTubeAds = skipsYouTubeAds
         browser.onMailto = { [weak self] url in self?.receive(url) }
         browser.onSignInChange = { [weak self] needed in self?.updateSignIn(needed, for: account.id) }
         browser.webView.pageZoom = serviceZoom[tab.service] ?? PageZoom.standard
@@ -350,6 +366,99 @@ final class EmbeddedWorkspace: ObservableObject {
         guard !security.blocksAccess else { return }
         notificationSettings[accountID] = settings
         if let data = try? JSONEncoder().encode(notificationSettings) { preferences.set(data, forKey: "accountNotifications") }
+    }
+
+    func setSkipsYouTubeAds(_ enabled: Bool) {
+        guard !security.blocksAccess else { return }
+        skipsYouTubeAds = enabled
+        preferences.set(enabled, forKey: "youtubeAutoSkipAds")
+        for browser in browsers.values { browser.skipsYouTubeAds = enabled }
+    }
+
+    func setAllowsYouTubeDownloads(_ enabled: Bool) {
+        guard !security.blocksAccess else { return }
+        allowsYouTubeDownloads = enabled
+        preferences.set(enabled, forKey: "youtubeMediaDownloads")
+        if !enabled { cancelMediaDownload(); showingVideoOptions = false; pendingVideoSelection = false; videoOptionsURL = nil }
+    }
+
+    var canSaveMedia: Bool {
+        !security.blocksAccess && allowsYouTubeDownloads && !savingMedia && selection?.service == .youtube && YouTubeMedia.videoURL(currentBrowser?.url) != nil
+    }
+
+    func cancelMediaDownload() {
+        mediaDownload?.cancel()
+        videoOptionsReader?.cancel()
+        mediaStatus = nil
+    }
+
+    func saveMedia(audio: Bool) {
+        guard canSaveMedia, let url = YouTubeMedia.videoURL(currentBrowser?.url), let window = mainWindow else { return }
+        guard YouTubeDownload.helper != nil else {
+            errorMessage = "Media saving uses yt-dlp and Deno, plus FFmpeg for high-resolution video. Open Terminal and run: brew install yt-dlp deno ffmpeg. After installation finishes, try Save Media again. You can also copy the command in Settings > YouTube. Other YouTube features work without these tools."
+            return
+        }
+        if !audio {
+            guard YouTubeDownload.ffmpeg != nil else {
+                errorMessage = "High-resolution video saving requires FFmpeg. Open Terminal and run: brew install yt-dlp deno ffmpeg"
+                return
+            }
+            videoOptionsURL = url
+            pendingVideoSelection = false
+            pendingVideoHeight = nil
+            showingVideoOptions = true
+            return
+        }
+        presentMediaSavePanel(url: url, audio: true, window: window)
+    }
+
+    func readVideoResolutions(url: URL) async throws -> [Int] {
+        guard !security.blocksAccess, allowsYouTubeDownloads else { throw CancellationError() }
+        videoOptionsReader?.cancel()
+        let reader = YouTubeDownload()
+        videoOptionsReader = reader
+        defer { if videoOptionsReader === reader { videoOptionsReader = nil } }
+        return try await reader.resolutions(url: url)
+    }
+
+    func cancelVideoResolutionCheck() { videoOptionsReader?.cancel() }
+
+    func chooseVideoResolution(_ height: Int?) {
+        pendingVideoHeight = height
+        pendingVideoSelection = true
+        showingVideoOptions = false
+    }
+
+    func completeVideoOptions() {
+        defer { videoOptionsURL = nil; pendingVideoSelection = false; pendingVideoHeight = nil }
+        guard pendingVideoSelection, let url = videoOptionsURL, !security.blocksAccess,
+              allowsYouTubeDownloads, !savingMedia, let window = mainWindow else { return }
+        presentMediaSavePanel(url: url, audio: false, window: window, height: pendingVideoHeight)
+    }
+
+    private func presentMediaSavePanel(url: URL, audio: Bool, window: NSWindow, height: Int? = nil) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = audio ? [.mpeg4Audio] : [.mpeg4Movie]
+        panel.nameFieldStringValue = audio ? "YouTube audio.m4a" : "YouTube video.mp4"
+        panel.beginSheetModal(for: window) { [weak self] response in
+            guard let self, response == .OK, let destination = panel.url,
+                  !self.security.blocksAccess, self.allowsYouTubeDownloads, !self.savingMedia else { return }
+            let download = YouTubeDownload()
+            self.mediaDownload = download
+            self.savingMedia = true
+            self.mediaStatus = audio ? "Saving audio…" : "Saving video…"
+            Task { @MainActor in
+                defer { self.savingMedia = false; self.mediaDownload = nil }
+                do {
+                    try await download.save(url: url, audio: audio, destination: destination, height: height)
+                    if !self.security.blocksAccess { self.mediaStatus = "Saved \(destination.lastPathComponent)" }
+                } catch is CancellationError { self.mediaStatus = nil }
+                catch {
+                    self.mediaStatus = nil
+                    if !self.security.blocksAccess { self.errorMessage = error.localizedDescription }
+                }
+            }
+        }
     }
 
     func saveTranscript() {

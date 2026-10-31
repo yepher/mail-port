@@ -34,6 +34,51 @@ final class WorkspaceSidebarTests: XCTestCase {
         return (model, directory, preferences)
     }
 
+    @MainActor func testYouTubeOptionsAreOptInPersistAndClearWhileLocked() async throws {
+        let (model, directory, preferences) = try await fixture()
+        XCTAssertFalse(model.skipsYouTubeAds)
+        XCTAssertFalse(model.allowsYouTubeDownloads)
+        model.setSkipsYouTubeAds(true)
+        model.setAllowsYouTubeDownloads(true)
+        XCTAssertTrue(preferences.bool(forKey: "youtubeAutoSkipAds"))
+        XCTAssertTrue(preferences.bool(forKey: "youtubeMediaDownloads"))
+        let reopened = EmbeddedWorkspace(testingDirectory: directory, securityEngine: PINLockEngine(store: FixturePINStore()))
+        for _ in 0..<200 where reopened.security.checking { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertTrue(reopened.skipsYouTubeAds)
+        XCTAssertTrue(reopened.allowsYouTubeDownloads)
+        let enabled = await model.security.enable(pin: "628493")
+        XCTAssertTrue(enabled)
+        model.security.lock()
+        XCTAssertFalse(model.skipsYouTubeAds)
+        XCTAssertFalse(model.allowsYouTubeDownloads)
+        model.setSkipsYouTubeAds(true)
+        model.setAllowsYouTubeDownloads(true)
+        XCTAssertFalse(model.skipsYouTubeAds)
+        XCTAssertFalse(model.allowsYouTubeDownloads)
+    }
+
+    @MainActor func testWebViewHostResizesAndAllowsFullscreenReparenting() {
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600), configuration: configuration)
+        let host = WebViewHost(webView: webView)
+        host.setFrameSize(NSSize(width: 1000, height: 700))
+        XCTAssertEqual(webView.frame.size, host.bounds.size)
+        XCTAssertTrue(webView.translatesAutoresizingMaskIntoConstraints)
+        XCTAssertTrue(host.constraints.isEmpty)
+        let fullscreenHost = NSView(frame: NSRect(x: 0, y: 0, width: 1440, height: 900))
+        webView.removeFromSuperview()
+        fullscreenHost.addSubview(webView)
+        webView.frame = fullscreenHost.bounds
+        host.setFrameSize(.zero)
+        XCTAssertEqual(webView.frame.size, fullscreenHost.bounds.size)
+        webView.removeFromSuperview()
+        host.setFrameSize(NSSize(width: 1000, height: 700))
+        host.addSubview(webView)
+        webView.frame = host.bounds
+        XCTAssertEqual(webView.frame.size, host.bounds.size)
+    }
+
     @MainActor private func storeExists(_ id: UUID) async -> Bool {
         await LocalDataReset.allWebsiteIdentifiers().contains(id)
     }

@@ -53,6 +53,9 @@ struct EmbeddedWorkspaceView: View {
         .sheet(isPresented: $model.showingHelp) { PreviewHelp() }
         .sheet(isPresented: $model.showingQuickSwitch) { QuickSwitcherView(model: model) }
         .sheet(isPresented: $model.showingPinEditor) { PinEditor(model: model) }
+        .sheet(isPresented: $model.showingVideoOptions, onDismiss: { model.completeVideoOptions() }) {
+            if let url = model.videoOptionsURL { YouTubeResolutionView(model: model, url: url) }
+        }
         .sheet(isPresented: Binding(get: { model.pendingCompose != nil }, set: { if !$0 { model.pendingCompose = nil } })) {
             VStack(alignment: .leading, spacing: 18) {
                 Text("Choose a sending account").font(.title2.bold())
@@ -78,6 +81,15 @@ struct EmbeddedWorkspaceView: View {
             if security.didReset {
                 Text("MailPort was reset after 10 incorrect PIN entries. Its local accounts and saved sign-ins have been cleared.")
                     .font(.callout).padding(12).frame(maxWidth: .infinity).background(.orange.opacity(0.1))
+            }
+            if let status = model.mediaStatus {
+                HStack {
+                    if model.savingMedia { ProgressView().controlSize(.small) }
+                    Text(status).font(.callout)
+                    Spacer()
+                    if model.savingMedia { Button("Cancel") { model.cancelMediaDownload() } }
+                    else { Button("Dismiss") { model.mediaStatus = nil } }
+                }.padding(10).background(.bar)
             }
             if let browser = model.currentBrowser {
                 BrowserPane(browser: browser)
@@ -113,9 +125,18 @@ struct EmbeddedWorkspaceView: View {
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 if model.selection?.service == .youtube {
-                    Button { model.saveTranscript() } label: {
-                        Label(model.savingTranscript ? "Reading Transcript…" : "Save Transcript", systemImage: "text.quote").labelStyle(.titleAndIcon)
-                    }.disabled(!model.canSaveTranscript).help("Save this video’s transcript as a text file")
+                    Menu {
+                        if model.allowsYouTubeDownloads {
+                            Button("Save Video…") { model.saveMedia(audio: false) }.disabled(!model.canSaveMedia)
+                            Button("Save Audio…") { model.saveMedia(audio: true) }.disabled(!model.canSaveMedia)
+                            Divider()
+                        }
+                        Button(model.savingTranscript ? "Reading Transcript…" : "Save Transcript…") { model.saveTranscript() }
+                            .disabled(!model.canSaveTranscript)
+                    } label: {
+                        Label(model.savingTranscript ? "Reading Transcript…" : "Save Media", systemImage: "arrow.down.circle")
+                            .labelStyle(.titleAndIcon)
+                    }.help("Save this video’s transcript, video, or audio")
                 }
                 Button { model.showingPinEditor = true } label: { Label("Pin Current Page", systemImage: "pin") }
                     .disabled(!model.canPinCurrentPage).help("Pin this page to the sidebar (⌘D)")
@@ -281,8 +302,8 @@ private struct FindBar: View {
 
 private struct WebContent: NSViewRepresentable {
     let webView: WKWebView
-    func makeNSView(context: Context) -> WKWebView { webView }
-    func updateNSView(_ view: WKWebView, context: Context) {}
+    func makeNSView(context: Context) -> WebViewHost { WebViewHost(webView: webView) }
+    func updateNSView(_ view: WebViewHost, context: Context) {}
 }
 
 struct TabActivityBadge: View {

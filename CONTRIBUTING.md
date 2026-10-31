@@ -65,7 +65,7 @@ Tests must not reach the network or real accounts. Use a disposable directory na
 
 ## Rules to keep
 
-**Don't change Google's pages.** MailPort doesn't hide warnings or restyle pages with CSS or scripts, and it doesn't block or skip ads. Page scripts only observe, and only on top-level HTTPS pages on `mail.google.com` and `calendar.google.com`. The one exception is `TranscriptReader.js`: it runs in the page's world only when the user asks, and it may switch subtitles on briefly to borrow the player's caption token, then restore them. Treat its result as untrusted. It depends on YouTube's player, so expect to update it when YouTube changes.
+**Don't change Google's pages.** MailPort doesn't hide warnings or restyle pages with CSS or scripts, and it doesn't block ads. Users may opt into automatically pressing YouTube’s available Skip button in Settings. Page scripts only observe, and only on top-level HTTPS pages on `mail.google.com` and `calendar.google.com`. YouTube also has an opt-in isolated-world `YouTubeSkipAds.js` script that clicks only a visible, enabled Skip button during an ad; it must not seek or modify playback. Another exception is `TranscriptReader.js`: it runs in the page's world only when the user asks, and it may switch subtitles on briefly to borrow the player's caption token, then restore them. Treat its result as untrusted. It depends on YouTube's player, so expect to update it when YouTube changes.
 
 **Keep the stored identifiers.** The bundle identifier `com.chriswilson.mailport.embedded`, WebKit store identifiers, preferences domain, and `MailPortPreview` support folder must not change, or users lose their sign-ins and settings. Fields added to `accounts.json` must be optional, because older builds still need to read it.
 

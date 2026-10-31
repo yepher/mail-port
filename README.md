@@ -36,6 +36,22 @@ Links to other websites open in your default browser. Unread counts appear besid
 
 An orange warning and a **Sign In** row mean Google signed the account out. Select **Sign In** and finish on Google's page. Its unread count and Calendar dot then come back.
 
+### Optional YouTube tools
+
+Both options are off by default in Settings:
+
+- **Automatically skip skippable ads** presses YouTube’s Skip button when it appears. Unskippable ads still play. YouTube page changes may stop this working.
+- **Enable video and audio downloads** adds Save Video and Save Audio to the YouTube toolbar’s Save Media menu, alongside Save Transcript. This feature requires a one-time installation: open Terminal and run `brew install yt-dlp deno ffmpeg`. Settings shows the command with a Copy button when you opt in, plus a link to install Homebrew if needed. MailPort does not install these tools automatically. Watching videos, transcripts, ad skipping, and fullscreen do not require them. Save Video checks the available MP4 resolutions and lets you choose one, or use Best available. FFmpeg merges the separate video and audio streams without re-encoding, allowing higher resolutions when YouTube provides them. If a chosen resolution becomes unavailable, saving fails rather than silently selecting a lower one. Audio-only saves M4A. Choose a destination, and cancel from the status bar if needed. Downloads use public URLs, never exported account cookies. Sign-in-only videos or unavailable formats may fail. Save only content you have permission to download.
+
+For scripted setup, quit MailPort and set either preference, then relaunch:
+
+```sh
+defaults write com.chriswilson.mailport.embedded youtubeAutoSkipAds -bool true
+defaults write com.chriswilson.mailport.embedded youtubeMediaDownloads -bool true
+```
+
+Use `false` to disable. Debug builds use an isolated `com.chriswilson.mailport.testing.*` preference domain; use Settings there. PIN locking cancels active media downloads; files already saved outside MailPort remain on disk.
+
 ### Read and print pages
 
 - **Find text:** press ⌘F, then ⌘G or ⇧⌘G to move between matches. Press Esc to close.
@@ -44,7 +60,7 @@ An orange warning and a **Sign In** row mean Google signed the account out. Sele
 
 ### Save a YouTube transcript
 
-Open a video in YouTube and select **Save Transcript** in the toolbar, or choose Navigate > Save Video Transcript. MailPort saves the video's captions as a text file with timestamps, using your Mac's language when it's available, then English. Subtitles may flicker on for a moment. If an ad is playing, MailPort waits for it to finish, so saving can take a moment. Not every video has captions. Saved transcripts are for your own use, and the video's rights still belong to its owner.
+Open a video in YouTube and choose **Save Media > Save Transcript** in the toolbar, or choose Navigate > Save Video Transcript. MailPort saves the video's captions as a text file with timestamps, using your Mac's language when it's available, then English. Subtitles may flicker on for a moment. If an ad is playing, MailPort waits for it to finish, so saving can take a moment. Not every video has captions. Saved transcripts are for your own use, and the video's rights still belong to its owner.
 
 ### Organize the sidebar
 
