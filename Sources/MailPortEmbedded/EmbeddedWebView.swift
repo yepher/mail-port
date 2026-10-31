@@ -67,10 +67,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             activityBridge = bridge
             bridge.install(on: contentController)
         }
-        if service == .youtube, let scriptURL = Bundle.main.url(forResource: "YouTubeSkipAds", withExtension: "js"),
-           let source = try? String(contentsOf: scriptURL, encoding: .utf8) {
-            contentController.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true, in: .defaultClient))
-        }
+        updateYouTubeAdSkipping()
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
@@ -126,11 +123,53 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         return (result as? [String: Any]).flatMap { VideoTranscript(message: $0, url: url) }
     }
 
+    private var youtubeSkipTimer: Timer?
+    private var youtubeSkipCheckPending = false
     var skipsYouTubeAds = false { didSet { updateYouTubeAdSkipping() } }
 
     func updateYouTubeAdSkipping() {
-        guard service == .youtube, !discardedForSecurity else { return }
-        webView.evaluateJavaScript("globalThis.__mailportSkipEnabled = \(skipsYouTubeAds ? "true" : "false");", in: nil, in: .defaultClient, completionHandler: nil)
+        guard service == .youtube, !discardedForSecurity,
+              let file = Bundle.main.url(forResource: "YouTubeSkipAds", withExtension: "js"),
+              let template = try? String(contentsOf: file, encoding: .utf8) else { return }
+        youtubeSkipTimer?.invalidate()
+        youtubeSkipTimer = nil
+        if skipsYouTubeAds {
+            let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] timer in
+                guard let self else { timer.invalidate(); return }
+                self.checkYouTubeSkipButton()
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            youtubeSkipTimer = timer
+        }
+        let source = template.replacingOccurrences(of: "/*__MAILPORT_SKIP_ENABLED__*/false", with: skipsYouTubeAds ? "true" : "false")
+        let controller = webView.configuration.userContentController
+        // Configure future documents too: YouTube may show ads before didFinish.
+        // Preserve other bridges and replace only our own script.
+        let others = controller.userScripts.filter { !$0.source.hasPrefix("// MailPort YouTube ad skipping") }
+        controller.removeAllUserScripts()
+        others.forEach { controller.addUserScript($0) }
+        controller.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true, in: .defaultClient))
+        // Install/update the current document without waiting for a reload.
+        webView.evaluateJavaScript(source, in: nil, in: .defaultClient, completionHandler: nil)
+    }
+
+    private func checkYouTubeSkipButton() {
+        guard skipsYouTubeAds, !discardedForSecurity, !youtubeSkipCheckPending,
+              webView.url?.scheme == "https", webView.url?.host == "www.youtube.com" else { return }
+        youtubeSkipCheckPending = true
+        let checkedURL = webView.url
+        webView.evaluateJavaScript("globalThis.__mailportSkipNow?.() ?? false", in: nil, in: .defaultClient) { [weak self] result in
+            guard let self else { return }
+            self.youtubeSkipCheckPending = false
+            switch result {
+            case .failure(let error):
+                self.navigationLogger.error("YouTube Skip check failed: \(error.localizedDescription, privacy: .public)")
+            case .success(let value):
+                guard self.skipsYouTubeAds, !self.discardedForSecurity, self.webView.url == checkedURL,
+                      let geometry = value as? [String: Any] else { return }
+                YouTubeSkipInput.activate(on: self.webView, geometry: geometry)
+            }
+        }
     }
 
     func showFind() {
@@ -161,6 +200,8 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
 
     func discardForSecurity() {
         discardedForSecurity = true
+        youtubeSkipTimer?.invalidate(); youtubeSkipTimer = nil
+        youtubeSkipCheckPending = false
         onActivity = nil; onMailto = nil; onSignInChange = nil
         webView.stopLoading()
         webView.pauseAllMediaPlayback(completionHandler: nil)
