@@ -36,6 +36,14 @@ Links to other websites open in your default browser. Unread counts appear besid
 
 An orange warning and a **Sign In** row mean Google signed the account out. Select **Sign In** and finish on Google's page. Its unread count and Calendar dot then come back.
 
+### Control and pop out YouTube videos
+
+While a video is loaded, right-click (or Control-click) MailPort’s Dock icon to play or pause it without bringing MailPort forward. If several accounts have videos loaded, each gets its own controls.
+
+Select **Pop Out Video** in the YouTube toolbar, Navigate menu, or Dock menu to move the existing player into a small window that stays above ordinary app windows and follows your desktops. Drag it into a corner and resize it as needed. The floating player is borderless until you move the pointer over it. A title bar then fades in with Close, Play/Pause, and Return to Tab controls. Drag the title bar to move it, or drag the lower-right grip to resize it. Hovering never changes the video size. The opacity slider adjusts the video from 100% opaque down to 15% visible, with a live preview. Hover controls stay fully readable, and MailPort remembers the level for your next pop-out. Closing the floating window also returns the video to its tab without restarting it. MailPort crops the existing web view natively; it does not extract the stream or restyle YouTube. Start playback first, keep the player fully visible, and exit fullscreen before popping it out.
+
+Closing the YouTube view, removing its account, or locking MailPort closes the floating window and stops that view’s playback. These controls do not require download helpers.
+
 ### Optional YouTube tools
 
 Both options are off by default in Settings:
@@ -73,7 +81,7 @@ Open a video in YouTube and choose **Save Media > Save Transcript** in the toolb
 
 ### Pin pages
 
-Go to a page, such as a Gmail search or Drive folder, then press ⌘D or select the pin button in the toolbar. Give it a name, and it appears under that account. To remove a pin, right-click it.
+Go to a page, such as a Gmail search or Drive folder, then press ⌘D or select the pin button in the toolbar. Give it a name, and it appears under that account with the matching service icon. To remove a pin, right-click it.
 
 Pins work on each service's main Google address. They're stored on your Mac and include the page address, so a pinned Gmail search keeps its search words there.
 

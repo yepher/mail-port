@@ -50,6 +50,7 @@ final class EmbeddedWorkspace: ObservableObject {
     }
     weak var mainWindow: NSWindow?
     var reopenWindow: (() -> Void)?
+    var clearVideoDockMenu: (() -> Void)?
 
     let security: AppSecurity
     let preferenceDomain: String
@@ -66,6 +67,10 @@ final class EmbeddedWorkspace: ObservableObject {
     private var preferences: UserDefaults
     private var lastAccountID: UUID?
     private var incomingAfterUnlock: URL?
+    @Published private(set) var poppedOutVideo: WorkspaceTab?
+    private var floatingVideoController: FloatingVideoController?
+    private var openingFloatingVideo = false
+    private(set) var popOutVideoOpacity = 1.0
 
     var selectedAccount: Account? { accounts.first { $0.id == (selection?.accountID ?? lastAccountID) } }
 
@@ -165,6 +170,7 @@ final class EmbeddedWorkspace: ObservableObject {
     private func restoreWorkspace() {
         skipsYouTubeAds = preferences.bool(forKey: "youtubeAutoSkipAds")
         allowsYouTubeDownloads = preferences.bool(forKey: "youtubeMediaDownloads")
+        popOutVideoOpacity = VideoOpacity.normalized((preferences.object(forKey: "popOutVideoOpacity") as? Double) ?? 1)
         guard !security.blocksAccess else { return }
         storageAvailable = true
         do {
@@ -206,6 +212,10 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     private func suspendForLock() {
+        clearVideoDockMenu?()
+        closeFloatingVideo()
+        openingFloatingVideo = false
+        popOutVideoOpacity = 1
         cancelMediaDownload()
         showingVideoOptions = false; videoOptionsURL = nil; pendingVideoSelection = false; pendingVideoHeight = nil
         skipsYouTubeAds = false; allowsYouTubeDownloads = false
@@ -268,6 +278,8 @@ final class EmbeddedWorkspace: ObservableObject {
         guard !security.blocksAccess else { return }
         guard tabs.contains(tab) else { return }
         let next = WorkspaceTab.selection(afterClosing: tab, in: navigationTabs, selected: selection)
+        if poppedOutVideo == tab { closeFloatingVideo() }
+        if tab.service == .youtube { browsers[tab]?.discardForSecurity() }
         tabs.removeAll { $0 == tab }
         if selection == tab {
             browserChanges = nil
@@ -366,6 +378,85 @@ final class EmbeddedWorkspace: ObservableObject {
         guard !security.blocksAccess else { return }
         notificationSettings[accountID] = settings
         if let data = try? JSONEncoder().encode(notificationSettings) { preferences.set(data, forKey: "accountNotifications") }
+    }
+
+    /// Loaded videos stay controllable even when their account isn't selected.
+    var dockVideoTabs: [WorkspaceTab] {
+        guard !security.blocksAccess else { return [] }
+        let loaded = navigationTabs.filter { browsers[$0]?.videoPlayback.hasVideo == true }
+        return loaded.filter { browsers[$0]?.videoPlayback.isPlaying == true } + loaded.filter { browsers[$0]?.videoPlayback.isPlaying != true }
+    }
+
+    func videoState(for tab: WorkspaceTab) -> VideoPlaybackState { browsers[tab]?.videoPlayback ?? .none }
+
+    func videoLabel(for tab: WorkspaceTab) -> String {
+        guard !security.blocksAccess, let browser = browsers[tab] else { return "Video" }
+        let title = browser.title.replacingOccurrences(of: " - YouTube", with: "")
+        return "\(browser.account.name) · \(String(title.prefix(90)))"
+    }
+
+    func controlVideo(_ action: String, tabID: String? = nil) {
+        guard !security.blocksAccess else { return }
+        let target: WorkspaceTab?
+        if let tabID { target = tabs.first { $0.id == tabID } }
+        else { target = selection }
+        guard let tab = target, tab.service == .youtube, let browser = browsers[tab] else { return }
+        if action == "popOut" { popOutVideo(tab); return }
+        Task { @MainActor [weak self, weak browser] in
+            guard let self, let browser, !self.security.blocksAccess else { return }
+            do {
+                let state = try await browser.performVideoAction(action)
+                if !state.hasVideo && !self.security.blocksAccess { self.errorMessage = "Start a YouTube video, then try the playback control again." }
+            } catch {
+                if !self.security.blocksAccess { self.errorMessage = "The video control couldn’t be used. \(error.localizedDescription)"; self.showWindow() }
+            }
+        }
+    }
+
+    func setPopOutVideoOpacity(_ value: Double) {
+        guard !security.blocksAccess else { return }
+        popOutVideoOpacity = VideoOpacity.normalized(value)
+        preferences.set(popOutVideoOpacity, forKey: "popOutVideoOpacity")
+        floatingVideoController?.setOpacity(popOutVideoOpacity)
+    }
+
+    func closeFloatingVideo() {
+        let controller = floatingVideoController
+        controller?.close()
+        floatingVideoController = nil
+        poppedOutVideo = nil
+    }
+
+    private func popOutVideo(_ tab: WorkspaceTab) {
+        if poppedOutVideo == tab { closeFloatingVideo(); select(tab); showWindow(); return }
+        guard !openingFloatingVideo, let browser = browsers[tab], browser.videoPlayback.hasVideo else { return }
+        openingFloatingVideo = true
+        Task { @MainActor [weak self, weak browser] in
+            guard let self, let browser else { return }
+            defer { self.openingFloatingVideo = false }
+            do {
+                guard let frame = try await browser.videoFrame() else {
+                    if !self.security.blocksAccess { self.errorMessage = "Make sure the video player is fully visible and exit fullscreen, then try Pop Out Video again." }
+                    return
+                }
+                guard !self.security.blocksAccess, self.tabs.contains(tab), self.browsers[tab] === browser else { return }
+                self.closeFloatingVideo()
+                self.poppedOutVideo = tab
+                let controller = FloatingVideoController(browser: browser, frame: frame, screen: self.mainWindow?.screen, opacity: self.popOutVideoOpacity)
+                self.floatingVideoController = controller
+                controller.onOpacityChange = { [weak self] value in self?.setPopOutVideoOpacity(value) }
+                controller.onReturn = { [weak self] in self?.floatingVideoController = nil; self?.poppedOutVideo = nil }
+                controller.onToggle = { [weak self] in self?.controlVideo("toggle", tabID: tab.id) }
+                controller.showWindow(nil)
+            } catch {
+                if !self.security.blocksAccess { self.errorMessage = "The video couldn’t be popped out. \(error.localizedDescription)" }
+            }
+        }
+    }
+
+    func showVideo(tabID: String) {
+        guard !security.blocksAccess, let tab = tabs.first(where: { $0.id == tabID }) else { return }
+        select(tab); showWindow()
     }
 
     func setSkipsYouTubeAds(_ enabled: Bool) {
@@ -510,6 +601,7 @@ final class EmbeddedWorkspace: ObservableObject {
 
     func setZoom(_ zoom: Double, for service: GoogleService) {
         guard !security.blocksAccess, PageZoom.isValid(zoom) else { return }
+        if poppedOutVideo?.service == service { closeFloatingVideo() }
         serviceZoom[service] = zoom
         preferences.set(Dictionary(uniqueKeysWithValues: serviceZoom.map { ($0.key.rawValue, $0.value) }), forKey: "serviceZoom")
         for (tab, browser) in browsers where tab.service == service { browser.webView.pageZoom = zoom }
@@ -657,6 +749,8 @@ final class EmbeddedWorkspace: ObservableObject {
             accounts = updated
             tabs.removeAll { $0.accountID == account.id }
             recentlyClosed.removeAll { $0.accountID == account.id }
+            if poppedOutVideo?.accountID == account.id { closeFloatingVideo() }
+            for (tab, browser) in browsers where tab.accountID == account.id { browser.discardForSecurity() }
             browsers = browsers.filter { $0.key.accountID != account.id }
             calendarMonitors.removeValue(forKey: account.id)?.webView.stopLoading()
             tabActivity = tabActivity.filter { $0.key.accountID != account.id }

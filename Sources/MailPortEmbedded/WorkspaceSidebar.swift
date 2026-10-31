@@ -112,8 +112,8 @@ private struct SidebarAccount: View {
     private func pinRow(_ pin: WorkspacePin) -> some View {
         let above = WorkspacePin.neighbor(of: pin, in: model.pins, offset: -1)
         let below = WorkspacePin.neighbor(of: pin, in: model.pins, offset: 1)
-        return SidebarRow(title: pin.name, symbol: "pin", color: color, selected: false, dragging: draggingRow == pin.id.uuidString,
-            label: "\(account.name) pinned page \(pin.name)") { model.open(pin) } trailing: { EmptyView() }
+        return SidebarRow(title: pin.name, symbol: pin.service.symbol, color: color, selected: false, dragging: draggingRow == pin.id.uuidString,
+            label: "\(account.name) pinned \(pin.service.shortTitle) page \(pin.name)") { model.open(pin) } trailing: { EmptyView() }
         .help("\(pin.name) — \(pin.service.shortTitle)")
         .contextMenu {
             Button("Move Up") { if let above { withAnimation(.easeInOut(duration: 0.15)) { model.movePin(pin, over: above) } } }.disabled(above == nil)

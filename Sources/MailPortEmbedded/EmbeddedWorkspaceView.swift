@@ -91,7 +91,13 @@ struct EmbeddedWorkspaceView: View {
                     else { Button("Dismiss") { model.mediaStatus = nil } }
                 }.padding(10).background(.bar)
             }
-            if let browser = model.currentBrowser {
+            if model.poppedOutVideo != nil && model.poppedOutVideo == model.selection {
+                VStack(spacing: 16) {
+                    Image(systemName: "pip").font(.system(size: 40)).foregroundStyle(.secondary)
+                    Text("Video is playing in a floating window").font(.headline)
+                    Button("Return Video to Tab") { model.controlVideo("popOut") }
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let browser = model.currentBrowser {
                 BrowserPane(browser: browser)
             } else {
                 VStack(spacing: 18) {
@@ -125,6 +131,10 @@ struct EmbeddedWorkspaceView: View {
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 if model.selection?.service == .youtube {
+                    Button { model.controlVideo("popOut") } label: {
+                        Label(model.poppedOutVideo != nil && model.poppedOutVideo == model.selection ? "Return Video" : "Pop Out Video", systemImage: "pip.enter")
+                    }.disabled(model.currentBrowser?.videoPlayback.hasVideo != true)
+                        .help("Watch in a floating window above other apps")
                     Menu {
                         if model.allowsYouTubeDownloads {
                             Button("Save Video…") { model.saveMedia(audio: false) }.disabled(!model.canSaveMedia)

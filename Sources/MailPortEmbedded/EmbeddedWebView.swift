@@ -25,6 +25,9 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     @Published private(set) var canGoBack = false
     @Published private(set) var canGoForward = false
     @Published private(set) var errorMessage: String?
+    @Published private(set) var videoPlayback = VideoPlaybackState.none
+    private var videoPlaybackTimer: Timer?
+    private var checkingVideoPlayback = false
     var onMailto: ((URL) -> Void)?
     var onActivity: ((TabActivity?) -> Void)?
     var onSignInChange: ((Bool) -> Void)?
@@ -45,7 +48,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     private var downloads: [ObjectIdentifier: WKDownload] = [:]
     private var downloadDestinations: [ObjectIdentifier: (temporary: URL, final: URL, replacing: Bool)] = [:]
 
-    init(account: Account, service: GoogleService, store: WKWebsiteDataStore, activityOnly: Bool = false) {
+    init(account: Account, service: GoogleService, store: WKWebsiteDataStore, activityOnly: Bool = false, loadsInitialPage: Bool = true) {
         self.account = account
         self.service = service
         self.activityOnly = activityOnly
@@ -72,6 +75,15 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
         observeState()
+        if service == .youtube {
+            let timer = Timer(timeInterval: 1, repeats: true) { [weak self] timer in
+                guard let self else { timer.invalidate(); return }
+                self.refreshVideoPlayback()
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            videoPlaybackTimer = timer
+        }
+        if !loadsInitialPage { return }
         if activityOnly {
             load(Self.todayURL)
         } else if service == .calendar || service == .gmail {
@@ -172,6 +184,52 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         }
     }
 
+    func refreshVideoPlayback() {
+        guard service == .youtube, !discardedForSecurity, !checkingVideoPlayback else { return }
+        checkingVideoPlayback = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.checkingVideoPlayback = false }
+            do { _ = try await self.performVideoAction("status") }
+            catch { if !self.discardedForSecurity { self.videoPlayback = .none } }
+        }
+    }
+
+    @discardableResult
+    func performVideoAction(_ action: String) async throws -> VideoPlaybackState {
+        guard service == .youtube, !discardedForSecurity,
+              let pageURL = webView.url, pageURL.scheme == "https", pageURL.host == "www.youtube.com",
+              let resource = Bundle.main.url(forResource: "YouTubePlayback", withExtension: "js") else { return .none }
+        let source = try String(contentsOf: resource, encoding: .utf8)
+        let result = try await webView.callAsyncJavaScript(source, arguments: ["action": action], contentWorld: action == "status" ? .defaultClient : .page)
+        guard !discardedForSecurity, webView.url == pageURL else { return .none }
+        let state = VideoPlaybackState(message: result as? [String: Any] ?? [:])
+        videoPlayback = state
+        return state
+    }
+
+    func videoFrame() async throws -> VideoFrame? {
+        guard service == .youtube, !discardedForSecurity, webView.url?.host == "www.youtube.com",
+              webView.fullscreenState == .notInFullscreen,
+              let resource = Bundle.main.url(forResource: "YouTubePlayback", withExtension: "js") else { return nil }
+        let pageURL = webView.url
+        // Dismiss native/web menus without clicking the player (which toggles playback).
+        if let window = webView.window, window.attachedSheet == nil,
+           let escape = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
+               timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
+               context: nil, characters: "\u{1b}", charactersIgnoringModifiers: "\u{1b}", isARepeat: false, keyCode: 53) {
+            window.makeFirstResponder(webView)
+            let target = window.firstResponder
+            if let view = target as? NSView, view === webView || view.isDescendant(of: webView) {
+                target?.keyDown(with: escape)
+            }
+        }
+        let result = try await webView.callAsyncJavaScript(try String(contentsOf: resource, encoding: .utf8), arguments: ["action": "frame"], contentWorld: .page)
+        guard !discardedForSecurity, webView.url == pageURL,
+              let frame = (result as? [String: Any])?["frame"] as? [String: Any] else { return nil }
+        return VideoFrame(message: frame)
+    }
+
     func showFind() {
         showingFind = true
         findFocusRequest += 1
@@ -200,6 +258,9 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
 
     func discardForSecurity() {
         discardedForSecurity = true
+        videoPlaybackTimer?.invalidate(); videoPlaybackTimer = nil
+        videoPlayback = .none
+        webView.closeAllMediaPresentations(completionHandler: nil)
         youtubeSkipTimer?.invalidate(); youtubeSkipTimer = nil
         youtubeSkipCheckPending = false
         onActivity = nil; onMailto = nil; onSignInChange = nil
@@ -245,6 +306,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
 
     private func updateState() {
         title = webView.title.flatMap { $0.isEmpty ? nil : $0 } ?? service.title
+        if url != webView.url { videoPlayback = .none }
         url = webView.url
         isLoading = webView.isLoading
         estimatedProgress = webView.estimatedProgress
@@ -348,6 +410,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         updateYouTubeAdSkipping()
+        refreshVideoPlayback()
         if webView.url?.host == service.url.host { authenticating = false }
         openingAttachment = false
         updateState()
@@ -376,6 +439,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        videoPlayback = .none
         onActivity?(nil)
         errorMessage = "This page’s web process stopped. Reload the page to continue."
         updateState()

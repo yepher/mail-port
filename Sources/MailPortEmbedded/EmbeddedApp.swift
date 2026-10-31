@@ -27,9 +27,58 @@ final class EmbeddedDelegate: NSObject, NSApplicationDelegate {
         }
     }
     var model: EmbeddedWorkspace? {
-        didSet { queued.forEach { model?.receive($0) }; queued.removeAll() }
+        didSet {
+            queued.forEach { model?.receive($0) }; queued.removeAll()
+            model?.clearVideoDockMenu = { [weak self] in self?.clearVideoDockMenu() }
+        }
     }
     private var queued: [URL] = []
+
+    private weak var activeVideoDockMenu: NSMenu?
+    func clearVideoDockMenu() {
+        let menu = activeVideoDockMenu
+        menu?.cancelTracking()
+        menu?.removeAllItems()
+        activeVideoDockMenu = nil
+    }
+
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        guard let model, !model.security.blocksAccess, !model.dockVideoTabs.isEmpty else { return nil }
+        return makeVideoDockMenu(model.dockVideoTabs.map { tab in
+            (tab: tab, label: model.videoLabel(for: tab), state: model.videoState(for: tab), poppedOut: model.poppedOutVideo == tab)
+        })
+    }
+
+    func makeVideoDockMenu(_ entries: [(tab: WorkspaceTab, label: String, state: VideoPlaybackState, poppedOut: Bool)]) -> NSMenu {
+        let menu = NSMenu(title: "Video playback")
+        for entry in entries {
+            let tab = entry.tab
+            let heading = NSMenuItem(title: entry.label, action: nil, keyEquivalent: "")
+            let controls: NSMenu
+            if entries.count == 1 {
+                heading.isEnabled = false; menu.addItem(heading); controls = menu
+            } else {
+                controls = NSMenu(title: heading.title); heading.submenu = controls; menu.addItem(heading)
+            }
+            dockItem(entry.state.isPlaying ? "Pause Video" : "Play Video", action: #selector(dockToggleVideo(_:)), tab: tab, menu: controls)
+            dockItem(entry.poppedOut ? "Return Video to Tab" : "Pop Out Video", action: #selector(dockPopOutVideo(_:)), tab: tab, menu: controls,
+                     enabled: entry.state.hasVideo)
+            dockItem("Show Video in MailPort", action: #selector(dockShowVideo(_:)), tab: tab, menu: controls)
+        }
+        activeVideoDockMenu = menu
+        return menu
+    }
+
+    private func dockItem(_ title: String, action: Selector, tab: WorkspaceTab, menu: NSMenu, enabled: Bool = true) {
+        menu.autoenablesItems = false
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+        item.target = self; item.representedObject = tab.id; item.isEnabled = enabled
+        menu.addItem(item)
+    }
+    @objc private func dockToggleVideo(_ sender: NSMenuItem) { model?.controlVideo("toggle", tabID: sender.representedObject as? String) }
+    @objc private func dockPopOutVideo(_ sender: NSMenuItem) { model?.controlVideo("popOut", tabID: sender.representedObject as? String) }
+    @objc private func dockShowVideo(_ sender: NSMenuItem) { if let id = sender.representedObject as? String { model?.showVideo(tabID: id) } }
+
     func application(_ application: NSApplication, open urls: [URL]) {
         if let model { urls.forEach { model.receive($0) } } else { queued.append(contentsOf: urls) }
     }
@@ -115,6 +164,11 @@ struct EmbeddedApp: App {
                     .disabled(model.security.blocksAccess || model.accounts.isEmpty)
                 Button("Pin Current Page…") { model.showingPinEditor = true }.keyboardShortcut("d")
                     .disabled(model.security.blocksAccess || !model.canPinCurrentPage)
+                Button(model.currentBrowser?.videoPlayback.isPlaying == true ? "Pause Video" : "Play Video") { model.controlVideo("toggle") }
+                    .disabled(!canUsePage || model.currentBrowser?.videoPlayback.hasVideo != true)
+                Button(model.poppedOutVideo != nil && model.poppedOutVideo == model.selection ? "Return Video to Tab" : "Pop Out Video") { model.controlVideo("popOut") }
+                    .disabled(!canUsePage || model.currentBrowser?.videoPlayback.hasVideo != true)
+                Divider()
                 Button("Save YouTube Video…") { model.saveMedia(audio: false) }.disabled(!model.canSaveMedia)
                 Button("Save YouTube Audio…") { model.saveMedia(audio: true) }.disabled(!model.canSaveMedia)
                 Button("Save Video Transcript…") { model.saveTranscript() }

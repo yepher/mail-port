@@ -45,7 +45,7 @@ public enum QuickSwitch {
 
     private static func item(for pin: WorkspacePin, account: Account) -> QuickSwitchItem {
         QuickSwitchItem(destination: .pin(pin), accountID: account.id, title: pin.name,
-            subtitle: "\(account.name) · \(pin.service.shortTitle)", symbol: "pin")
+            subtitle: "\(account.name) · \(pin.service.shortTitle)", symbol: pin.service.symbol)
     }
 
     private static func keywords(for item: QuickSwitchItem, accounts: [Account]) -> String {

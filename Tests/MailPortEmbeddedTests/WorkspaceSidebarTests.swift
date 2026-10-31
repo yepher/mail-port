@@ -34,6 +34,22 @@ final class WorkspaceSidebarTests: XCTestCase {
         return (model, directory, preferences)
     }
 
+    @MainActor func testPopOutOpacityPersistsAndCannotChangeWhileLocked() async throws {
+        let (model, directory, preferences) = try await fixture()
+        XCTAssertEqual(model.popOutVideoOpacity, 1)
+        model.setPopOutVideoOpacity(0.35)
+        XCTAssertEqual(preferences.double(forKey: "popOutVideoOpacity"), 0.35)
+        let reopened = EmbeddedWorkspace(testingDirectory: directory, securityEngine: PINLockEngine(store: FixturePINStore()))
+        for _ in 0..<200 where reopened.security.checking { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertEqual(reopened.popOutVideoOpacity, 0.35)
+        let enabled = await model.security.enable(pin: "628493")
+        XCTAssertTrue(enabled)
+        model.security.lock()
+        model.setPopOutVideoOpacity(0.8)
+        XCTAssertEqual(model.popOutVideoOpacity, 1)
+        XCTAssertEqual(preferences.double(forKey: "popOutVideoOpacity"), 0.35)
+    }
+
     @MainActor func testYouTubeOptionsAreOptInPersistAndClearWhileLocked() async throws {
         let (model, directory, preferences) = try await fixture()
         XCTAssertFalse(model.skipsYouTubeAds)
