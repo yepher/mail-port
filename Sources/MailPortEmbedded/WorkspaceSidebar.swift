@@ -95,6 +95,7 @@ private struct SidebarAccount: View {
         return SidebarRow(title: tab.service.shortTitle, symbol: tab.service.symbol, color: color, selected: model.selection == tab,
             dragging: draggingRow == tab.id, label: name) { model.select(tab) } trailing: {
             TabActivityBadge(activity: model.tabActivity[tab], service: tab.service, now: now)
+            if let browser = model.videoBrowser(for: tab) { VideoPlayingBadge(browser: browser) }
             ShortcutHint(number: model.shortcutNumber(for: tab))
         }
         .contextMenu {
@@ -149,6 +150,10 @@ private struct SidebarAccount: View {
                         .accessibilityLabel("Sign-in needed").help("Sign-in needed")
                 } else if collapsed, let mail = accountTabs.first(where: { $0.service == .gmail }) {
                     TabActivityBadge(activity: model.tabActivity[mail], service: .gmail, now: now)
+                }
+                if collapsed, let youtube = accountTabs.first(where: { $0.service == .youtube }),
+                   let browser = model.videoBrowser(for: youtube) {
+                    VideoPlayingBadge(browser: browser)
                 }
                 Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
                     .rotationEffect(.degrees(collapsed ? 0 : 90))
@@ -303,5 +308,19 @@ struct PinEditor: View {
                     .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction).disabled(trimmed.isEmpty)
             }
         }.padding(24).frame(width: 380).onAppear { focus = true }
+    }
+}
+
+/// Observe the page itself, so background accounts update without waiting for selection.
+struct VideoPlayingBadge: View {
+    @ObservedObject var browser: BrowserTab
+    var body: some View {
+        if browser.videoPlayback.isPlaying {
+            Image(systemName: "play.circle.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.green)
+                .help("Playing: " + browser.title.replacingOccurrences(of: " - YouTube", with: ""))
+                .accessibilityLabel("YouTube video playing: " + browser.title.replacingOccurrences(of: " - YouTube", with: ""))
+        }
     }
 }

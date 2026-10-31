@@ -30,6 +30,21 @@ public enum YouTubeMedia {
         }).sorted(by: >)
     }
 
+    public static func suggestedBasename(metadata: [String: Any], url: URL) -> String {
+        let channel = ["channel", "uploader", "channel_id", "uploader_id"].compactMap { metadata[$0] as? String }
+            .first { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } ?? "YouTube"
+        let normalized = String(channel.prefix(256)).precomposedStringWithCanonicalMapping
+        let cleaned = String(normalized.map { $0.isLetter || $0.isNumber || $0 == "-" ? $0 : "_" })
+            .split(separator: "_").joined(separator: "_")
+        var name = ""
+        for character in cleaned {
+            guard name.utf8.count + String(character).utf8.count <= 160 else { break }
+            name.append(character)
+        }
+        let id = videoURL(url).flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "v" }?.value } ?? "video"
+        return "\(name.isEmpty ? "YouTube" : name)_\(id)"
+    }
+
     public static func arguments(url: URL, audio: Bool, output: String, height: Int? = nil, ffmpeg: String? = nil) -> [String] {
         var arguments = ["--ignore-config", "--no-playlist", "--no-overwrites", "--no-progress", "--quiet"]
         let size = height.map { "[height=\($0)]" } ?? ""

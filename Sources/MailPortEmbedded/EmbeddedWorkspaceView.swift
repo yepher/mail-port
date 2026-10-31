@@ -177,6 +177,7 @@ struct EmbeddedWorkspaceView: View {
                                     Text(account.name).font(.system(size: 12, weight: model.selection == tab ? .semibold : .regular)).lineLimit(1)
                                     Text(tab.service.shortTitle).font(.system(size: 10)).foregroundStyle(.secondary)
                                     TabActivityBadge(activity: model.tabActivity[tab], service: tab.service, now: now)
+                                    if let browser = model.videoBrowser(for: tab) { VideoPlayingBadge(browser: browser) }
                                     if model.accountsNeedingSignIn.contains(account.id) {
                                         Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10)).foregroundStyle(.orange)
                                             .accessibilityLabel("Sign-in needed").help("Sign-in needed")

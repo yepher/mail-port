@@ -28,6 +28,12 @@ final class YouTubeDownload {
     }
 
     func resolutions(url: URL) async throws -> [Int] {
+        let details = try await self.details(url: url)
+        guard !details.heights.isEmpty else { throw failure("No downloadable MP4 video with audio was found. Update yt-dlp and Deno, then try again.") }
+        return details.heights
+    }
+
+    func details(url: URL) async throws -> (heights: [Int], basename: String) {
         let folder = try temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
         let metadata = folder.appendingPathComponent("metadata.json")
@@ -36,9 +42,7 @@ final class YouTubeDownload {
         guard (attributes[.size] as? NSNumber)?.intValue ?? 0 <= 20_000_000 else { throw failure("YouTube returned too much video metadata.") }
         let data = try Data(contentsOf: metadata)
         guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw failure("YouTube returned invalid video metadata.") }
-        let heights = YouTubeMedia.availableHeights(in: object)
-        guard !heights.isEmpty else { throw failure("No downloadable MP4 video with audio was found. Update yt-dlp and Deno, then try again.") }
-        return heights
+        return (YouTubeMedia.availableHeights(in: object), YouTubeMedia.suggestedBasename(metadata: object, url: url))
     }
 
     func save(url: URL, audio: Bool, destination: URL, height: Int? = nil) async throws {

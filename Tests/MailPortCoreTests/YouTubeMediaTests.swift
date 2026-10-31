@@ -2,6 +2,22 @@ import XCTest
 @testable import MailPortCore
 
 final class YouTubeMediaTests: XCTestCase {
+    func testFilenameUsesChannelAndCanonicalVideoID() {
+        let url = URL(string: "https://www.youtube.com/watch?v=abcdefghijk&list=ignored")!
+        XCTAssertEqual(YouTubeMedia.suggestedBasename(metadata: ["channel": "Example Channel", "id": "wrong-id"], url: url), "Example_Channel_abcdefghijk")
+        XCTAssertEqual(YouTubeMedia.suggestedBasename(metadata: ["channel": " ", "uploader": "Uploader"], url: url), "Uploader_abcdefghijk")
+        XCTAssertEqual(YouTubeMedia.suggestedBasename(metadata: [:], url: url), "YouTube_abcdefghijk")
+    }
+    func testFilenameCannotEscapeDirectoryAndBoundsUTF8Length() {
+        let url = URL(string: "https://www.youtube.com/shorts/abcdefghijk")!
+        let name = YouTubeMedia.suggestedBasename(metadata: ["channel": "../../A/B:C\\D\n"], url: url)
+        XCTAssertEqual(name, "A_B_C_D_abcdefghijk")
+        let long = YouTubeMedia.suggestedBasename(metadata: ["channel": String(repeating: "界", count: 256)], url: url)
+        XCTAssertLessThanOrEqual(long.utf8.count, 172)
+        XCTAssertTrue(long.hasSuffix("_abcdefghijk"))
+        XCTAssertEqual(YouTubeMedia.suggestedBasename(metadata: ["channel": "..."], url: url), "YouTube_abcdefghijk")
+    }
+
     func testCanonicalURLDropsPlaylistAndRejectsUntrustedInput() {
         XCTAssertEqual(YouTubeMedia.videoURL(URL(string: "https://www.youtube.com/watch?v=abcdefghijk&list=private"))?.absoluteString,
                        "https://www.youtube.com/watch?v=abcdefghijk")

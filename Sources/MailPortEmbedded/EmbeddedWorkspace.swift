@@ -37,6 +37,7 @@ final class EmbeddedWorkspace: ObservableObject {
     private(set) var videoOptionsURL: URL?
     private var pendingVideoSelection = false
     private var pendingVideoHeight: Int?
+    private var videoDownloadBasename: String?
     private var mediaDownload: YouTubeDownload?
     private var videoOptionsReader: YouTubeDownload?
     @Published private(set) var skipsYouTubeAds = false
@@ -217,7 +218,7 @@ final class EmbeddedWorkspace: ObservableObject {
         openingFloatingVideo = false
         popOutVideoOpacity = 1
         cancelMediaDownload()
-        showingVideoOptions = false; videoOptionsURL = nil; pendingVideoSelection = false; pendingVideoHeight = nil
+        showingVideoOptions = false; videoOptionsURL = nil; pendingVideoSelection = false; pendingVideoHeight = nil; videoDownloadBasename = nil
         skipsYouTubeAds = false; allowsYouTubeDownloads = false
         // Remove sensitive views and AppKit sheets before returning from the sleep hook.
         showingAccountEditor = false; editingAccount = nil
@@ -387,6 +388,11 @@ final class EmbeddedWorkspace: ObservableObject {
         return loaded.filter { browsers[$0]?.videoPlayback.isPlaying == true } + loaded.filter { browsers[$0]?.videoPlayback.isPlaying != true }
     }
 
+    func videoBrowser(for tab: WorkspaceTab) -> BrowserTab? {
+        guard !security.blocksAccess, tab.service == .youtube else { return nil }
+        return browsers[tab]
+    }
+
     func videoState(for tab: WorkspaceTab) -> VideoPlaybackState { browsers[tab]?.videoPlayback ?? .none }
 
     func videoLabel(for tab: WorkspaceTab) -> String {
@@ -512,7 +518,24 @@ final class EmbeddedWorkspace: ObservableObject {
             showingVideoOptions = true
             return
         }
-        presentMediaSavePanel(url: url, audio: true, window: window)
+        let reader = YouTubeDownload()
+        mediaDownload = reader
+        savingMedia = true
+        mediaStatus = "Reading video details…"
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.savingMedia = false; self.mediaDownload = nil }
+            do {
+                let details = try await reader.details(url: url)
+                guard !self.security.blocksAccess, self.allowsYouTubeDownloads else { return }
+                self.mediaStatus = nil
+                self.presentMediaSavePanel(url: url, audio: true, window: window, basename: details.basename)
+            } catch is CancellationError { self.mediaStatus = nil }
+            catch {
+                self.mediaStatus = nil
+                if !self.security.blocksAccess { self.errorMessage = error.localizedDescription }
+            }
+        }
     }
 
     func readVideoResolutions(url: URL) async throws -> [Int] {
@@ -521,7 +544,14 @@ final class EmbeddedWorkspace: ObservableObject {
         let reader = YouTubeDownload()
         videoOptionsReader = reader
         defer { if videoOptionsReader === reader { videoOptionsReader = nil } }
-        return try await reader.resolutions(url: url)
+        videoDownloadBasename = nil
+        let details = try await reader.details(url: url)
+        guard !security.blocksAccess, allowsYouTubeDownloads, videoOptionsURL == url else { throw CancellationError() }
+        guard !details.heights.isEmpty else {
+            throw NSError(domain: "MailPortMedia", code: 1, userInfo: [NSLocalizedDescriptionKey: "No downloadable MP4 video with audio was found. Update yt-dlp and Deno, then try again."])
+        }
+        videoDownloadBasename = details.basename
+        return details.heights
     }
 
     func cancelVideoResolutionCheck() { videoOptionsReader?.cancel() }
@@ -533,16 +563,17 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     func completeVideoOptions() {
-        defer { videoOptionsURL = nil; pendingVideoSelection = false; pendingVideoHeight = nil }
+        defer { videoOptionsURL = nil; pendingVideoSelection = false; pendingVideoHeight = nil; videoDownloadBasename = nil }
         guard pendingVideoSelection, let url = videoOptionsURL, !security.blocksAccess,
               allowsYouTubeDownloads, !savingMedia, let window = mainWindow else { return }
-        presentMediaSavePanel(url: url, audio: false, window: window, height: pendingVideoHeight)
+        presentMediaSavePanel(url: url, audio: false, window: window, height: pendingVideoHeight,
+            basename: videoDownloadBasename ?? YouTubeMedia.suggestedBasename(metadata: [:], url: url))
     }
 
-    private func presentMediaSavePanel(url: URL, audio: Bool, window: NSWindow, height: Int? = nil) {
+    private func presentMediaSavePanel(url: URL, audio: Bool, window: NSWindow, height: Int? = nil, basename: String) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = audio ? [.mpeg4Audio] : [.mpeg4Movie]
-        panel.nameFieldStringValue = audio ? "YouTube audio.m4a" : "YouTube video.mp4"
+        panel.nameFieldStringValue = basename + (audio ? ".m4a" : ".mp4")
         panel.beginSheetModal(for: window) { [weak self] response in
             guard let self, response == .OK, let destination = panel.url,
                   !self.security.blocksAccess, self.allowsYouTubeDownloads, !self.savingMedia else { return }
