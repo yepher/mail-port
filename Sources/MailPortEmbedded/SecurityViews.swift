@@ -51,6 +51,13 @@ struct SecuritySettingsView: View {
     @State private var currentPIN = ""
     @State private var acknowledged = false
     var body: some View {
+        VStack(spacing: 0) {
+            ScrollView { settings.padding(28) }
+            Divider()
+            HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }.padding(14)
+        }.frame(width: 530, height: 620)
+    }
+    private var settings: some View {
         VStack(alignment: .leading, spacing: 18) {
             Label("MailPort settings", systemImage: "gearshape").font(.title2.bold())
             Toggle("Show keyboard shortcuts next to views", isOn: Binding(get: { model.showsShortcutHints }, set: { model.setShowsShortcutHints($0) }))
@@ -60,6 +67,10 @@ struct SecuritySettingsView: View {
             Divider()
             DefaultMailSettings(model: model)
             Divider()
+            if !model.accounts.isEmpty {
+                DockBadgeSettings(model: model)
+                Divider()
+            }
             Label("Security", systemImage: "lock.shield").font(.headline)
             Text("Require a PIN after your Mac sleeps and whenever MailPort launches.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -73,8 +84,7 @@ struct SecuritySettingsView: View {
             Text("This is an app privacy lock. It does not encrypt website data or replace macOS login security and FileVault.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if let error = security.error { Text(error).font(.callout).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
-            HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
-        }.padding(28).frame(width: 530)
+        }
     }
     private var enabledControls: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -104,6 +114,19 @@ struct SecuritySettingsView: View {
         }
     }
 
+}
+
+private struct DockBadgeSettings: View {
+    @ObservedObject var model: EmbeddedWorkspace
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Count unread mail in the Dock").font(.headline)
+            ForEach(model.accounts) { account in
+                Toggle(account.name, isOn: Binding(get: { !model.dockBadgeExcluded.contains(account.id) }, set: { model.setCountsInDockBadge($0, for: account) }))
+            }
+            Text("Only accounts with Mail open can be counted.").font(.caption).foregroundStyle(.secondary)
+        }
+    }
 }
 
 private struct DefaultMailSettings: View {

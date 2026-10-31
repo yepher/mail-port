@@ -1,5 +1,9 @@
 # Contributing to MailPort
 
+## License
+
+MailPort uses the MIT License with the Commons Clause, so it isn't open source in the OSI sense. By contributing, you agree that your work is licensed under those terms, and that the author may also include it in separately licensed versions.
+
 ## Set up
 
 You need Xcode with Swift 6 on an Apple silicon Mac.
@@ -61,7 +65,7 @@ Tests must not reach the network or real accounts. Use a disposable directory na
 
 ## Rules to keep
 
-**Don't change Google's pages.** MailPort doesn't hide warnings or restyle pages with CSS or scripts. Page scripts only observe, and only on top-level HTTPS pages on `mail.google.com` and `calendar.google.com`.
+**Don't change Google's pages.** MailPort doesn't hide warnings or restyle pages with CSS or scripts, and it doesn't block or skip ads. Page scripts only observe, and only on top-level HTTPS pages on `mail.google.com` and `calendar.google.com`. The one exception is `TranscriptReader.js`: it runs in the page's world only when the user asks, and it may switch subtitles on briefly to borrow the player's caption token, then restore them. Treat its result as untrusted. It depends on YouTube's player, so expect to update it when YouTube changes.
 
 **Keep the stored identifiers.** The bundle identifier `com.chriswilson.mailport.embedded`, WebKit store identifiers, preferences domain, and `MailPortPreview` support folder must not change, or users lose their sign-ins and settings. Fields added to `accounts.json` must be optional, because older builds still need to read it.
 

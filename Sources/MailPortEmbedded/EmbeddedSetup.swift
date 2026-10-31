@@ -89,18 +89,18 @@ struct PreviewHelp: View {
     @Environment(\.dismiss) private var dismiss
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Label("Single-window preview", systemImage: "rectangle.on.rectangle").font(.title2.bold())
-            Text("This build tests the layout you asked for: every account and Google service inside one MailPort window.")
+            Label("About this preview", systemImage: "rectangle.on.rectangle").font(.title2.bold())
+            Text("MailPort shows Google’s own web pages in one window. It’s an independent preview, not affiliated with or endorsed by Google.")
                 .fixedSize(horizontal: false, vertical: true)
             Group {
-                Label("Google sign-in has worked on this Mac", systemImage: "person.crop.circle.badge.checkmark").font(.headline)
-                Text("Sign-in has succeeded for two accounts during testing. Each account still needs its own Google sign-in, and Google may request extra verification. Passkeys require an Apple browser entitlement that this preview does not have.")
-                Label("WebKit compatibility", systemImage: "globe").font(.headline)
-                Text("The preview adds a conservative Safari-compatible version suffix for a recognized system WebKit build while keeping its MailPort identity. This helps website feature detection; it does not grant official Google support or additional browser capabilities.")
+                Label("Google sign-in", systemImage: "person.crop.circle.badge.checkmark").font(.headline)
+                Text("Each account needs its own Google sign-in. Google may ask for extra verification or reject embedded browsers, and passkeys aren’t supported.")
+                Label("Browser compatibility", systemImage: "globe").font(.headline)
+                Text("For recognized WebKit versions, MailPort adds a Safari-compatible version to its browser identity and keeps its own name. This helps websites detect browser features. It doesn’t mean Google officially supports MailPort.")
                 Label("Sessions are separate", systemImage: "lock.shield").font(.headline)
-                Text("WebKit keeps each account’s website data separate; Mail and Calendar for that account share a session. Existing single-window account sessions and tab settings are preserved as MailPort becomes the main app.")
+                Text("WebKit keeps each account’s website data separate, and an account’s services share one session.")
                 Label("Calendar notifications", systemImage: "bell.badge").font(.headline)
-                Text("Enable native alerts from MailPort > Notifications, then choose Desktop notifications in each account’s Google Calendar settings. MailPort keeps Calendar running for reminders while the app is open. Alerts cannot arrive while the app is quit or the Mac is asleep. Native unread badges and independent background mail checks remain unfinished.")
+                Text("Enable alerts from MailPort > Notifications, then choose Desktop notifications in each account’s Google Calendar settings. MailPort must be running, so alerts can’t arrive while it’s quit or your Mac is asleep.")
             }.font(.callout).fixedSize(horizontal: false, vertical: true)
             HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
         }.padding(30).frame(width: 550)

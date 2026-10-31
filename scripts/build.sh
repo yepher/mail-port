@@ -34,8 +34,11 @@ if [[ "$sign_identity" != "-" ]]; then
 fi
 cp "$build_dir/MailPort.icns" "$bundle/Contents/Resources/MailPort.icns"
 cp README.md "$bundle/Contents/Resources/README.md"
+cp LICENSE "$bundle/Contents/Resources/LICENSE.txt"
+cp -f "$build_dir/checkouts/Sparkle/LICENSE" "$bundle/Contents/Resources/Sparkle-LICENSE.txt"
 cp Sources/MailPortEmbedded/Resources/NotificationBridge.js "$bundle/Contents/Resources/NotificationBridge.js"
 cp Sources/MailPortEmbedded/Resources/TabActivity.js "$bundle/Contents/Resources/TabActivity.js"
+cp Sources/MailPortEmbedded/Resources/TranscriptReader.js "$bundle/Contents/Resources/TranscriptReader.js"
 chmod +x "$bundle/Contents/MacOS/MailPort"
 plutil -lint "$bundle/Contents/Info.plist"
 # Hardened apps only load frameworks from their own team, which a local signature doesn't have.

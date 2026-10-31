@@ -140,6 +140,10 @@ private struct SidebarAccount: View {
                     }
                 }
                 Spacer(minLength: 4)
+                if model.notificationSettings(for: account).isMuted(at: now) {
+                    Image(systemName: "bell.slash").font(.system(size: 10)).foregroundStyle(.secondary)
+                        .accessibilityLabel("Notifications muted").help("Notifications muted")
+                }
                 if collapsed, needsSignIn {
                     Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 11)).foregroundStyle(.orange)
                         .accessibilityLabel("Sign-in needed").help("Sign-in needed")
@@ -154,6 +158,8 @@ private struct SidebarAccount: View {
         .accessibilityLabel("\(account.name), \(collapsed ? "collapsed" : "expanded")")
         .contextMenu {
             Button("Edit \(account.name)…") { model.editAccount(account) }
+            AccountNotificationMenu(model: model, account: account, now: now)
+            Divider()
             Button("Remove \(account.name)…", role: .destructive) { model.accountPendingRemoval = account }
         }
     }
@@ -195,6 +201,27 @@ private struct DraggableRow: ViewModifier {
                     if abs(value.translation.height) > abs(value.translation.width) { onDrag(value.location) }
                 }
                 .onEnded { _ in dragging = nil })
+    }
+}
+
+struct AccountNotificationMenu: View {
+    @ObservedObject var model: EmbeddedWorkspace
+    let account: Account
+    let now: Date
+    private var settings: AccountNotificationSettings { model.notificationSettings(for: account) }
+
+    var body: some View {
+        Menu("Notifications") {
+            if settings.isMuted(at: now) {
+                Button("Unmute") { model.muteNotifications(for: account, until: nil) }
+            } else {
+                Button("Mute for 1 Hour") { model.muteNotifications(for: account, until: now.addingTimeInterval(3600)) }
+                Button("Mute Until Tomorrow") { model.muteNotifications(for: account, until: AccountNotificationSettings.tomorrowMorning(after: now)) }
+                Button("Mute Until I Unmute") { model.muteNotifications(for: account, until: .distantFuture) }
+            }
+            Divider()
+            Toggle("Hide Message Previews", isOn: Binding(get: { settings.hidesPreviews }, set: { model.setHidesPreviews($0, for: account) }))
+        }
     }
 }
 

@@ -54,6 +54,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         let contentController = WKUserContentController()
         configuration.userContentController = contentController
         configuration.websiteDataStore = store
+        configuration.preferences.isElementFullscreenEnabled = true
         // WebKit's base UA deliberately freezes OS/engine tokens and omits a
         // Version/Safari suffix. Keep the generated base and MailPort identity.
         configuration.applicationNameForUserAgent = Self.browserIdentity.applicationNameForUserAgent
@@ -109,6 +110,16 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         guard let url = webView.url,
               BrowserLinkRouting.isAuthenticationURL(url) || BrowserLinkRouting.signInRequired(at: url, service: service) == true else { return }
         load(activityOnly ? Self.todayURL : service.url)
+    }
+
+    /// Nil means YouTube didn't provide captions for this video.
+    func readTranscript() async throws -> VideoTranscript? {
+        guard !discardedForSecurity, let url = webView.url,
+              let file = Bundle.main.url(forResource: "TranscriptReader", withExtension: "js") else { return nil }
+        let source = try String(contentsOf: file, encoding: .utf8)
+        // The player lives in the page's world, so its result is untrusted; VideoTranscript checks it.
+        let result = try await webView.callAsyncJavaScript(source, contentWorld: .page)
+        return (result as? [String: Any]).flatMap { VideoTranscript(message: $0, url: url) }
     }
 
     func showFind() {

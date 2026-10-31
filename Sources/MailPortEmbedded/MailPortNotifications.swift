@@ -13,6 +13,7 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
     @Published private(set) var lastDelivery: String?
     var onPermissionChanged: (() -> Void)?
     var onOpen: ((UUID, GoogleService, String?) -> Void)?
+    var settingsForAccount: ((UUID) -> AccountNotificationSettings)?
     // Command-line XCTest has no application bundle proxy. The production
     // app always uses its real notification center; tests have no OS alerts.
     private let center: UNUserNotificationCenter? = Bundle.main.bundleURL.pathExtension == "app" ? .current() : nil
@@ -86,13 +87,16 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
 
     func deliver(_ message: WebNotificationMessage, account: Account, service: GoogleService) async -> String? {
         guard permission == "granted", let center else { return nil }
+        let settings = settingsForAccount?(account.id) ?? AccountNotificationSettings()
+        guard !settings.isMuted(at: Date()) else { return nil }
         let key = message.tag.isEmpty ? message.id : message.tag
         let digest = SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined()
         let identifier = "mailport.\(account.id.uuidString).\(service.rawValue).\(digest)"
         let content = UNMutableNotificationContent()
-        content.title = message.title.isEmpty ? (service == .calendar ? "Calendar reminder" : "New mail") : message.title
+        let text = settings.alertText(title: message.title, body: message.body, service: service)
+        content.title = text.title
         content.subtitle = account.name
-        content.body = message.body
+        content.body = text.body
         if !message.silent { content.sound = .default }
         content.threadIdentifier = "\(account.id.uuidString).\(service.rawValue)"
         content.userInfo = ["accountID": account.id.uuidString, "service": service.rawValue, "webID": message.id]
@@ -110,6 +114,7 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
 
     func sendTest(account: Account) async {
         guard permission == "granted" else { lastError = "Enable MailPort notifications first."; return }
+        if settingsForAccount?(account.id).isMuted(at: Date()) == true { lastError = "\(account.name) is muted."; return }
         let message = WebNotificationMessage(["kind": "show", "id": UUID().uuidString,
             "title": "MailPort test reminder", "body": "Notifications are ready. Click to open \(account.name)’s Calendar."])!
         _ = await deliver(message, account: account, service: .calendar)

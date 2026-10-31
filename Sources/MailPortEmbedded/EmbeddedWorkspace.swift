@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import UniformTypeIdentifiers
 import WebKit
 import MailPortCore
 import MailPortSecurity
@@ -24,10 +25,13 @@ final class EmbeddedWorkspace: ObservableObject {
     @Published var pendingCompose: URL?
     @Published private(set) var storageAvailable = true
     @Published private(set) var recentlyClosed: [WorkspaceTab] = []
-    @Published private(set) var tabActivity: [WorkspaceTab: TabActivity] = [:]
+    @Published private(set) var tabActivity: [WorkspaceTab: TabActivity] = [:] { didSet { updateDockBadge() } }
+    @Published private(set) var dockBadgeExcluded: Set<UUID> = []
+    @Published private(set) var notificationSettings: [UUID: AccountNotificationSettings] = [:]
     @Published private(set) var pins: [WorkspacePin] = []
     @Published private(set) var collapsedAccounts: Set<UUID> = []
     @Published private(set) var showsShortcutHints = true
+    @Published private(set) var savingTranscript = false
     @Published private(set) var accountsNeedingSignIn: Set<UUID> = []
     @Published private(set) var serviceZoom: [GoogleService: Double] = [:]
     @Published private(set) var defaultMailAccountID: UUID?
@@ -57,6 +61,11 @@ final class EmbeddedWorkspace: ObservableObject {
 
     /// The order shortcuts and closing follow, matching what's on screen.
     var navigationTabs: [WorkspaceTab] { layout == .sidebar ? WorkspaceTab.grouped(tabs, by: accounts) : tabs }
+
+    var canSaveTranscript: Bool {
+        guard let selection, !savingTranscript else { return false }
+        return VideoTranscript.isVideoPage(currentBrowser?.url, service: selection.service)
+    }
 
     var canPinCurrentPage: Bool {
         guard let selection, let url = currentBrowser?.url else { return false }
@@ -119,6 +128,7 @@ final class EmbeddedWorkspace: ObservableObject {
             }
             for browser in self.browsers.values { browser.notificationBridge.updatePermission() }
         }
+        notifications.settingsForAccount = { [weak self] id in self?.notificationSettings[id] ?? AccountNotificationSettings() }
         notifications.attachOpenHandler { [weak self] accountID, service, webID in
             guard let self, self.accounts.contains(where: { $0.id == accountID }) else { return }
             self.select(WorkspaceTab(accountID: accountID, service: service))
@@ -130,6 +140,7 @@ final class EmbeddedWorkspace: ObservableObject {
         activityTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                self.updateDockBadge()
                 let today = Calendar.current.startOfDay(for: Date())
                 if today != self.activityDay {
                     self.activityDay = today
@@ -153,6 +164,12 @@ final class EmbeddedWorkspace: ObservableObject {
             showsShortcutHints = preferences.object(forKey: "showsShortcutHints") as? Bool ?? true
             defaultMailAccountID = preferences.string(forKey: "defaultMailAccount").flatMap(UUID.init(uuidString:))
                 .flatMap { id in accounts.contains { $0.id == id } ? id : nil }
+            let accountIDs = Set(accounts.map(\.id))
+            dockBadgeExcluded = Set((preferences.stringArray(forKey: "dockBadgeExcluded") ?? []).compactMap(UUID.init(uuidString:))).intersection(accountIDs)
+            if let saved = preferences.data(forKey: "accountNotifications"),
+               let restored = try? JSONDecoder().decode([UUID: AccountNotificationSettings].self, from: saved) {
+                notificationSettings = restored.filter { accountIDs.contains($0.key) }
+            }
             let zoom = preferences.dictionary(forKey: "serviceZoom") as? [String: Double] ?? [:]
             serviceZoom = zoom.reduce(into: [:]) { result, entry in
                 if let service = GoogleService(rawValue: entry.key), PageZoom.isValid(entry.value) { result[service] = entry.value }
@@ -190,6 +207,7 @@ final class EmbeddedWorkspace: ObservableObject {
         browsers.removeAll(); calendarMonitors.removeAll(); stores.removeAll()
         accounts.removeAll(); tabs.removeAll(); recentlyClosed.removeAll(); tabActivity.removeAll()
         pins.removeAll(); collapsedAccounts.removeAll(); accountsNeedingSignIn.removeAll(); defaultMailAccountID = nil
+        dockBadgeExcluded.removeAll(); notificationSettings.removeAll()
         selection = nil; lastAccountID = nil
     }
 
@@ -273,7 +291,7 @@ final class EmbeddedWorkspace: ObservableObject {
         browser.onSignInChange = { [weak self] needed in self?.updateSignIn(needed, for: account.id) }
         browser.webView.pageZoom = serviceZoom[tab.service] ?? PageZoom.standard
         if tab.service == .gmail {
-            browser.onActivity = { [weak self] sample in self?.tabActivity[tab] = sample }
+            browser.onActivity = { [weak self] sample in self?.recordActivity(sample, for: tab) }
         }
         browsers[tab] = browser
     }
@@ -289,10 +307,78 @@ final class EmbeddedWorkspace: ObservableObject {
                 // Observe today's view independently of whichever date the user is browsing.
                 // This page has no native notification bridge, so it cannot duplicate alerts.
                 let monitor = BrowserTab(account: account, service: .calendar, store: store, activityOnly: true)
-                monitor.onActivity = { [weak self] sample in self?.tabActivity[tab] = sample }
+                monitor.onActivity = { [weak self] sample in self?.recordActivity(sample, for: tab) }
                 monitor.onSignInChange = { [weak self] needed in self?.updateSignIn(needed, for: account.id) }
                 calendarMonitors[account.id] = monitor
             }
+        }
+    }
+
+    func dockBadgeLabel(at now: Date = Date()) -> String? {
+        let counted = tabActivity.filter { $0.key.service == .gmail && !dockBadgeExcluded.contains($0.key.accountID) }
+        return TabActivity.totalBadge(Array(counted.values), at: now)
+    }
+
+    func updateDockBadge() { NSApp?.dockTile.badgeLabel = dockBadgeLabel() }
+
+    func setCountsInDockBadge(_ counts: Bool, for account: Account) {
+        guard !security.blocksAccess else { return }
+        if counts { dockBadgeExcluded.remove(account.id) } else { dockBadgeExcluded.insert(account.id) }
+        preferences.set(dockBadgeExcluded.map(\.uuidString), forKey: "dockBadgeExcluded")
+        updateDockBadge()
+    }
+
+    func recordActivity(_ sample: TabActivity?, for tab: WorkspaceTab) { tabActivity[tab] = sample }
+
+    func notificationSettings(for account: Account) -> AccountNotificationSettings {
+        notificationSettings[account.id] ?? AccountNotificationSettings()
+    }
+
+    func muteNotifications(for account: Account, until date: Date?) {
+        var settings = notificationSettings(for: account)
+        settings.mutedUntil = date
+        store(settings, for: account.id)
+    }
+
+    func setHidesPreviews(_ hides: Bool, for account: Account) {
+        var settings = notificationSettings(for: account)
+        settings.hidesPreviews = hides
+        store(settings, for: account.id)
+    }
+
+    private func store(_ settings: AccountNotificationSettings?, for accountID: UUID) {
+        guard !security.blocksAccess else { return }
+        notificationSettings[accountID] = settings
+        if let data = try? JSONEncoder().encode(notificationSettings) { preferences.set(data, forKey: "accountNotifications") }
+    }
+
+    func saveTranscript() {
+        guard !security.blocksAccess, canSaveTranscript, let browser = currentBrowser else { return }
+        savingTranscript = true
+        Task {
+            defer { savingTranscript = false }
+            do {
+                guard let transcript = try await browser.readTranscript() else {
+                    errorMessage = "MailPort couldn’t get a transcript. This video may not have captions. If an ad is playing, try again once the video starts."
+                    return
+                }
+                guard !security.blocksAccess else { return }
+                presentSavePanel(for: transcript)
+            } catch {
+                errorMessage = "MailPort couldn’t read this video’s transcript. YouTube may have changed its page. \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func presentSavePanel(for transcript: VideoTranscript) {
+        guard let window = mainWindow else { return }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = transcript.suggestedFilename
+        panel.allowedContentTypes = [.plainText]
+        panel.beginSheetModal(for: window) { [weak self] response in
+            guard response == .OK, let destination = panel.url else { return }
+            do { try transcript.text.write(to: destination, atomically: true, encoding: .utf8) }
+            catch { self?.errorMessage = "The transcript couldn’t be saved. \(error.localizedDescription)" }
         }
     }
 
@@ -470,6 +556,8 @@ final class EmbeddedWorkspace: ObservableObject {
             persistPins()
             accountsNeedingSignIn.remove(account.id)
             if defaultMailAccountID == account.id { setDefaultMailAccount(nil) }
+            if dockBadgeExcluded.contains(account.id) { setCountsInDockBadge(true, for: account) }
+            if notificationSettings[account.id] != nil { store(nil, for: account.id) }
             if collapsedAccounts.remove(account.id) != nil { persistCollapsedAccounts() }
             if selection?.accountID == account.id {
                 browserChanges = nil

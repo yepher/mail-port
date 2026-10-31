@@ -18,7 +18,6 @@ final class WorkspaceNavigationTests: XCTestCase {
 
     func testShortcutNumbersFollowTheGivenOrderAndStopAtNine() {
         let tabs = GoogleService.allCases.map { WorkspaceTab(accountID: work.id, service: $0) }
-            + [WorkspaceTab(accountID: personal.id, service: .gmail)]
         XCTAssertEqual(tabs.count, 10)
         XCTAssertEqual(tabs.map { WorkspaceTab.shortcutNumber(of: $0, in: tabs) }, [1, 2, 3, 4, 5, 6, 7, 8, 9, nil])
         XCTAssertNil(WorkspaceTab.shortcutNumber(of: WorkspaceTab(accountID: UUID(), service: .gmail), in: tabs))
@@ -81,6 +80,81 @@ final class WorkspaceNavigationTests: XCTestCase {
         XCTAssertFalse(PageZoom.isValid(0))
         XCTAssertFalse(PageZoom.isValid(10))
         XCTAssertTrue(PageZoom.isValid(1.5))
+    }
+
+    func testMutingEndsAtItsTimeAndDefaultsToOff() {
+        let now = Date()
+        XCTAssertFalse(AccountNotificationSettings().isMuted(at: now))
+        let muted = AccountNotificationSettings(mutedUntil: now.addingTimeInterval(60))
+        XCTAssertTrue(muted.isMuted(at: now))
+        XCTAssertFalse(muted.isMuted(at: now.addingTimeInterval(60)))
+        XCTAssertTrue(AccountNotificationSettings(mutedUntil: .distantFuture).isMuted(at: now))
+    }
+
+    func testHiddenPreviewsRevealNoMessageText() {
+        let hidden = AccountNotificationSettings(hidesPreviews: true)
+        XCTAssertEqual(hidden.alertText(title: "Secret subject", body: "Secret body", service: .gmail).title, "New mail")
+        XCTAssertEqual(hidden.alertText(title: "Secret subject", body: "Secret body", service: .gmail).body, "")
+        XCTAssertEqual(hidden.alertText(title: "Board meeting", body: "", service: .calendar).title, "Calendar reminder")
+        let shown = AccountNotificationSettings()
+        XCTAssertEqual(shown.alertText(title: "Subject", body: "Body", service: .gmail).title, "Subject")
+        XCTAssertEqual(shown.alertText(title: "", body: "Body", service: .calendar).title, "Calendar reminder")
+    }
+
+    func testTomorrowMorningIsEightOnTheNextDay() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "America/Chicago"))
+        let lateNight = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 3, day: 7, hour: 23, minute: 30)))
+        let parts = calendar.dateComponents([.day, .hour, .minute], from: AccountNotificationSettings.tomorrowMorning(after: lateNight, calendar: calendar))
+        XCTAssertEqual([parts.day, parts.hour, parts.minute], [8, 8, 0], "Works across a daylight saving change")
+    }
+
+    func testYouTubeKeepsItsOwnSubdomainsAndSendsOtherSitesOut() {
+        func external(_ address: String, _ service: GoogleService = .youtube, userLink: Bool = true) -> URL? {
+            BrowserLinkRouting.externalURL(for: URL(string: address)!, service: service, topLevel: true, userLink: userLink)
+        }
+        for address in ["https://www.youtube.com/watch?v=abc", "https://studio.youtube.com/channel/abc",
+                        "https://consent.youtube.com/m", "https://accounts.youtube.com/accounts/SetSID", "https://youtube.com/"] {
+            XCTAssertNil(external(address), address)
+        }
+        XCTAssertNotNil(external("https://example.com/"))
+        XCTAssertNotNil(external("https://www.youtube.com.evil.example/"))
+        XCTAssertNotNil(external("https://www.youtube.com/watch?v=abc", .gmail), "Video links in mail still open in the browser")
+    }
+
+    func testTranscriptKeepsTimedTextAndRejectsEmptyPages() throws {
+        let url = URL(string: "https://www.youtube.com/watch?v=abc")!
+        let segments: [[String: Any]] = [["time": "0:18", "text": " Hello "], ["time": "", "text": "No time"], ["time": "1:00", "text": "  "], ["text": 5]]
+        let transcript = try XCTUnwrap(VideoTranscript(message: ["title": "Talk", "segments": segments], url: url))
+        XCTAssertEqual(transcript.text, "Talk\nhttps://www.youtube.com/watch?v=abc\n\n[0:18] Hello\nNo time\n")
+        XCTAssertNil(VideoTranscript(message: ["title": "Talk", "segments": []], url: url), "No transcript must not save an empty file")
+        XCTAssertNil(VideoTranscript(message: ["segments": [["text": "   "]]], url: url))
+        XCTAssertNil(VideoTranscript(message: ["title": 5], url: url))
+    }
+
+    func testTranscriptFilenamesCannotEscapeTheChosenFolder() throws {
+        let url = URL(string: "https://www.youtube.com/watch?v=abc")!
+        func name(_ title: String) throws -> String {
+            try XCTUnwrap(VideoTranscript(message: ["title": title, "segments": [["text": "Hi"]]], url: url)).suggestedFilename
+        }
+        XCTAssertEqual(try name("A/B: C\\D"), "A-B- C-D transcript.txt")
+        XCTAssertEqual(try name("../../etc/passwd"), "-..-etc-passwd transcript.txt")
+        XCTAssertEqual(try name("...hidden"), "hidden transcript.txt")
+        XCTAssertEqual(try name(""), "YouTube video transcript.txt")
+        XCTAssertLessThanOrEqual(try name(String(repeating: "a", count: 500)).count, 140)
+    }
+
+    func testTranscriptButtonOnlyAppliesToYouTubeWatchPages() {
+        func page(_ address: String, _ service: GoogleService = .youtube) -> Bool {
+            VideoTranscript.isVideoPage(URL(string: address), service: service)
+        }
+        XCTAssertTrue(page("https://www.youtube.com/watch?v=abc&t=10"))
+        XCTAssertFalse(page("https://www.youtube.com/"))
+        XCTAssertFalse(page("https://www.youtube.com/watch"))
+        XCTAssertFalse(page("https://www.youtube.com/watch?v="))
+        XCTAssertFalse(page("https://www.youtube.com/shorts/abc"))
+        XCTAssertFalse(page("https://www.youtube.com.evil.example/watch?v=abc"))
+        XCTAssertFalse(page("https://www.youtube.com/watch?v=abc", .gmail))
     }
 
     func testPinsAcceptOnlyTheirOwnSecureServiceHost() throws {

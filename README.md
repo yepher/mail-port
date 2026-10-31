@@ -1,6 +1,6 @@
 # MailPort
 
-MailPort puts Gmail, Calendar, and your other Google services in one Mac window, with every account a click away. Each account keeps its own sign-in, and pages stay loaded as you switch between them.
+MailPort puts Gmail, Calendar, YouTube, and your other Google services in one Mac window, with every account a click away. Each account keeps its own sign-in, and pages stay loaded as you switch between them.
 
 ![MailPort with Work and Personal accounts in the sidebar](docs/screenshot.png)
 
@@ -29,7 +29,7 @@ The name and color are labels only. The Google account is whichever one you sign
 
 - **Switch views:** select a service in the sidebar, or press ⌘1–9. The first nine views show their shortcut.
 - **Go To:** press ⌘T and type, such as `personal cal`, to find any account, service, or pinned page.
-- **Open a service:** select **Open Service** under an account. Mail, Calendar, Drive, Contacts, Chat, Meet, Gemini, Colab, and NotebookLM are available.
+- **Open a service:** select **Open Service** under an account. Mail, Calendar, Drive, Contacts, Chat, Meet, YouTube, Gemini, Colab, and NotebookLM are available.
 - **Check where you are:** the toolbar shows the current account, its email label, and the page's address.
 
 Links to other websites open in your default browser. Unread counts appear beside Mail, and a green dot beside Calendar means a timed event is happening now.
@@ -41,6 +41,10 @@ An orange warning and a **Sign In** row mean Google signed the account out. Sele
 - **Find text:** press ⌘F, then ⌘G or ⇧⌘G to move between matches. Press Esc to close.
 - **Zoom:** press ⌘= or ⌘− to change the size, and ⌘0 to reset. Each service remembers its own zoom across accounts.
 - **Print:** press ⌘P.
+
+### Save a YouTube transcript
+
+Open a video in YouTube and select **Save Transcript** in the toolbar, or choose Navigate > Save Video Transcript. MailPort saves the video's captions as a text file with timestamps, using your Mac's language when it's available, then English. Subtitles may flicker on for a moment. If an ad is playing, MailPort waits for it to finish, so saving can take a moment. Not every video has captions. Saved transcripts are for your own use, and the video's rights still belong to its owner.
 
 ### Organize the sidebar
 
@@ -82,6 +86,12 @@ Links open as a draft for you to review in Gmail. Nothing sends until you send i
 5. Repeat steps 3 and 4 for each account.
 
 MailPort must be running, online, and signed in for reminders to arrive. They can be missed while the app is quit, locked, or your Mac is asleep. Clicking a Calendar reminder opens that account's Calendar. Gmail notifications also appear when they're enabled in Gmail and its page is loaded.
+
+To quiet one account, right-click its header and choose **Notifications**. You can mute it for an hour, until tomorrow morning, or until you unmute it. A muted account shows a crossed-out bell, and alerts sent while it's muted are skipped, not saved for later. **Hide Message Previews** shows only "New mail" or "Calendar reminder" with the account name. These choices don't change your Google settings.
+
+### See unread mail in the Dock
+
+The Dock icon shows your total unread mail. To choose which accounts count, open Settings (⌘,) and use **Count unread mail in the Dock**. Only accounts with a Mail view open can be counted, and the badge clears while MailPort is locked.
 
 ### Lock MailPort with a PIN
 
@@ -125,10 +135,18 @@ MailPort has no server and doesn't use a Google API. Its only other connection i
 ## Current limits
 
 - Passkeys don't work.
-- Unread counts come from loaded Mail pages, and there's no Dock badge. They can disappear while you're signed out or offline.
+- Unread counts come from loaded Mail pages. They aren't available while Mail is closed, or while you're signed out or offline.
 - Calendar dots need Google Calendar in English.
 - Browser extensions and attachment tools aren't included.
+
+## Get help
+
+Choose Help > MailPort Help to open this page, or Help > Report a Problem to [open an issue](https://github.com/yepher/mail-port/issues/new). If Google's sign-in stops working, please say so; it's the thing most likely to break.
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for build, test, and release instructions.
+
+## License
+
+MailPort is free to use, change, and share, including at work. You can't sell it, or sell a product or service based substantially on it, without a separate license from the author. See [LICENSE](LICENSE) for the full terms. The app includes [Sparkle](https://sparkle-project.org), which has its own license.

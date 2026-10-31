@@ -112,10 +112,15 @@ struct EmbeddedWorkspaceView: View {
                 } else { Text("MailPort").font(.headline) }
             }
             ToolbarItemGroup(placement: .primaryAction) {
+                if model.selection?.service == .youtube {
+                    Button { model.saveTranscript() } label: {
+                        Label(model.savingTranscript ? "Reading Transcript…" : "Save Transcript", systemImage: "text.quote").labelStyle(.titleAndIcon)
+                    }.disabled(!model.canSaveTranscript).help("Save this video’s transcript as a text file")
+                }
                 Button { model.showingPinEditor = true } label: { Label("Pin Current Page", systemImage: "pin") }
                     .disabled(!model.canPinCurrentPage).help("Pin this page to the sidebar (⌘D)")
                 // Gmail has its own Compose button, so this appears only on other services.
-                if model.selection != nil, model.selection?.service != .gmail {
+                if model.selection != nil, model.selection?.service != .gmail, model.selection?.service != .youtube {
                     Button { model.compose() } label: { Label("New Email", systemImage: "square.and.pencil").labelStyle(.titleAndIcon) }
                         .help("Compose in Gmail (⌘N)")
                 }
@@ -167,6 +172,7 @@ struct EmbeddedWorkspaceView: View {
                                 Button("Close Tab") { model.close(tab) }
                                 Divider()
                                 Button("Edit \(account.name)…") { model.editAccount(account) }
+                                AccountNotificationMenu(model: model, account: account, now: now)
                                 Button("Remove Account…", role: .destructive) { model.accountPendingRemoval = account }
                             }
                             .background(GeometryReader { proxy in

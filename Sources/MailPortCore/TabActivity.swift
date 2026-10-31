@@ -44,8 +44,15 @@ public struct TabActivity: Equatable, Sendable {
 
     public func isFresh(at now: Date) -> Bool { (-60...300).contains(now.timeIntervalSince(sampledAt)) }
     public func hasCurrentEvent(at now: Date) -> Bool { isFresh(at: now) && events.contains { $0.contains(now) } }
-    public func unreadBadge(at now: Date) -> String? {
-        guard isFresh(at: now), let count = unreadCount, count > 0 else { return nil }
+    public func unreadBadge(at now: Date) -> String? { Self.badge(for: isFresh(at: now) ? (unreadCount ?? 0) : 0) }
+
+    /// The Dock total. Stale and unknown counts are left out rather than guessed.
+    public static func totalBadge(_ activity: [TabActivity], at now: Date) -> String? {
+        badge(for: activity.filter { $0.isFresh(at: now) }.compactMap(\.unreadCount).reduce(0, +))
+    }
+
+    private static func badge(for count: Int) -> String? {
+        guard count > 0 else { return nil }
         return count > 999 ? "999+" : String(count)
     }
 }

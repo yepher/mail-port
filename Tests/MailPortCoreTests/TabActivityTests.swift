@@ -35,4 +35,16 @@ final class TabActivityTests: XCTestCase {
             XCTAssertNil(TabActivity(message: ["kind": "calendar", "events": [pair]], service: .calendar))
         }
     }
+
+    func testDockTotalAddsFreshCountsAndLeavesOutStaleOnes() throws {
+        let now = Date()
+        func mail(_ count: Int, sampled: Date) throws -> TabActivity {
+            try XCTUnwrap(TabActivity(message: ["kind": "unread", "count": count], service: .gmail, now: sampled))
+        }
+        XCTAssertEqual(TabActivity.totalBadge([try mail(3, sampled: now), try mail(4, sampled: now)], at: now), "7")
+        XCTAssertEqual(TabActivity.totalBadge([try mail(3, sampled: now), try mail(4, sampled: now.addingTimeInterval(-600))], at: now), "3")
+        XCTAssertEqual(TabActivity.totalBadge([try mail(600, sampled: now), try mail(600, sampled: now)], at: now), "999+")
+        XCTAssertNil(TabActivity.totalBadge([try mail(0, sampled: now)], at: now))
+        XCTAssertNil(TabActivity.totalBadge([], at: now))
+    }
 }

@@ -22,6 +22,7 @@ fileGroups:
   - project.yml
   - README.md
   - CONTRIBUTING.md
+  - LICENSE
   - Resources
   - scripts
 targets:

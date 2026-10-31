@@ -33,6 +33,8 @@ public enum BrowserLinkRouting {
         // and Google redirect wrappers are external sites too.
         if scheme == "https" {
             if host == service.url.host?.lowercased() || isAuthenticationURL(url) { return nil }
+            // YouTube spreads Studio, sign-in, and consent across its own subdomains.
+            if service == .youtube, host == "youtube.com" || host.hasSuffix(".youtube.com") { return nil }
             // Keep SAML redirects/form submissions inside the sign-in flow, but
             // don't treat an explicit link clicked there as an authentication redirect.
             if authenticating && !userLink { return nil }

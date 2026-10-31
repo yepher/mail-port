@@ -106,6 +106,42 @@ final class WorkspaceSidebarTests: XCTestCase {
         XCTAssertNil(stale.defaultMailAccountID, "A default pointing at a missing account is ignored")
     }
 
+    @MainActor private func unread(_ count: Int) throws -> TabActivity {
+        try XCTUnwrap(TabActivity(message: ["kind": "unread", "count": count], service: .gmail))
+    }
+
+    @MainActor func testDockBadgeCountsChosenAccountsAndClearsWhenLocked() async throws {
+        let (model, directory, _) = try await fixture()
+        model.recordActivity(try unread(5), for: WorkspaceTab(accountID: work.id, service: .gmail))
+        model.recordActivity(try unread(2), for: WorkspaceTab(accountID: personal.id, service: .gmail))
+        XCTAssertEqual(model.dockBadgeLabel(), "7")
+        model.setCountsInDockBadge(false, for: work)
+        XCTAssertEqual(model.dockBadgeLabel(), "2")
+        let reopened = EmbeddedWorkspace(testingDirectory: directory, securityEngine: PINLockEngine(store: FixturePINStore()))
+        for _ in 0..<200 where reopened.security.checking { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertEqual(reopened.dockBadgeExcluded, [work.id])
+        let enabled = await model.security.enable(pin: "628493")
+        XCTAssertTrue(enabled)
+        model.security.lock()
+        XCTAssertNil(model.dockBadgeLabel(), "A locked app must not show an unread total")
+    }
+
+    @MainActor func testNotificationChoicesAreSavedPerAccountAndDroppedWithIt() async throws {
+        let (model, directory, _) = try await fixture()
+        let until = Date().addingTimeInterval(3600)
+        model.muteNotifications(for: work, until: until)
+        model.setHidesPreviews(true, for: personal)
+        let reopened = EmbeddedWorkspace(testingDirectory: directory, securityEngine: PINLockEngine(store: FixturePINStore()))
+        for _ in 0..<200 where reopened.security.checking { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertTrue(reopened.notificationSettings(for: work).isMuted(at: Date()))
+        XCTAssertFalse(reopened.notificationSettings(for: personal).isMuted(at: Date()))
+        XCTAssertTrue(reopened.notificationSettings(for: personal).hidesPreviews)
+        model.muteNotifications(for: work, until: nil)
+        XCTAssertFalse(model.notificationSettings(for: work).isMuted(at: Date()))
+        model.removeAccount(personal)
+        XCTAssertNil(model.notificationSettings[personal.id])
+    }
+
     @MainActor func testMovedPinsKeepTheirOrderInSavedPreferences() async throws {
         let first = try XCTUnwrap(WorkspacePin(accountID: work.id, service: .gmail, name: "First", url: search))
         let second = try XCTUnwrap(WorkspacePin(accountID: work.id, service: .gmail, name: "Second", url: search))

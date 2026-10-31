@@ -81,6 +81,7 @@ struct EmbeddedApp: App {
             }
             CommandGroup(replacing: .help) {
                 Button("MailPort Help") { NSWorkspace.shared.open(URL(string: "https://github.com/yepher/mail-port#readme")!) }
+                Button("Report a Problem…") { NSWorkspace.shared.open(URL(string: "https://github.com/yepher/mail-port/issues/new")!) }
             }
             CommandGroup(replacing: .printItem) {
                 Button("Print…") { model.currentBrowser?.printPage() }.keyboardShortcut("p").disabled(!canUsePage)
@@ -114,6 +115,8 @@ struct EmbeddedApp: App {
                     .disabled(model.security.blocksAccess || model.accounts.isEmpty)
                 Button("Pin Current Page…") { model.showingPinEditor = true }.keyboardShortcut("d")
                     .disabled(model.security.blocksAccess || !model.canPinCurrentPage)
+                Button("Save Video Transcript…") { model.saveTranscript() }
+                    .disabled(model.security.blocksAccess || !model.canSaveTranscript)
                 Divider()
                 Button("Reload Page") { model.currentBrowser?.reload() }.keyboardShortcut("r").disabled(model.security.blocksAccess)
                 Button("Service Home") { model.home() }.keyboardShortcut("h", modifiers: [.command, .shift]).disabled(model.security.blocksAccess)
