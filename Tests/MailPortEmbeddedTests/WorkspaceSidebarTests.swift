@@ -63,6 +63,49 @@ final class WorkspaceSidebarTests: XCTestCase {
         XCTAssertFalse(reopened.showsShortcutHints)
     }
 
+    @MainActor func testSignInStatusClearsAndIsDroppedWithTheAccountAndOnLock() async throws {
+        let (model, _, _) = try await fixture()
+        model.updateSignIn(true, for: work.id)
+        model.updateSignIn(true, for: personal.id)
+        XCTAssertEqual(model.accountsNeedingSignIn, [work.id, personal.id])
+        model.updateSignIn(false, for: personal.id)
+        XCTAssertEqual(model.accountsNeedingSignIn, [work.id])
+        model.removeAccount(work)
+        XCTAssertTrue(model.accountsNeedingSignIn.isEmpty)
+        model.updateSignIn(true, for: personal.id)
+        let enabled = await model.security.enable(pin: "628493")
+        XCTAssertTrue(enabled)
+        model.security.lock()
+        XCTAssertTrue(model.accountsNeedingSignIn.isEmpty)
+    }
+
+    @MainActor func testZoomIsSavedPerServiceAndBadSavedValuesAreDropped() async throws {
+        let (model, directory, preferences) = try await fixture()
+        model.setZoom(1.25, for: .gmail)
+        model.setZoom(40, for: .calendar)
+        XCTAssertEqual(model.serviceZoom, [.gmail: 1.25])
+        preferences.set(["gmail": 1.5, "calendar": 99.0, "unknown": 1.25], forKey: "serviceZoom")
+        let reopened = EmbeddedWorkspace(testingDirectory: directory, securityEngine: PINLockEngine(store: FixturePINStore()))
+        for _ in 0..<200 where reopened.security.checking { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertEqual(reopened.serviceZoom, [.gmail: 1.5])
+    }
+
+    @MainActor func testDefaultMailAccountPersistsAndClearsWithTheAccount() async throws {
+        let (model, directory, preferences) = try await fixture()
+        model.setDefaultMailAccount(work.id)
+        let reopened = EmbeddedWorkspace(testingDirectory: directory, securityEngine: PINLockEngine(store: FixturePINStore()))
+        for _ in 0..<200 where reopened.security.checking { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertEqual(reopened.defaultMailAccountID, work.id)
+        model.removeAccount(work)
+        XCTAssertNil(model.defaultMailAccountID)
+        XCTAssertNil(preferences.string(forKey: "defaultMailAccount"))
+        model.setDefaultMailAccount(personal.id)
+        preferences.set(UUID().uuidString, forKey: "defaultMailAccount")
+        let stale = EmbeddedWorkspace(testingDirectory: directory, securityEngine: PINLockEngine(store: FixturePINStore()))
+        for _ in 0..<200 where stale.security.checking { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertNil(stale.defaultMailAccountID, "A default pointing at a missing account is ignored")
+    }
+
     @MainActor func testMovedPinsKeepTheirOrderInSavedPreferences() async throws {
         let first = try XCTUnwrap(WorkspacePin(accountID: work.id, service: .gmail, name: "First", url: search))
         let second = try XCTUnwrap(WorkspacePin(accountID: work.id, service: .gmail, name: "Second", url: search))

@@ -14,6 +14,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         let build = Bundle(for: WKWebView.self).object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
         return WebKitBrowserIdentity(engineBuild: build)
     }
+    static let todayURL = URL(string: "https://calendar.google.com/calendar/u/0/r/day")!
     let webView: WKWebView
     let account: Account
     let service: GoogleService
@@ -26,6 +27,11 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     @Published private(set) var errorMessage: String?
     var onMailto: ((URL) -> Void)?
     var onActivity: ((TabActivity?) -> Void)?
+    var onSignInChange: ((Bool) -> Void)?
+    @Published var showingFind = false
+    @Published var findText = ""
+    @Published private(set) var findMissed = false
+    @Published private(set) var findFocusRequest = 0
     private(set) var notificationBridge: WebNotificationBridge!
     private var activityBridge: TabActivityBridge?
     private let activityOnly: Bool
@@ -65,7 +71,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         webView.allowsBackForwardNavigationGestures = true
         observeState()
         if activityOnly {
-            load(URL(string: "https://calendar.google.com/calendar/u/0/r/day")!)
+            load(Self.todayURL)
         } else if service == .calendar || service == .gmail {
             Task { [weak self] in
                 await MailPortNotifications.shared.refresh()
@@ -98,12 +104,42 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         else { webView.reload() }
     }
 
+    /// Reloads a page left on sign-in once another page shows the account is signed in.
+    func leaveSignIn() {
+        guard let url = webView.url,
+              BrowserLinkRouting.isAuthenticationURL(url) || BrowserLinkRouting.signInRequired(at: url, service: service) == true else { return }
+        load(activityOnly ? Self.todayURL : service.url)
+    }
+
+    func showFind() {
+        showingFind = true
+        findFocusRequest += 1
+    }
+
+    func find(backwards: Bool = false) {
+        guard !findText.isEmpty else { findMissed = false; return }
+        guard showingFind else { showFind(); return }
+        let configuration = WKFindConfiguration()
+        configuration.backwards = backwards
+        configuration.wraps = true
+        webView.find(findText, configuration: configuration) { [weak self] result in
+            self?.findMissed = !result.matchFound
+        }
+    }
+
+    func closeFind() {
+        showingFind = false
+        findText = ""
+        findMissed = false
+        webView.window?.makeFirstResponder(webView)
+    }
+
     func back() { if webView.canGoBack { webView.goBack() } }
     func forward() { if webView.canGoForward { webView.goForward() } }
 
     func discardForSecurity() {
         discardedForSecurity = true
-        onActivity = nil; onMailto = nil
+        onActivity = nil; onMailto = nil; onSignInChange = nil
         webView.stopLoading()
         webView.pauseAllMediaPlayback(completionHandler: nil)
         webView.navigationDelegate = nil; webView.uiDelegate = nil
@@ -122,6 +158,8 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             return
         }
         let operation = webView.printOperation(with: NSPrintInfo.shared)
+        // WebKit's print view starts with no size, which prints blank pages.
+        operation.view?.frame = webView.bounds
         operation.showsPrintPanel = true
         operation.showsProgressPanel = true
         operation.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
@@ -249,6 +287,9 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         if webView.url?.host == service.url.host { authenticating = false }
         openingAttachment = false
         updateState()
+        if let url = webView.url, let required = BrowserLinkRouting.signInRequired(at: url, service: service) {
+            onSignInChange?(required)
+        }
         if !activityOnly { notificationBridge.updatePermission() }
     }
 

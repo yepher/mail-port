@@ -5,6 +5,18 @@ public enum BrowserLinkRouting {
         url.scheme?.lowercased() == "https" && url.host?.lowercased() == "accounts.google.com"
     }
 
+    /// Whether a Mail or Calendar page shows the account is signed out. Signed-out
+    /// pages can land on Google's sign-in or its product pages. Nil means this page can't tell.
+    public static func signInRequired(at url: URL, service: GoogleService) -> Bool? {
+        guard service == .gmail || service == .calendar, url.scheme?.lowercased() == "https",
+              let host = url.host?.lowercased() else { return nil }
+        let path = url.path.lowercased()
+        if isAuthenticationURL(url) || host == "workspace.google.com" { return true }
+        if host == "www.google.com", path.contains("/gmail/about") || path.contains("/calendar/about") { return true }
+        guard host == service.url.host?.lowercased() else { return nil }
+        return path.hasPrefix("/calendar/about")
+    }
+
     public static func isGmailAttachmentURL(_ url: URL) -> Bool {
         guard url.scheme?.lowercased() == "https", url.host?.lowercased() == "mail.google.com",
               url.path.hasPrefix("/mail/"), let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return false }

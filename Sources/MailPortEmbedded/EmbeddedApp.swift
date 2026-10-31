@@ -44,6 +44,7 @@ struct EmbeddedApp: App {
     @NSApplicationDelegateAdaptor(EmbeddedDelegate.self) private var delegate
     @StateObject private var model = EmbeddedWorkspace()
     @ObservedObject private var updates = AppUpdates.shared
+    private var canUsePage: Bool { !model.security.blocksAccess && model.currentBrowser != nil }
 
     var body: some Scene {
         Window("MailPort", id: "mailport") {
@@ -67,6 +68,19 @@ struct EmbeddedApp: App {
             CommandGroup(after: .sidebar) {
                 Toggle("Use Tab Bar", isOn: Binding(get: { model.layout == .tabBar }, set: { model.layout = $0 ? .tabBar : .sidebar }))
                     .disabled(model.security.blocksAccess)
+                Divider()
+                Button("Zoom In") { model.zoom(by: 1) }.keyboardShortcut("=").disabled(!canUsePage)
+                Button("Zoom Out") { model.zoom(by: -1) }.keyboardShortcut("-").disabled(!canUsePage)
+                Button("Actual Size") { model.resetZoom() }.keyboardShortcut("0").disabled(!canUsePage)
+            }
+            CommandGroup(after: .pasteboard) {
+                Divider()
+                Button("Find…") { model.currentBrowser?.showFind() }.keyboardShortcut("f").disabled(!canUsePage)
+                Button("Find Next") { model.currentBrowser?.find() }.keyboardShortcut("g").disabled(!canUsePage)
+                Button("Find Previous") { model.currentBrowser?.find(backwards: true) }.keyboardShortcut("g", modifiers: [.command, .shift]).disabled(!canUsePage)
+            }
+            CommandGroup(replacing: .printItem) {
+                Button("Print…") { model.currentBrowser?.printPage() }.keyboardShortcut("p").disabled(!canUsePage)
             }
             CommandGroup(replacing: .newItem) {
                 Button("New Message") { model.compose() }.keyboardShortcut("n").disabled(model.security.blocksAccess)

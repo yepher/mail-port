@@ -55,6 +55,34 @@ final class WorkspaceNavigationTests: XCTestCase {
         XCTAssertNil(WorkspaceTab.neighbor(of: drive, in: tabs, offset: 1))
     }
 
+    func testSignInStatusRecognizesSignedOutPagesWithoutGuessingOnOthers() {
+        func status(_ address: String, _ service: GoogleService = .gmail) -> Bool? {
+            BrowserLinkRouting.signInRequired(at: URL(string: address)!, service: service)
+        }
+        XCTAssertEqual(status("https://accounts.google.com/v3/signin/identifier"), true)
+        XCTAssertEqual(status("https://workspace.google.com/gmail/"), true)
+        XCTAssertEqual(status("https://www.google.com/intl/en/gmail/about/"), true)
+        XCTAssertEqual(status("https://calendar.google.com/calendar/about/", .calendar), true)
+        XCTAssertEqual(status("https://mail.google.com/mail/u/0/#inbox"), false)
+        XCTAssertEqual(status("https://calendar.google.com/calendar/u/0/r", .calendar), false)
+        XCTAssertNil(status("https://support.google.com/mail/"), "Other pages say nothing about sign-in")
+        XCTAssertNil(status("https://accounts.google.com/signin", .drive), "Only Mail and Calendar report status")
+        XCTAssertNil(status("http://accounts.google.com/signin"))
+    }
+
+    func testZoomStepsThroughStopsAndStopsAtTheEnds() {
+        XCTAssertEqual(PageZoom.stepped(from: 1, by: 1), 1.1)
+        XCTAssertEqual(PageZoom.stepped(from: 1, by: -1), 0.9)
+        XCTAssertEqual(PageZoom.stepped(from: 2, by: 1), 2)
+        XCTAssertEqual(PageZoom.stepped(from: 0.5, by: -1), 0.5)
+        XCTAssertEqual(PageZoom.stepped(from: 1.2, by: 1), 1.25, "Values between stops move to the next stop")
+        XCTAssertEqual(PageZoom.stepped(from: 1.2, by: -1), 1.1)
+        XCTAssertFalse(PageZoom.isValid(.nan))
+        XCTAssertFalse(PageZoom.isValid(0))
+        XCTAssertFalse(PageZoom.isValid(10))
+        XCTAssertTrue(PageZoom.isValid(1.5))
+    }
+
     func testPinsAcceptOnlyTheirOwnSecureServiceHost() throws {
         let pin = try XCTUnwrap(WorkspacePin(accountID: work.id, service: .gmail, name: "  Atlas  ", url: inbox))
         XCTAssertEqual(pin.name, "Atlas")

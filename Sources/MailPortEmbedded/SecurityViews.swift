@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import MailPortSecurity
 
@@ -57,6 +58,8 @@ struct SecuritySettingsView: View {
                 Toggle("Check for updates automatically", isOn: $updates.checksAutomatically)
             }
             Divider()
+            DefaultMailSettings(model: model)
+            Divider()
             Label("Security", systemImage: "lock.shield").font(.headline)
             Text("Require a PIN after your Mac sleeps and whenever MailPort launches.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -101,6 +104,43 @@ struct SecuritySettingsView: View {
         }
     }
 
+}
+
+private struct DefaultMailSettings: View {
+    @ObservedObject var model: EmbeddedWorkspace
+    @State private var isDefault = false
+    @State private var error: String?
+    private let sample = URL(string: "mailto:someone@example.com")!
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if isDefault {
+                Label("MailPort opens email links", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+            } else {
+                Button("Make MailPort the Default Mail App") { makeDefault() }
+            }
+            Picker("Open email links with", selection: Binding(get: { model.defaultMailAccountID }, set: { model.setDefaultMailAccount($0) })) {
+                Text("Ask each time").tag(UUID?.none)
+                ForEach(model.accounts) { account in Text(account.name).tag(UUID?.some(account.id)) }
+            }.frame(maxWidth: 340)
+            if let error { Text(error).font(.caption).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
+        }
+        .onAppear(perform: refresh)
+    }
+
+    private func refresh() {
+        let handler = NSWorkspace.shared.urlForApplication(toOpen: sample)
+        isDefault = handler.flatMap { Bundle(url: $0)?.bundleIdentifier } == Bundle.main.bundleIdentifier
+    }
+
+    private func makeDefault() {
+        NSWorkspace.shared.setDefaultApplication(at: Bundle.main.bundleURL, toOpenURLsWithScheme: "mailto") { failure in
+            DispatchQueue.main.async {
+                error = failure.map { "macOS didn’t change the default mail app. \($0.localizedDescription)" }
+                refresh()
+            }
+        }
+    }
 }
 
 private struct PINDigitsField: View {

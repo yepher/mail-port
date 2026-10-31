@@ -141,6 +141,10 @@ struct EmbeddedWorkspaceView: View {
                                     Text(account.name).font(.system(size: 12, weight: model.selection == tab ? .semibold : .regular)).lineLimit(1)
                                     Text(tab.service.shortTitle).font(.system(size: 10)).foregroundStyle(.secondary)
                                     TabActivityBadge(activity: model.tabActivity[tab], service: tab.service, now: now)
+                                    if model.accountsNeedingSignIn.contains(account.id) {
+                                        Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10)).foregroundStyle(.orange)
+                                            .accessibilityLabel("Sign-in needed").help("Sign-in needed")
+                                    }
                                     ShortcutHint(number: model.shortcutNumber(for: tab))
                               }.padding(.leading, 13).padding(.trailing, 8).frame(height: 38).contentShape(Rectangle())
                                 .onTapGesture { model.select(tab) }
@@ -238,8 +242,34 @@ private struct BrowserPane: View {
                     Button("Reload") { browser.reload() }
                 }.padding(12).background(.orange.opacity(0.08))
             }
+            if browser.showingFind { FindBar(browser: browser) }
             WebContent(webView: browser.webView).id(ObjectIdentifier(browser.webView))
         }
+    }
+}
+
+private struct FindBar: View {
+    @ObservedObject var browser: BrowserTab
+    @FocusState private var focus: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField("Find in page", text: $browser.findText).textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+                .focused($focus)
+                .onSubmit { browser.find() }
+                .onChange(of: browser.findText) { _, _ in browser.find() }
+            if browser.findMissed { Text("Not found").font(.caption).foregroundStyle(.secondary) }
+            Button { browser.find(backwards: true) } label: { Image(systemName: "chevron.up") }
+                .help("Find Previous (⇧⌘G)").accessibilityLabel("Find Previous")
+            Button { browser.find() } label: { Image(systemName: "chevron.down") }
+                .help("Find Next (⌘G)").accessibilityLabel("Find Next")
+            Spacer()
+            Button("Done") { browser.closeFind() }.keyboardShortcut(.cancelAction)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6).background(.bar)
+        .onAppear { focus = true }
+        .onChange(of: browser.findFocusRequest) { _, _ in focus = true }
     }
 }
 

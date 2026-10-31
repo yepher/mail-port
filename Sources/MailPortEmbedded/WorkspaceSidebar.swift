@@ -61,6 +61,7 @@ private struct SidebarAccount: View {
     private var accountTabs: [WorkspaceTab] { model.navigationTabs.filter { $0.accountID == account.id } }
     private var accountPins: [WorkspacePin] { model.pins.filter { $0.accountID == account.id } }
     private var collapsed: Bool { model.collapsedAccounts.contains(account.id) }
+    private var needsSignIn: Bool { model.accountsNeedingSignIn.contains(account.id) }
     private var closedServices: [GoogleService] {
         GoogleService.allCases.filter { service in !accountTabs.contains { $0.service == service } }
     }
@@ -69,6 +70,11 @@ private struct SidebarAccount: View {
         VStack(alignment: .leading, spacing: 1) {
             header
             if !collapsed {
+                if needsSignIn {
+                    SidebarRow(title: "Sign In", symbol: "exclamationmark.triangle.fill", color: color, selected: false, dragging: false,
+                        label: "Sign in to \(account.name)", tint: .orange) { model.open(.gmail, account: account) } trailing: { EmptyView() }
+                        .help("This account is signed out. Open its Mail view to sign in.")
+                }
                 ForEach(accountTabs) { tab in tabRow(tab) }
                 if !closedServices.isEmpty { openService }
                 if !accountPins.isEmpty {
@@ -134,7 +140,10 @@ private struct SidebarAccount: View {
                     }
                 }
                 Spacer(minLength: 4)
-                if collapsed, let mail = accountTabs.first(where: { $0.service == .gmail }) {
+                if collapsed, needsSignIn {
+                    Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 11)).foregroundStyle(.orange)
+                        .accessibilityLabel("Sign-in needed").help("Sign-in needed")
+                } else if collapsed, let mail = accountTabs.first(where: { $0.service == .gmail }) {
                     TabActivityBadge(activity: model.tabActivity[mail], service: .gmail, now: now)
                 }
                 Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
@@ -206,6 +215,7 @@ private struct SidebarRow<Trailing: View>: View {
     let selected: Bool
     let dragging: Bool
     let label: String
+    var tint: Color?
     let action: () -> Void
     @ViewBuilder var trailing: () -> Trailing
 
@@ -213,7 +223,7 @@ private struct SidebarRow<Trailing: View>: View {
         // A tap gesture, not a Button, so the row's drag can start anywhere on it.
         HStack(spacing: 6) {
             HStack(spacing: 9) {
-                Image(systemName: symbol).foregroundStyle(selected ? color : .secondary).frame(width: 18)
+                Image(systemName: symbol).foregroundStyle(tint ?? (selected ? color : .secondary)).frame(width: 18)
                 Text(title).font(.system(size: 12, weight: selected ? .semibold : .regular)).lineLimit(1)
                 Spacer(minLength: 0)
             }

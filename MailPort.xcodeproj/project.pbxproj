@@ -53,6 +53,7 @@
 		D9FE5E45785008457574E66B /* NotificationBridge.js in Resources */ = {isa = PBXBuildFile; fileRef = C9B0F5BDD7978127AF92CDD8 /* NotificationBridge.js */; };
 		DFAF825D41E7165A95215876 /* QuickSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FACCDA15101A7799D8BFD17 /* QuickSwitcherView.swift */; };
 		F143CAF226B1A7B683A43B5C /* WorkspaceTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA220AF94AABA60833038D09 /* WorkspaceTab.swift */; };
+		F44CE00AB2B87DAE3D435A54 /* PageZoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A20DDA9B60D18ECE8957876 /* PageZoom.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -115,6 +116,7 @@
 		5F493D0D90D9E3BC92778D2F /* GoogleService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleService.swift; sourceTree = "<group>"; };
 		6150344F821805DF6E0D2195 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
 		61F157D647D552B06917D139 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		6A20DDA9B60D18ECE8957876 /* PageZoom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageZoom.swift; sourceTree = "<group>"; };
 		6DE6018611FAC4C97006520D /* TabClosingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabClosingTests.swift; sourceTree = "<group>"; };
 		6FACCDA15101A7799D8BFD17 /* QuickSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSwitcherView.swift; sourceTree = "<group>"; };
 		77B3651654916A1DBDC3D25B /* BrowserIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserIdentity.swift; sourceTree = "<group>"; };
@@ -335,6 +337,7 @@
 				3C0EF13258A768492CD2840A /* GmailCompose.swift */,
 				5F493D0D90D9E3BC92778D2F /* GoogleService.swift */,
 				D2C6F8F6A069CEF2961E41C5 /* HexColor.swift */,
+				6A20DDA9B60D18ECE8957876 /* PageZoom.swift */,
 				EF6529FFFE31FE5588FCB954 /* QuickSwitch.swift */,
 				325430994E30A62DD6956256 /* TabActivity.swift */,
 				2040025A6CD1B5641269AFF6 /* WebNotificationMessage.swift */,
@@ -656,6 +659,7 @@
 				CC77DCB12DA1096F87135590 /* GmailCompose.swift in Sources */,
 				08E3AC649706768CE09EB887 /* GoogleService.swift in Sources */,
 				0D9DDF8EE07E0752A722A8E4 /* HexColor.swift in Sources */,
+				F44CE00AB2B87DAE3D435A54 /* PageZoom.swift in Sources */,
 				18B295784A97BABFEA4C68C4 /* QuickSwitch.swift in Sources */,
 				5AFA7A3F076262C8937CD392 /* TabActivity.swift in Sources */,
 				A1E230B8246EDBE5E76690FE /* WebNotificationMessage.swift in Sources */,

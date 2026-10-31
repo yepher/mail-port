@@ -34,6 +34,14 @@ The name and color are labels only. The Google account is whichever one you sign
 
 Links to other websites open in your default browser. Unread counts appear beside Mail, and a green dot beside Calendar means a timed event is happening now.
 
+An orange warning and a **Sign In** row mean Google signed the account out. Select **Sign In** and finish on Google's page. Its unread count and Calendar dot then come back.
+
+### Read and print pages
+
+- **Find text:** press ⌘F, then ⌘G or ⇧⌘G to move between matches. Press Esc to close.
+- **Zoom:** press ⌘= or ⌘− to change the size, and ⌘0 to reset. Each service remembers its own zoom across accounts.
+- **Print:** press ⌘P.
+
 ### Organize the sidebar
 
 - **Reorder:** drag a service or pin up or down within its account, or right-click it for **Move Up** and **Move Down**. Shortcut numbers follow the new order.
@@ -57,6 +65,13 @@ Right-click an account's header.
 - **Remove** offers two choices. **Remove and Keep Sign-In** leaves its website data on your Mac. **Remove and Sign Out** deletes MailPort's cookies and website data for that account.
 
 Neither choice changes your Google account, email, or calendar.
+
+### Open email links in MailPort
+
+1. Open Settings (⌘,) and select **Make MailPort the Default Mail App**. macOS may ask you to confirm.
+2. Under **Open email links with**, choose an account, or keep **Ask each time**.
+
+Links open as a draft for you to review in Gmail. Nothing sends until you send it.
 
 ### Turn on Calendar reminders
 
@@ -90,6 +105,10 @@ MailPort checks for new versions automatically and asks before installing one. Y
 | Next or previous view | ⇧⌘] or ⇧⌘[ |
 | New email | ⌘N |
 | Pin the current page | ⌘D |
+| Find in page | ⌘F |
+| Find next or previous | ⌘G or ⇧⌘G |
+| Zoom in, out, or reset | ⌘=, ⌘−, or ⌘0 |
+| Print | ⌘P |
 | Reload | ⌘R |
 | Return to the service's home page | ⇧⌘H |
 | Close the current view | ⌘W |

@@ -28,6 +28,9 @@ final class EmbeddedWorkspace: ObservableObject {
     @Published private(set) var pins: [WorkspacePin] = []
     @Published private(set) var collapsedAccounts: Set<UUID> = []
     @Published private(set) var showsShortcutHints = true
+    @Published private(set) var accountsNeedingSignIn: Set<UUID> = []
+    @Published private(set) var serviceZoom: [GoogleService: Double] = [:]
+    @Published private(set) var defaultMailAccountID: UUID?
     @Published var layout: WorkspaceLayout = .sidebar {
         didSet { preferences.set(layout.rawValue, forKey: "workspaceLayout") }
     }
@@ -148,6 +151,12 @@ final class EmbeddedWorkspace: ObservableObject {
                 pins = restored.filter { pin in pin.isValid && accounts.contains { $0.id == pin.accountID } }
             }
             showsShortcutHints = preferences.object(forKey: "showsShortcutHints") as? Bool ?? true
+            defaultMailAccountID = preferences.string(forKey: "defaultMailAccount").flatMap(UUID.init(uuidString:))
+                .flatMap { id in accounts.contains { $0.id == id } ? id : nil }
+            let zoom = preferences.dictionary(forKey: "serviceZoom") as? [String: Double] ?? [:]
+            serviceZoom = zoom.reduce(into: [:]) { result, entry in
+                if let service = GoogleService(rawValue: entry.key), PageZoom.isValid(entry.value) { result[service] = entry.value }
+            }
             let collapsed = preferences.stringArray(forKey: "collapsedAccounts") ?? []
             collapsedAccounts = Set(collapsed.compactMap(UUID.init(uuidString:))).intersection(accounts.map(\.id))
             if let saved = preferences.data(forKey: "openTabs"), let restored = try? JSONDecoder().decode([WorkspaceTab].self, from: saved) {
@@ -180,7 +189,7 @@ final class EmbeddedWorkspace: ObservableObject {
         currentBrowser = nil
         browsers.removeAll(); calendarMonitors.removeAll(); stores.removeAll()
         accounts.removeAll(); tabs.removeAll(); recentlyClosed.removeAll(); tabActivity.removeAll()
-        pins.removeAll(); collapsedAccounts.removeAll()
+        pins.removeAll(); collapsedAccounts.removeAll(); accountsNeedingSignIn.removeAll(); defaultMailAccountID = nil
         selection = nil; lastAccountID = nil
     }
 
@@ -261,6 +270,8 @@ final class EmbeddedWorkspace: ObservableObject {
         stores[account.id] = store
         let browser = BrowserTab(account: account, service: tab.service, store: store)
         browser.onMailto = { [weak self] url in self?.receive(url) }
+        browser.onSignInChange = { [weak self] needed in self?.updateSignIn(needed, for: account.id) }
+        browser.webView.pageZoom = serviceZoom[tab.service] ?? PageZoom.standard
         if tab.service == .gmail {
             browser.onActivity = { [weak self] sample in self?.tabActivity[tab] = sample }
         }
@@ -279,9 +290,40 @@ final class EmbeddedWorkspace: ObservableObject {
                 // This page has no native notification bridge, so it cannot duplicate alerts.
                 let monitor = BrowserTab(account: account, service: .calendar, store: store, activityOnly: true)
                 monitor.onActivity = { [weak self] sample in self?.tabActivity[tab] = sample }
+                monitor.onSignInChange = { [weak self] needed in self?.updateSignIn(needed, for: account.id) }
                 calendarMonitors[account.id] = monitor
             }
         }
+    }
+
+    func updateSignIn(_ needed: Bool, for accountID: UUID) {
+        guard needed != accountsNeedingSignIn.contains(accountID) else { return }
+        if needed { accountsNeedingSignIn.insert(accountID); return }
+        accountsNeedingSignIn.remove(accountID)
+        for (tab, browser) in browsers where tab.accountID == accountID { browser.leaveSignIn() }
+        calendarMonitors[accountID]?.leaveSignIn()
+    }
+
+    func zoom(by direction: Int) {
+        guard let service = selection?.service else { return }
+        setZoom(PageZoom.stepped(from: serviceZoom[service] ?? PageZoom.standard, by: direction), for: service)
+    }
+
+    func resetZoom() {
+        if let service = selection?.service { setZoom(PageZoom.standard, for: service) }
+    }
+
+    func setZoom(_ zoom: Double, for service: GoogleService) {
+        guard !security.blocksAccess, PageZoom.isValid(zoom) else { return }
+        serviceZoom[service] = zoom
+        preferences.set(Dictionary(uniqueKeysWithValues: serviceZoom.map { ($0.key.rawValue, $0.value) }), forKey: "serviceZoom")
+        for (tab, browser) in browsers where tab.service == service { browser.webView.pageZoom = zoom }
+    }
+
+    func setDefaultMailAccount(_ id: UUID?) {
+        guard !security.blocksAccess else { return }
+        defaultMailAccountID = id
+        preferences.set(id?.uuidString, forKey: "defaultMailAccount")
     }
 
     func prepareCalendarReminders() {
@@ -426,6 +468,8 @@ final class EmbeddedWorkspace: ObservableObject {
             stores.removeValue(forKey: account.id)
             pins.removeAll { $0.accountID == account.id }
             persistPins()
+            accountsNeedingSignIn.remove(account.id)
+            if defaultMailAccountID == account.id { setDefaultMailAccount(nil) }
             if collapsedAccounts.remove(account.id) != nil { persistCollapsedAccounts() }
             if selection?.accountID == account.id {
                 browserChanges = nil
@@ -481,8 +525,11 @@ final class EmbeddedWorkspace: ObservableObject {
             return
         }
         if url.scheme?.lowercased() == "mailto" {
-            do { _ = try GmailCompose(mailto: url); pendingCompose = url }
-            catch { errorMessage = error.localizedDescription }
+            do {
+                _ = try GmailCompose(mailto: url)
+                pendingCompose = url
+                if let account = accounts.first(where: { $0.id == defaultMailAccountID }) { composePending(with: account) }
+            } catch { errorMessage = error.localizedDescription }
         }
         showWindow()
     }
