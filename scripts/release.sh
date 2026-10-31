@@ -63,6 +63,7 @@ else
     ! git rev-parse -q --verify "refs/tags/$tag" >/dev/null || fail "tag $tag already exists; choose a new version"
 fi
 
+start_commit="$(git rev-parse HEAD)"
 work_dir="$(mktemp -d)"
 plist_backup="$work_dir/Info.plist"
 cp "$plist" "$plist_backup"
@@ -132,10 +133,10 @@ spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg
 xcrun stapler validate "$dmg"
 
 step "Publishing $tag to $repo"
-if [[ "$version" != "$current_version" ]]; then
-    git add "$plist"
-    git commit --quiet -m "Release $version"
-fi
+# The tag must name what was built, so only a version bump may land during a run.
+git diff --quiet "$start_commit" HEAD -- . ":(exclude)$plist" || fail "other commits landed during this run; run it again so the release includes them"
+git add "$plist"
+git diff --cached --quiet -- "$plist" || git commit --quiet -m "Release $version"
 restore_plist=false
 git tag -a "$tag" -m "MailPort $version"
 git push --quiet --atomic origin main "$tag"
