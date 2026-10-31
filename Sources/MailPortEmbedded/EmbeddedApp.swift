@@ -79,6 +79,9 @@ struct EmbeddedApp: App {
                 Button("Find Next") { model.currentBrowser?.find() }.keyboardShortcut("g").disabled(!canUsePage)
                 Button("Find Previous") { model.currentBrowser?.find(backwards: true) }.keyboardShortcut("g", modifiers: [.command, .shift]).disabled(!canUsePage)
             }
+            CommandGroup(replacing: .help) {
+                Button("MailPort Help") { NSWorkspace.shared.open(URL(string: "https://github.com/yepher/mail-port#readme")!) }
+            }
             CommandGroup(replacing: .printItem) {
                 Button("Print…") { model.currentBrowser?.printPage() }.keyboardShortcut("p").disabled(!canUsePage)
             }
