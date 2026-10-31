@@ -6,7 +6,7 @@ A native macOS app that puts Gmail, Calendar, and other Google services directly
 
 ## Run
 
-Open `dist/MailPort.app`. It requires Apple silicon and macOS 14 or later. The build is signed locally and is not notarized for public distribution.
+Download the latest disk image from GitHub Releases, open it, and drag MailPort to Applications. For a local build, open `dist/MailPort.app`. MailPort requires Apple silicon and macOS 14 or later. Local builds are signed locally and are not notarized; only release builds can be shared with other Macs.
 
 This is the sole active MailPort implementation. Add accounts and sign in on Google's page inside each account's Mail tab. The label alone does not authenticate an account. Existing accounts and sign-ins from the single-window preview are preserved.
 
@@ -38,7 +38,42 @@ With Xcode and Swift 6:
 ./scripts/build.sh --test
 ```
 
-Set `MAILPORT_BUILD_DIR` to place build caches elsewhere. `MAILPORT_PREVIEW_DATA_DIR` selects an isolated test profile in debug builds only; release builds ignore it. WebKit stores remain isolated by the app bundle identifier and account UUID.
+Set `MAILPORT_BUILD_DIR` to place build caches elsewhere. `MAILPORT_DIST_DIR` changes where the app is written, and `MAILPORT_SIGN_IDENTITY` signs with a named certificate instead of locally. `MAILPORT_PREVIEW_DATA_DIR` selects an isolated test profile in debug builds only; release builds ignore it. WebKit stores remain isolated by the app bundle identifier and account UUID.
+
+## Xcode
+
+Open `MailPort.xcodeproj` and select the **MailPort** scheme. ⌘R runs **MailPort Dev** and ⌘U runs all the Swift tests. No Apple certificate is needed; the project signs locally.
+
+Debug builds use the bundle identifier `com.chriswilson.mailport.embedded.securityqa`, which selects a separate profile. Accounts, sign-ins, preferences, and the PIN lock are kept apart from your installed MailPort, so you will sign in again the first time. Both apps can run at once. The Release configuration uses the real identifier and your real profile, so do not switch the Run action to Release for testing.
+
+Debug builds do not use the hardened runtime. To test that behavior, use a release build from `./scripts/release.sh --dry-run`.
+
+`project.yml` is the source of `MailPort.xcodeproj`. After adding, removing, or renaming files, run `xcodegen generate` (install with `brew install xcodegen`). Published releases come from `scripts/release.sh`, not from Xcode.
+
+## Releasing
+
+`scripts/release.sh` runs the tests, signs and notarizes the app, packages a stapled disk image in `dist/release/`, tags the commit, and publishes a GitHub release. Versions must stay on `0.x.y`.
+
+One-time setup on the release Mac:
+
+1. Create a **Developer ID Application** certificate in Xcode → Settings → Accounts → Manage Certificates. This needs a paid Apple Developer Program membership, and only the team's Account Holder can create one.
+2. Create an app-specific password at [account.apple.com](https://account.apple.com), then save the notary credentials:
+
+   ```sh
+   xcrun notarytool store-credentials mailport-notary --apple-id YOUR_APPLE_ID --team-id YOUR_TEAM_ID
+   ```
+
+Commit your work on `main`, then run one of:
+
+```sh
+./scripts/release.sh --dry-run   # Build and package only; no Apple or GitHub steps
+./scripts/release.sh             # Release the version in Resources/Info.plist
+./scripts/release.sh 0.6.1       # Bump the version and build number, then release
+```
+
+A failed run before publishing restores `Resources/Info.plist` and changes nothing in git. `MAILPORT_SIGN_IDENTITY`, `MAILPORT_NOTARY_PROFILE`, and `MAILPORT_RELEASE_REPO` override the certificate, notary profile, and target repository.
+
+Release downloads follow the repository's visibility, so people without access to a private repository cannot download them. Moving from a local build to a Developer ID build changes the app's signature: macOS may ask again for Keychain access, notifications, camera, and microphone. Later Developer ID releases keep the same signing identity.
 
 The single-window implementation lives at the repository root. Run builds and tests here; `SingleWindowPreview` is no longer a separate project. The retired multi-window launcher is archived outside the active repository.
 
