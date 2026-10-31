@@ -108,7 +108,7 @@ MailPort has no server and doesn't use a Google API. Its only other connection i
 - Passkeys don't work.
 - Unread counts come from loaded Mail pages, and there's no Dock badge. They can disappear while you're signed out or offline.
 - Calendar dots need Google Calendar in English.
-- Mailplane-style extensions and attachment tools aren't included.
+- Browser extensions and attachment tools aren't included.
 
 ## Contributing
 
