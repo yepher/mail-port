@@ -34,6 +34,19 @@ final class WorkspaceSidebarTests: XCTestCase {
         return (model, directory, preferences)
     }
 
+    @MainActor func testPopOutFramePersistsAndInvalidSavedGeometryIsIgnored() async throws {
+        let (model, directory, preferences) = try await fixture()
+        let frame = CGRect(x: -800, y: 200, width: 640, height: 360)
+        model.setPopOutVideoFrame(frame)
+        let reopened = EmbeddedWorkspace(testingDirectory: directory, securityEngine: PINLockEngine(store: FixturePINStore()))
+        for _ in 0..<200 where reopened.security.checking { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertEqual(reopened.savedPopOutVideoFrame, frame)
+        preferences.set([0, 0, -1, 360], forKey: "popOutVideoFrame")
+        XCTAssertNil(model.savedPopOutVideoFrame)
+        preferences.set([0, 0], forKey: "popOutVideoFrame")
+        XCTAssertNil(model.savedPopOutVideoFrame)
+    }
+
     @MainActor func testPopOutOpacityPersistsAndCannotChangeWhileLocked() async throws {
         let (model, directory, preferences) = try await fixture()
         XCTAssertEqual(model.popOutVideoOpacity, 1)

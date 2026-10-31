@@ -413,6 +413,17 @@ final class EmbeddedWorkspace: ObservableObject {
         }
     }
 
+    var savedPopOutVideoFrame: NSRect? {
+        guard let values = preferences.array(forKey: "popOutVideoFrame") as? [Double], values.count == 4 else { return nil }
+        let frame = NSRect(x: values[0], y: values[1], width: values[2], height: values[3])
+        return FloatingVideoPlacement.isValid(frame) ? frame : nil
+    }
+
+    func setPopOutVideoFrame(_ frame: NSRect) {
+        guard !security.blocksAccess, FloatingVideoPlacement.isValid(frame) else { return }
+        preferences.set([Double(frame.origin.x), Double(frame.origin.y), Double(frame.width), Double(frame.height)], forKey: "popOutVideoFrame")
+    }
+
     func setPopOutVideoOpacity(_ value: Double) {
         guard !security.blocksAccess else { return }
         popOutVideoOpacity = VideoOpacity.normalized(value)
@@ -442,8 +453,9 @@ final class EmbeddedWorkspace: ObservableObject {
                 guard !self.security.blocksAccess, self.tabs.contains(tab), self.browsers[tab] === browser else { return }
                 self.closeFloatingVideo()
                 self.poppedOutVideo = tab
-                let controller = FloatingVideoController(browser: browser, frame: frame, screen: self.mainWindow?.screen, opacity: self.popOutVideoOpacity)
+                let controller = FloatingVideoController(browser: browser, frame: frame, screen: self.mainWindow?.screen, opacity: self.popOutVideoOpacity, savedFrame: self.savedPopOutVideoFrame)
                 self.floatingVideoController = controller
+                controller.onFrameChange = { [weak self] frame in self?.setPopOutVideoFrame(frame) }
                 controller.onOpacityChange = { [weak self] value in self?.setPopOutVideoOpacity(value) }
                 controller.onReturn = { [weak self] in self?.floatingVideoController = nil; self?.poppedOutVideo = nil }
                 controller.onToggle = { [weak self] in self?.controlVideo("toggle", tabID: tab.id) }

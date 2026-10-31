@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 public struct VideoPlaybackState: Equatable, Sendable {
     public let hasVideo: Bool
@@ -30,5 +31,30 @@ public enum VideoOpacity {
     public static let minimum = 0.15
     public static func normalized(_ value: Double) -> Double {
         value.isFinite ? min(1, max(minimum, value)) : 1
+    }
+}
+
+public enum FloatingVideoPlacement {
+    public static func isValid(_ frame: CGRect) -> Bool {
+        [frame.origin.x, frame.origin.y, frame.width, frame.height].allSatisfy { $0.isFinite }
+            && abs(frame.origin.x) <= 1_000_000 && abs(frame.origin.y) <= 1_000_000
+            && frame.width >= 32 && frame.height >= 32 && frame.width <= 32768 && frame.height <= 32768
+    }
+
+    /// Keep the last width and top-left corner, adapting height for the current video.
+    public static func restore(_ saved: CGRect, aspect: CGFloat, screens: [CGRect], fallback: CGRect) -> CGRect? {
+        guard isValid(saved), aspect.isFinite, aspect > 0 else { return nil }
+        let available = screens.filter { isValid($0) }
+        let screen = available.max { left, right in
+            let a = left.intersection(saved), b = right.intersection(saved)
+            return (a.isNull ? 0 : a.width * a.height) < (b.isNull ? 0 : b.width * b.height)
+        }.flatMap { $0.intersects(saved) ? $0 : nil } ?? fallback
+        guard isValid(screen) else { return nil }
+        let maximumWidth = min(screen.width, screen.height * aspect)
+        let width = min(maximumWidth, max(min(280, maximumWidth), saved.width))
+        let height = width / aspect
+        guard width > 0, height > 0 else { return nil }
+        return CGRect(x: min(max(saved.minX, screen.minX), screen.maxX - width),
+                      y: min(max(saved.maxY - height, screen.minY), screen.maxY - height), width: width, height: height)
     }
 }

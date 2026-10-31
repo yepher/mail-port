@@ -180,6 +180,7 @@ final class FloatingVideoController: NSWindowController, NSWindowDelegate {
     private var returned = false
     var onReturn: (() -> Void)?
     var onToggle: (() -> Void)?
+    var onFrameChange: ((NSRect) -> Void)?
     private let playButton = FloatingVideoButton()
     private var stateChanges: AnyCancellable?
     private let opacitySlider = NSSlider()
@@ -187,7 +188,7 @@ final class FloatingVideoController: NSWindowController, NSWindowDelegate {
     private(set) var opacity = 1.0
     var onOpacityChange: ((Double) -> Void)?
 
-    init(browser: BrowserTab, frame: VideoFrame, screen: NSScreen?, opacity: Double = 1) {
+    init(browser: BrowserTab, frame: VideoFrame, screen: NSScreen?, opacity: Double = 1, savedFrame: NSRect? = nil) {
         webView = browser.webView
         originalSize = webView.bounds.size
         let crop = VideoCropView(webView: webView, video: frame)
@@ -205,7 +206,12 @@ final class FloatingVideoController: NSWindowController, NSWindowDelegate {
         panel.contentAspectRatio = crop.frame.size
         panel.contentMinSize = NSSize(width: 280, height: 280 * crop.frame.height / crop.frame.width)
         let visible = (screen ?? NSScreen.main)?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 800)
-        panel.setFrameOrigin(NSPoint(x: visible.maxX - panel.frame.width - 24, y: visible.minY + 24))
+        if let savedFrame, let restored = FloatingVideoPlacement.restore(savedFrame,
+            aspect: crop.frame.width / crop.frame.height, screens: NSScreen.screens.map(\.visibleFrame), fallback: visible) {
+            panel.setFrame(restored, display: false)
+        } else {
+            panel.setFrameOrigin(NSPoint(x: visible.maxX - panel.frame.width - 24, y: visible.minY + 24))
+        }
         super.init(window: panel)
         panel.delegate = self
         let close = FloatingVideoButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "Close floating video")!, target: self, action: #selector(returnVideo))
@@ -265,10 +271,17 @@ final class FloatingVideoController: NSWindowController, NSWindowDelegate {
 
     @objc private func togglePlayback() { onToggle?() }
     @objc private func returnVideo() { close() }
+    func windowDidMove(_ notification: Notification) { saveFrame() }
+    func windowDidResize(_ notification: Notification) { saveFrame() }
+    private func saveFrame() {
+        guard !returned, let frame = window?.frame, FloatingVideoPlacement.isValid(frame) else { return }
+        onFrameChange?(frame)
+    }
     func windowWillClose(_ notification: Notification) { restore() }
     override func close() { restore(); super.close() }
     private func restore() {
         guard !returned else { return }
+        saveFrame()
         returned = true
         stateChanges = nil
         webView.removeFromSuperview()
@@ -276,6 +289,7 @@ final class FloatingVideoController: NSWindowController, NSWindowDelegate {
         webView.frame = NSRect(origin: .zero, size: originalSize)
         let callback = onReturn; onReturn = nil; onToggle = nil
         onOpacityChange = nil
+        onFrameChange = nil
         callback?()
     }
 }
