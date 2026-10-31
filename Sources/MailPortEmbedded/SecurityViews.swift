@@ -40,6 +40,7 @@ struct PINLockScreen: View {
 }
 
 struct SecuritySettingsView: View {
+    @ObservedObject var model: EmbeddedWorkspace
     @ObservedObject var security: AppSecurity
     @Environment(\.dismiss) private var dismiss
     @State private var wantsPIN = false
@@ -49,7 +50,10 @@ struct SecuritySettingsView: View {
     @State private var acknowledged = false
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Label("MailPort security", systemImage: "lock.shield").font(.title2.bold())
+            Label("MailPort settings", systemImage: "gearshape").font(.title2.bold())
+            Toggle("Show keyboard shortcuts next to views", isOn: Binding(get: { model.showsShortcutHints }, set: { model.setShowsShortcutHints($0) }))
+            Divider()
+            Label("Security", systemImage: "lock.shield").font(.headline)
             Text("Require a PIN after your Mac sleeps and whenever MailPort launches.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if security.enabled { enabledControls } else { setupControls }

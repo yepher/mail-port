@@ -22,14 +22,7 @@ public enum LocalDataReset {
                 throw PINLockError.invalidState
             }
         }
-        for id in Set(websiteIdentifiers) {
-            await clearStore(id: id)
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                WKWebsiteDataStore.remove(forIdentifier: id) { error in
-                    if let error { continuation.resume(throwing: error) } else { continuation.resume() }
-                }
-            }
-        }
+        for id in Set(websiteIdentifiers) { try await eraseWebsiteData(id: id) }
         if includeDefaultStore {
             await clearStore(id: nil)
             if let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
@@ -45,6 +38,29 @@ public enum LocalDataReset {
         if FileManager.default.fileExists(atPath: directory.path) { try FileManager.default.removeItem(at: directory) }
         UserDefaults.standard.removePersistentDomain(forName: preferenceDomain)
         URLCache.shared.removeAllCachedResponses()
+    }
+
+    /// Every web view using this store must already be released. WebKit shuts a
+    /// store down asynchronously, so removal is retried before it counts as failed.
+    @MainActor public static func eraseWebsiteData(id: UUID) async throws {
+        await clearStore(id: id)
+        for attempt in 1...8 {
+            do {
+                try await removeStore(id: id)
+                return
+            } catch {
+                if attempt == 8 { throw error }
+                try await Task.sleep(for: .milliseconds(250))
+            }
+        }
+    }
+
+    @MainActor private static func removeStore(id: UUID) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            WKWebsiteDataStore.remove(forIdentifier: id) { error in
+                if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+            }
+        }
     }
 
     @MainActor private static func clearStore(id: UUID?) async {

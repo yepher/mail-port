@@ -13,9 +13,8 @@ struct EmbeddedWorkspaceView: View {
     @ObservedObject var model: EmbeddedWorkspace
     @ObservedObject private var security: AppSecurity
     init(model: EmbeddedWorkspace) { self.model = model; self.security = model.security }
-    @ObservedObject private var notifications = MailPortNotifications.shared
     @Environment(\.openWindow) private var openWindow
-    @State private var removing: Account?
+    @State private var sidebarVisibility = NavigationSplitViewVisibility.all
     @State private var tabFrames: [WorkspaceTab: CGRect] = [:]
 
     var body: some View {
@@ -31,13 +30,55 @@ struct EmbeddedWorkspaceView: View {
     }
 
     private var workspaceContent: some View {
+        Group {
+            if model.layout == .sidebar {
+                NavigationSplitView(columnVisibility: $sidebarVisibility) {
+                    WorkspaceSidebar(model: model)
+                } detail: { detail }
+            } else {
+                VStack(spacing: 0) {
+                    tabs
+                    Divider()
+                    detail
+                }
+            }
+        }
+        .onAppear {
+            let action = openWindow
+            model.reopenWindow = { action(id: "mailport") }
+        }
+        .sheet(isPresented: $model.showingSecuritySettings) { SecuritySettingsView(model: model, security: security) }
+        .sheet(isPresented: $model.showingAccountEditor) { EmbeddedAccountEditor(model: model, existing: model.editingAccount) }
+        .sheet(isPresented: $model.showingNotifications) { NotificationsSetup(model: model) }
+        .sheet(isPresented: $model.showingHelp) { PreviewHelp() }
+        .sheet(isPresented: $model.showingQuickSwitch) { QuickSwitcherView(model: model) }
+        .sheet(isPresented: $model.showingPinEditor) { PinEditor(model: model) }
+        .sheet(isPresented: Binding(get: { model.pendingCompose != nil }, set: { if !$0 { model.pendingCompose = nil } })) {
+            VStack(alignment: .leading, spacing: 18) {
+                Text("Choose a sending account").font(.title2.bold())
+                Text("Open this email link as a draft. Gmail will let you review it before sending.").foregroundStyle(.secondary)
+                ForEach(model.accounts) { account in
+                    Button(account.name) { model.composePending(with: account) }.buttonStyle(.bordered)
+                }
+                if model.accounts.isEmpty { Text("Add an account, then open the link again.") }
+                HStack { Spacer(); Button("Cancel") { model.pendingCompose = nil }.keyboardShortcut(.cancelAction) }
+            }.padding(28).frame(width: 430)
+        }
+        .alert("MailPort", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+            Button("OK") { model.errorMessage = nil }
+        } message: { Text(model.errorMessage ?? "") }
+        .confirmationDialog("Remove \(model.accountPendingRemoval?.name ?? "account") from MailPort?", isPresented: Binding(get: { model.accountPendingRemoval != nil }, set: { if !$0 { model.accountPendingRemoval = nil } })) {
+            Button("Remove and Keep Sign-In", role: .destructive) { if let account = model.accountPendingRemoval { model.removeAccount(account) } }
+            Button("Remove and Sign Out", role: .destructive) { if let account = model.accountPendingRemoval { Task { await model.signOutAndRemoveAccount(account) } } }
+        } message: { Text("Its tabs and pins are removed either way. Keeping the sign-in leaves its website data on this Mac. Signing out deletes MailPort’s cookies and website data for it. Your Google account, email, and calendar are not affected.") }
+    }
+
+    private var detail: some View {
         VStack(spacing: 0) {
             if security.didReset {
                 Text("MailPort was reset after 10 incorrect PIN entries. Its local accounts and saved sign-ins have been cleared.")
                     .font(.callout).padding(12).frame(maxWidth: .infinity).background(.orange.opacity(0.1))
             }
-            tabs
-            Divider()
             if let browser = model.currentBrowser {
                 BrowserPane(browser: browser)
             } else {
@@ -54,14 +95,8 @@ struct EmbeddedWorkspaceView: View {
                     }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            Divider()
-            HStack {
-                Label("Single-window preview", systemImage: "rectangle.inset.filled").font(.system(size: 10, weight: .medium))
-                Text(notifications.permission == "granted" ? "Calendar reminders enabled while MailPort is running." : "Enable notifications for Calendar reminders.").font(.system(size: 10)).foregroundStyle(.secondary)
-                Spacer()
-                Button("Details") { model.showingHelp = true }.buttonStyle(.link).font(.system(size: 10))
-            }.padding(.horizontal, 14).padding(.vertical, 7).background(.bar)
         }
+        .navigationTitle("")
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
                 Button { model.currentBrowser?.back() } label: { Label("Back", systemImage: "chevron.left") }
@@ -72,50 +107,20 @@ struct EmbeddedWorkspaceView: View {
                     .disabled(model.currentBrowser == nil)
             }
             ToolbarItem(placement: .principal) {
-                if let browser = model.currentBrowser { BrowserLocation(browser: browser) }
-                else { Text("MailPort").font(.headline) }
+                if let browser = model.currentBrowser, let account = model.selectedAccount, let tab = model.selection {
+                    WorkspaceIdentity(browser: browser, account: account, service: tab.service)
+                } else { Text("MailPort").font(.headline) }
             }
-            ToolbarItemGroup(placement: .automatic) {
-                Button { model.showingNotifications = true } label: { Label("Notifications", systemImage: notifications.permission == "granted" ? "bell.badge" : "bell") }
-                Button { model.home() } label: { Label("Inbox / Calendar Home", systemImage: "house") }.disabled(model.selection == nil)
-                Button { model.compose() } label: { Label("Compose", systemImage: "square.and.pencil") }.disabled(model.selectedAccount == nil)
-                Menu {
-                    if let account = model.selectedAccount {
-                        ForEach(GoogleService.allCases) { service in
-                            Button { model.open(service, account: account) } label: { Label(service.title, systemImage: service.symbol) }
-                        }
-                        Divider()
-                    }
-                    accountServices
-                } label: { Label("Google Apps", systemImage: "square.grid.2x2") }.disabled(model.accounts.isEmpty)
-                Button { model.addAccount() } label: { Label("Add Account", systemImage: "person.crop.circle.badge.plus") }.disabled(!model.storageAvailable)
-            }
-        }
-        .onAppear {
-            let action = openWindow
-            model.reopenWindow = { action(id: "mailport") }
-        }
-        .sheet(isPresented: $model.showingSecuritySettings) { SecuritySettingsView(security: security) }
-        .sheet(isPresented: $model.showingAccountEditor) { EmbeddedAccountEditor(model: model, existing: model.editingAccount) }
-        .sheet(isPresented: $model.showingNotifications) { NotificationsSetup(model: model) }
-        .sheet(isPresented: $model.showingHelp) { PreviewHelp() }
-        .sheet(isPresented: Binding(get: { model.pendingCompose != nil }, set: { if !$0 { model.pendingCompose = nil } })) {
-            VStack(alignment: .leading, spacing: 18) {
-                Text("Choose a sending account").font(.title2.bold())
-                Text("Open this email link as a draft. Gmail will let you review it before sending.").foregroundStyle(.secondary)
-                ForEach(model.accounts) { account in
-                    Button(account.name) { model.composePending(with: account) }.buttonStyle(.bordered)
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button { model.showingPinEditor = true } label: { Label("Pin Current Page", systemImage: "pin") }
+                    .disabled(!model.canPinCurrentPage).help("Pin this page to the sidebar (⌘D)")
+                // Gmail has its own Compose button, so this appears only on other services.
+                if model.selection != nil, model.selection?.service != .gmail {
+                    Button { model.compose() } label: { Label("New Email", systemImage: "square.and.pencil").labelStyle(.titleAndIcon) }
+                        .help("Compose in Gmail (⌘N)")
                 }
-                if model.accounts.isEmpty { Text("Add an account, then open the link again.") }
-                HStack { Spacer(); Button("Cancel") { model.pendingCompose = nil }.keyboardShortcut(.cancelAction) }
-            }.padding(28).frame(width: 430)
+            }
         }
-        .alert("MailPort", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
-            Button("OK") { model.errorMessage = nil }
-        } message: { Text(model.errorMessage ?? "") }
-        .confirmationDialog("Remove \(removing?.name ?? "account") from this preview?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
-            Button("Remove Account", role: .destructive) { if let removing { model.removeAccount(removing) }; removing = nil }
-        } message: { Text("Its tabs will close. Its saved website session and the original MailPort app stay intact.") }
     }
 
     private var tabs: some View {
@@ -132,10 +137,11 @@ struct EmbeddedWorkspaceView: View {
                         if let account = model.accounts.first(where: { $0.id == tab.accountID }) {
                             HStack(spacing: 0) {
                               HStack(spacing: 8) {
-                                    Image(systemName: tab.service.symbol).foregroundStyle(Color(nsColor: account.color.nsColor)).font(.system(size: 13))
+                                    Image(systemName: tab.service.symbol).foregroundStyle(Color(nsColor: account.nsColor)).font(.system(size: 13))
                                     Text(account.name).font(.system(size: 12, weight: model.selection == tab ? .semibold : .regular)).lineLimit(1)
-                                    Text(tab.service == .gmail ? "Mail" : tab.service.title).font(.system(size: 10)).foregroundStyle(.secondary)
+                                    Text(tab.service.shortTitle).font(.system(size: 10)).foregroundStyle(.secondary)
                                     TabActivityBadge(activity: model.tabActivity[tab], service: tab.service, now: now)
+                                    ShortcutHint(number: model.shortcutNumber(for: tab))
                               }.padding(.leading, 13).padding(.trailing, 8).frame(height: 38).contentShape(Rectangle())
                                 .onTapGesture { model.select(tab) }
                                 .accessibilityElement(children: .combine)
@@ -149,15 +155,15 @@ struct EmbeddedWorkspaceView: View {
                                   .help("Close \(account.name) — \(tab.service.title)")
                                   .accessibilityLabel("Close \(account.name) \(tab.service.title) tab")
                             }
-                            .background(model.selection == tab ? Color(nsColor: account.color.nsColor).opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                            .background(model.selection == tab ? Color(nsColor: account.nsColor).opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
                             .overlay(alignment: .bottom) {
-                                if model.selection == tab { RoundedRectangle(cornerRadius: 1).fill(Color(nsColor: account.color.nsColor)).frame(height: 2).padding(.horizontal, 10) }
+                                if model.selection == tab { RoundedRectangle(cornerRadius: 1).fill(Color(nsColor: account.nsColor)).frame(height: 2).padding(.horizontal, 10) }
                             }
                             .contextMenu {
                                 Button("Close Tab") { model.close(tab) }
                                 Divider()
                                 Button("Edit \(account.name)…") { model.editAccount(account) }
-                                Button("Remove Account…", role: .destructive) { removing = account }
+                                Button("Remove Account…", role: .destructive) { model.accountPendingRemoval = account }
                             }
                             .background(GeometryReader { proxy in
                                 Color.clear.preference(key: TabFrames.self, value: [tab: proxy.frame(in: .named("tabStrip"))])
@@ -175,8 +181,12 @@ struct EmbeddedWorkspaceView: View {
                 .coordinateSpace(name: "tabStrip")
                 .onPreferenceChange(TabFrames.self) { tabFrames = $0 }
             Divider().frame(height: 26)
-            Button { model.addAccount() } label: { Image(systemName: "plus").frame(width: 42, height: 42) }
-                .buttonStyle(.plain).help("Add a Google account").disabled(!model.storageAvailable)
+            Menu {
+                accountServices
+                if !model.accounts.isEmpty { Divider() }
+                Button("Add Account…") { model.addAccount() }.disabled(!model.storageAvailable)
+            } label: { Image(systemName: "plus").frame(width: 42, height: 42).contentShape(Rectangle()) }
+                .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).help("Open a service or add an account")
         }.background(.bar)
     }
 
@@ -191,13 +201,27 @@ struct EmbeddedWorkspaceView: View {
     }
 }
 
-private struct BrowserLocation: View {
+private struct WorkspaceIdentity: View {
     @ObservedObject var browser: BrowserTab
+    let account: Account
+    let service: GoogleService
+    private var host: String { browser.url?.host ?? "Loading…" }
+
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: browser.url?.scheme == "https" ? "lock" : "globe").font(.system(size: 10))
-            Text(browser.url?.host ?? "Loading…").font(.system(size: 11)).lineLimit(1)
-        }.foregroundStyle(.secondary).help(browser.url?.absoluteString ?? "")
+        HStack(spacing: 8) {
+            Circle().fill(Color(nsColor: account.nsColor)).frame(width: 9, height: 9)
+            VStack(spacing: 0) {
+                Text("\(account.name) · \(service.title)").font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                // The host stays visible so sign-in pages can be checked at a glance.
+                HStack(spacing: 4) {
+                    Image(systemName: browser.url?.scheme == "https" ? "lock" : "globe").font(.system(size: 8))
+                    Text(account.email.isEmpty ? host : "\(account.email) · \(host)").font(.system(size: 10)).lineLimit(1).truncationMode(.middle)
+                }.foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: 380)
+        .help(browser.url?.absoluteString ?? "")
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -225,7 +249,7 @@ private struct WebContent: NSViewRepresentable {
     func updateNSView(_ view: WKWebView, context: Context) {}
 }
 
-private struct TabActivityBadge: View {
+struct TabActivityBadge: View {
     let activity: TabActivity?
     let service: GoogleService
     let now: Date

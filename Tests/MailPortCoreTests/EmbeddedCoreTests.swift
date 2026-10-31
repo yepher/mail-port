@@ -112,4 +112,62 @@ final class EmbeddedCoreTests: XCTestCase {
     private func temporaryDirectory() -> URL {
         FileManager.default.temporaryDirectory.appendingPathComponent("MailPortEmbeddedTests-\(UUID().uuidString)", isDirectory: true)
     }
+
+    func testHexColorsAcceptHTMLFormsAndRejectEverythingElse() {
+        XCTAssertEqual(HexColor("#1a73e8")?.code, "#1A73E8")
+        XCTAssertEqual(HexColor("  1A73E8 ")?.code, "#1A73E8")
+        XCTAssertEqual(HexColor("#F80")?.code, "#FF8800")
+        XCTAssertEqual(HexColor("#123456")?.red, 0x12)
+        for text in ["", "#", "#12", "#1234", "#12345", "#1234567", "#12345678", "#GGGGGG", "red", "##123456", "#１２３"] {
+            XCTAssertNil(HexColor(text), text)
+        }
+    }
+
+    func testWheelValuesRoundToCodesAndStayInRange() {
+        XCTAssertEqual(HexColor(red: 1, green: 0, blue: 0.5).code, "#FF0080")
+        XCTAssertEqual(HexColor(red: 1.4, green: -0.2, blue: 0).code, "#FF0000")
+    }
+
+    func testLabelsUseWhicheverTextIsMoreReadable() throws {
+        XCTAssertTrue(try XCTUnwrap(HexColor("#FFFF00")).prefersDarkText)
+        XCTAssertTrue(try XCTUnwrap(HexColor("#FFFFFF")).prefersDarkText)
+        XCTAssertFalse(try XCTUnwrap(HexColor("#000000")).prefersDarkText)
+        XCTAssertFalse(try XCTUnwrap(HexColor("#1A237E")).prefersDarkText)
+    }
+
+    func testCustomColorRoundTripsAndNormalizes() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = AccountStore(directory: directory)
+        try store.save([Account(name: "Work", color: .purple, customColor: "#f80")])
+        let loaded = try XCTUnwrap(store.load().first)
+        XCTAssertEqual(loaded.customColor, "#FF8800")
+        XCTAssertEqual(loaded.color, .purple)
+    }
+
+    func testAccountListsWithoutACustomColorStillLoad() throws {
+        let json = #"[{"id":"11111111-1111-4111-8111-111111111111","name":"Work","email":"","color":"teal"}]"#
+        let account = try XCTUnwrap(JSONDecoder().decode([Account].self, from: Data(json.utf8)).first)
+        XCTAssertNil(account.customColor)
+        XCTAssertNil(account.hexColor)
+        XCTAssertEqual(account.color, .teal)
+    }
+
+    func testBadSavedColorFallsBackInsteadOfBlockingTheAccountList() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = AccountStore(directory: directory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let json = #"[{"id":"11111111-1111-4111-8111-111111111111","name":"Work","email":"","color":"teal","customColor":"not-a-color"}]"#
+        try Data(json.utf8).write(to: store.fileURL)
+        let account = try XCTUnwrap(store.load().first)
+        XCTAssertNil(account.customColor)
+        XCTAssertEqual(account.color, .teal)
+    }
+
+    func testOlderBuildsCanStillDecodeAnAccountWithACustomColor() throws {
+        struct OlderAccount: Decodable { let id: UUID; let name: String; let email: String; let color: AccountColor }
+        let data = try JSONEncoder().encode(Account(name: "Work", color: .rose, customColor: "#123456"))
+        XCTAssertEqual(try JSONDecoder().decode(OlderAccount.self, from: data).color, .rose)
+    }
 }

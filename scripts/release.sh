@@ -1,8 +1,8 @@
 #!/bin/bash
 # Builds, signs, notarizes, and publishes MailPort to GitHub Releases.
 #
-#   ./scripts/release.sh             Release the version in Resources/Info.plist
-#   ./scripts/release.sh 0.6.1       Bump to 0.6.1, then release it
+#   ./scripts/release.sh             Release the next patch version after the latest tag
+#   ./scripts/release.sh 0.7.0       Bump to 0.7.0, then release it
 #   ./scripts/release.sh --dry-run   Build and package only; no Apple or GitHub steps
 #
 # Setup and environment overrides are described in README.md under Releasing.
@@ -30,11 +30,25 @@ done
 
 current_version="$(plutil -extract CFBundleShortVersionString raw "$plist")"
 current_build="$(plutil -extract CFBundleVersion raw "$plist")"
-version="${version:-$current_version}"
+
+# Without a version, add one to the latest release. An unreleased higher version
+# already set in Info.plist wins, so the version never moves backward.
+next_version() {
+    local latest
+    latest="$(git tag --list 'v0.*' | sed -n 's/^v\(0\.[0-9]*\.[0-9]*\)$/\1/p' | sort -V | tail -1)"
+    if [[ -z "$latest" ]]; then printf '%s\n' "$current_version"; return; fi
+    local next="${latest%.*}.$((${latest##*.} + 1))"
+    printf '%s\n%s\n' "$next" "$current_version" | sort -V | tail -1
+}
+
+if [[ -z "$version" ]]; then
+    git fetch --quiet origin --tags 2>/dev/null || $dry_run || fail "couldn't read release tags from origin"
+    version="$(next_version)"
+fi
 [[ "$version" =~ ^0\.[0-9]+\.[0-9]+$ ]] || fail "version must look like 0.x.y, got '$version'"
 tag="v$version"
 
-step "Checking prerequisites"
+step "Checking prerequisites for $version"
 if $dry_run; then
     sign_identity="-"
 else

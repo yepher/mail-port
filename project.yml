@@ -56,22 +56,19 @@ targets:
         DEVELOPMENT_TEAM: WDCGJTU726
         ENABLE_HARDENED_RUNTIME: YES
       configs:
-        # The .securityqa suffix selects an isolated profile in debug builds; see EmbeddedWorkspace.
+        # Keeps Debug apart in macOS. EmbeddedWorkspace separately refuses the real profile in debug builds.
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: com.chriswilson.mailport.embedded.securityqa
+          MAILPORT_DISPLAY_NAME: MailPort Dev
         Release:
           PRODUCT_BUNDLE_IDENTIFIER: com.chriswilson.mailport.embedded
+          MAILPORT_DISPLAY_NAME: MailPort
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
     postCompileScripts:
-      - name: Finish app bundle
+      - name: Generate app icon
         basedOnDependencyAnalysis: false
         script: |
           set -euo pipefail
-          plist="$TARGET_BUILD_DIR/$INFOPLIST_PATH"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $PRODUCT_BUNDLE_IDENTIFIER" "$plist"
-          if [ "$CONFIGURATION" = "Debug" ]; then
-            /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName MailPort Dev" "$plist"
-          fi
           icon="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/MailPort.icns"
           if [ ! -f "$icon" ]; then
             mkdir -p "$TARGET_TEMP_DIR/MailPort.iconset"

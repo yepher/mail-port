@@ -33,6 +33,24 @@ public struct WorkspaceTab: Identifiable, Hashable, Codable, Sendable {
         return nil
     }
 
+    /// Sidebar order: accounts in list order, each keeping its tabs' relative order.
+    public static func grouped(_ tabs: [WorkspaceTab], by accounts: [Account]) -> [WorkspaceTab] {
+        accounts.flatMap { account in tabs.filter { $0.accountID == account.id } }
+    }
+
+    /// The tab one step away in the same account, for Move Up and Move Down.
+    public static func neighbor(of tab: WorkspaceTab, in tabs: [WorkspaceTab], offset: Int) -> WorkspaceTab? {
+        let siblings = tabs.filter { $0.accountID == tab.accountID }
+        guard let index = siblings.firstIndex(of: tab), siblings.indices.contains(index + offset) else { return nil }
+        return siblings[index + offset]
+    }
+
+    /// The ⌘1–9 number for a tab in the given order, or nil past the ninth.
+    public static func shortcutNumber(of tab: WorkspaceTab, in tabs: [WorkspaceTab]) -> Int? {
+        guard let index = tabs.firstIndex(of: tab), index < 9 else { return nil }
+        return index + 1
+    }
+
     public static func pinnedTabs(for accounts: [Account]) -> [WorkspaceTab] {
         accounts.flatMap { account in
             [

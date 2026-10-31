@@ -32,6 +32,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     private var authenticating = false
     private var openingAttachment = false
     private var discardedForSecurity = false
+    private var loadRequested = false
     private let navigationLogger = Logger(subsystem: "com.chriswilson.mailport.embedded", category: "BrowserNavigation")
 
     private var observations: [NSKeyValueObservation] = []
@@ -70,13 +71,15 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
                 await MailPortNotifications.shared.refresh()
                 guard let self else { return }
                 self.notificationBridge.updatePermission()
-                self.load(service.url)
+                // A pin or compose request may have arrived during the refresh.
+                if !self.loadRequested { self.load(service.url) }
             }
         } else { load(service.url) }
     }
 
     func load(_ url: URL) {
         guard !discardedForSecurity else { return }
+        loadRequested = true
         guard isSecureWebURL(url) else {
             if url.scheme?.lowercased() == "mailto" { onMailto?(url) }
             else { errorMessage = "MailPort can load only secure web pages." }

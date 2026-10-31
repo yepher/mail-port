@@ -5,13 +5,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>MailPort</string>
+	<string>$(MAILPORT_DISPLAY_NAME)</string>
 	<key>CFBundleExecutable</key>
 	<string>MailPort</string>
 	<key>CFBundleIconFile</key>
 	<string>MailPort.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.chriswilson.mailport.embedded</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

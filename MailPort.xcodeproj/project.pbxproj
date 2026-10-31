@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		024CDE773EC540315734EF6C /* WebNotificationBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85883367DCD92552E5FC5F0B /* WebNotificationBridge.swift */; };
 		08E3AC649706768CE09EB887 /* GoogleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F493D0D90D9E3BC92778D2F /* GoogleService.swift */; };
+		0D9DDF8EE07E0752A722A8E4 /* HexColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C6F8F6A069CEF2961E41C5 /* HexColor.swift */; };
+		18B295784A97BABFEA4C68C4 /* QuickSwitch.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF6529FFFE31FE5588FCB954 /* QuickSwitch.swift */; };
 		1A4E548386E1F925F2B478F7 /* EmbeddedWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CC5358895BFE47CB6C82723 /* EmbeddedWebView.swift */; };
 		1CF8A1ACD4A04EF2705862D5 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = A796AC8737B3FC05148D2C4B /* Account.swift */; };
 		1D85CA61953FFE83A833CB4F /* MailPortNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = A798B3A79A025DC2AE4A2BFF /* MailPortNotifications.swift */; };
@@ -26,23 +28,28 @@
 		7358E7B28A7EC1FCD9F74B4F /* TabActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98F4707D712E1B8018D3D066 /* TabActivityTests.swift */; };
 		7DAC619BC36B6D7CCE646A4A /* SecurityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B412E7924DA1FB249B8D3F6C /* SecurityViews.swift */; };
 		82A8EC640AD55D0D4520CFB2 /* PINLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8BF2579E9F516506906FA6 /* PINLockTests.swift */; };
+		8797DA7BD9EC979BCE36BA35 /* WorkspaceSidebarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0543294F1195DD243413A7C2 /* WorkspaceSidebarTests.swift */; };
 		8929BFFA38B43BB736DA518B /* libMailPortCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */; };
 		9178E564B788B92CC7569A4B /* AppSecurityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D6CA6C5C429FD4DE000D63C /* AppSecurityTests.swift */; };
 		925AD56301191B4E869B7603 /* TabActivityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD894A4A5C039D43139D129C /* TabActivityBridge.swift */; };
 		95878881E6CDBAA15EB7466D /* BrowserIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B3651654916A1DBDC3D25B /* BrowserIdentity.swift */; };
+		966F8F4BEC490A4F5AEA209B /* WorkspaceSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1E6CC0461A31076C40435 /* WorkspaceSidebar.swift */; };
 		A1E230B8246EDBE5E76690FE /* WebNotificationMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2040025A6CD1B5641269AFF6 /* WebNotificationMessage.swift */; };
 		A3F51387CEC2F6F3DC6CCDB1 /* WebNotificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 995F812918F343A86128DB65 /* WebNotificationTests.swift */; };
 		A86DF19237C14A024CF9E40A /* BrowserLinkRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED48C60F6A41C365D22E4AA /* BrowserLinkRoutingTests.swift */; };
 		A8C25C73D8A76D426E0F8D9B /* BrowserIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0C557486BE2FC14DD683E6 /* BrowserIdentityTests.swift */; };
 		AAFFE8CD2FE710F548CFB173 /* EmbeddedSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8D43D5580218B147D8C18A /* EmbeddedSetup.swift */; };
+		AC157D43348D6F8677B62A20 /* WorkspaceNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C2DDC586AF731FC2854514C /* WorkspaceNavigationTests.swift */; };
 		B20A539CE753D40A9ACFFCBB /* TabReorderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F41A79D91C725EA5C38DF929 /* TabReorderingTests.swift */; };
 		B9BEF2DC254F2060F72396D6 /* BrowserLinkRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 080D34A1103E41D2D768B992 /* BrowserLinkRouting.swift */; };
 		BB0165E58E035A082B624081 /* EmbeddedApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A75C3BADDA3A9DF6FAC90BC8 /* EmbeddedApp.swift */; };
 		BB4D7FB0B44E311EDF747CE2 /* PINLockEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E37E0B156A217996992FBDA6 /* PINLockEngine.swift */; };
 		BF97FE9AA8563AD3275246D0 /* TabClosingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DE6018611FAC4C97006520D /* TabClosingTests.swift */; };
+		CB33BE43347D0BEE8F6A0FF7 /* WorkspacePin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EC74623562558A49CCED29D /* WorkspacePin.swift */; };
 		CC77DCB12DA1096F87135590 /* GmailCompose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0EF13258A768492CD2840A /* GmailCompose.swift */; };
 		CD9D84A9E0FBDB40147016B5 /* libMailPortSecurity.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DE9D96863BF1E20B6106D395 /* libMailPortSecurity.a */; };
 		D9FE5E45785008457574E66B /* NotificationBridge.js in Resources */ = {isa = PBXBuildFile; fileRef = C9B0F5BDD7978127AF92CDD8 /* NotificationBridge.js */; };
+		DFAF825D41E7165A95215876 /* QuickSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FACCDA15101A7799D8BFD17 /* QuickSwitcherView.swift */; };
 		F143CAF226B1A7B683A43B5C /* WorkspaceTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA220AF94AABA60833038D09 /* WorkspaceTab.swift */; };
 /* End PBXBuildFile section */
 
@@ -86,6 +93,7 @@
 
 /* Begin PBXFileReference section */
 		0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libMailPortCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		0543294F1195DD243413A7C2 /* WorkspaceSidebarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSidebarTests.swift; sourceTree = "<group>"; };
 		080D34A1103E41D2D768B992 /* BrowserLinkRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserLinkRouting.swift; sourceTree = "<group>"; };
 		0A2AB001E9F3C29AB9EC144B /* MailPortCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MailPortCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1923421427A4680301247026 /* NotificationsSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsSetup.swift; sourceTree = "<group>"; };
@@ -104,16 +112,19 @@
 		5F493D0D90D9E3BC92778D2F /* GoogleService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleService.swift; sourceTree = "<group>"; };
 		61F157D647D552B06917D139 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		6DE6018611FAC4C97006520D /* TabClosingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabClosingTests.swift; sourceTree = "<group>"; };
+		6FACCDA15101A7799D8BFD17 /* QuickSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSwitcherView.swift; sourceTree = "<group>"; };
 		77B3651654916A1DBDC3D25B /* BrowserIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserIdentity.swift; sourceTree = "<group>"; };
 		77BF505FAEE4CB1FC4FDA850 /* EmbeddedCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedCoreTests.swift; sourceTree = "<group>"; };
 		7B4BC0B57397618885A4FF34 /* test-tab-activity.cjs */ = {isa = PBXFileReference; path = "test-tab-activity.cjs"; sourceTree = "<group>"; };
 		7E8175C9A9BBEC8228AA6A00 /* MailPort.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MailPort.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7EC74623562558A49CCED29D /* WorkspacePin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacePin.swift; sourceTree = "<group>"; };
 		7ED48C60F6A41C365D22E4AA /* BrowserLinkRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserLinkRoutingTests.swift; sourceTree = "<group>"; };
 		817127550BD5350D2089F6B5 /* EmbeddedWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedWorkspaceView.swift; sourceTree = "<group>"; };
 		85883367DCD92552E5FC5F0B /* WebNotificationBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebNotificationBridge.swift; sourceTree = "<group>"; };
 		87641FCBF1B788076E5B0B3A /* AppSecurity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSecurity.swift; sourceTree = "<group>"; };
 		98F4707D712E1B8018D3D066 /* TabActivityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabActivityTests.swift; sourceTree = "<group>"; };
 		995F812918F343A86128DB65 /* WebNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebNotificationTests.swift; sourceTree = "<group>"; };
+		9C2DDC586AF731FC2854514C /* WorkspaceNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceNavigationTests.swift; sourceTree = "<group>"; };
 		9DE255287BCD9FEEDE571C2D /* LocalDataReset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDataReset.swift; sourceTree = "<group>"; };
 		A27960EBCECCF096B6929BA6 /* test-notification-bridge.cjs */ = {isa = PBXFileReference; path = "test-notification-bridge.cjs"; sourceTree = "<group>"; };
 		A36E6DDB10D0E6BECF1DB843 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -126,12 +137,15 @@
 		C0E13B5EA7B9F7825479BCDC /* TabActivity.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = TabActivity.js; sourceTree = "<group>"; };
 		C9B0F5BDD7978127AF92CDD8 /* NotificationBridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = NotificationBridge.js; sourceTree = "<group>"; };
 		C9DAF4EE8C34AC2B9CDEAFC1 /* project.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = project.yml; sourceTree = "<group>"; };
+		D0A1E6CC0461A31076C40435 /* WorkspaceSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSidebar.swift; sourceTree = "<group>"; };
 		D1B82EBF40C9446051E93EB0 /* build.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build.sh; sourceTree = "<group>"; };
+		D2C6F8F6A069CEF2961E41C5 /* HexColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HexColor.swift; sourceTree = "<group>"; };
 		DE9D96863BF1E20B6106D395 /* libMailPortSecurity.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libMailPortSecurity.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		E2C140DE07BAC971334340C4 /* release.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = release.sh; sourceTree = "<group>"; };
 		E37E0B156A217996992FBDA6 /* PINLockEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINLockEngine.swift; sourceTree = "<group>"; };
 		E5E11ADE61D01F731DD94D7C /* MailPortSecurityTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MailPortSecurityTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EA220AF94AABA60833038D09 /* WorkspaceTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceTab.swift; sourceTree = "<group>"; };
+		EF6529FFFE31FE5588FCB954 /* QuickSwitch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSwitch.swift; sourceTree = "<group>"; };
 		F41A79D91C725EA5C38DF929 /* TabReorderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabReorderingTests.swift; sourceTree = "<group>"; };
 		FD894A4A5C039D43139D129C /* TabActivityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabActivityBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -221,6 +235,7 @@
 				6DE6018611FAC4C97006520D /* TabClosingTests.swift */,
 				F41A79D91C725EA5C38DF929 /* TabReorderingTests.swift */,
 				995F812918F343A86128DB65 /* WebNotificationTests.swift */,
+				9C2DDC586AF731FC2854514C /* WorkspaceNavigationTests.swift */,
 			);
 			path = MailPortCoreTests;
 			sourceTree = "<group>";
@@ -250,9 +265,11 @@
 				817127550BD5350D2089F6B5 /* EmbeddedWorkspaceView.swift */,
 				A798B3A79A025DC2AE4A2BFF /* MailPortNotifications.swift */,
 				1923421427A4680301247026 /* NotificationsSetup.swift */,
+				6FACCDA15101A7799D8BFD17 /* QuickSwitcherView.swift */,
 				B412E7924DA1FB249B8D3F6C /* SecurityViews.swift */,
 				FD894A4A5C039D43139D129C /* TabActivityBridge.swift */,
 				85883367DCD92552E5FC5F0B /* WebNotificationBridge.swift */,
+				D0A1E6CC0461A31076C40435 /* WorkspaceSidebar.swift */,
 				C485CE8DC87F778D96C6686E /* Resources */,
 			);
 			path = MailPortEmbedded;
@@ -262,6 +279,7 @@
 			isa = PBXGroup;
 			children = (
 				1D6CA6C5C429FD4DE000D63C /* AppSecurityTests.swift */,
+				0543294F1195DD243413A7C2 /* WorkspaceSidebarTests.swift */,
 			);
 			path = MailPortEmbeddedTests;
 			sourceTree = "<group>";
@@ -309,8 +327,11 @@
 				080D34A1103E41D2D768B992 /* BrowserLinkRouting.swift */,
 				3C0EF13258A768492CD2840A /* GmailCompose.swift */,
 				5F493D0D90D9E3BC92778D2F /* GoogleService.swift */,
+				D2C6F8F6A069CEF2961E41C5 /* HexColor.swift */,
+				EF6529FFFE31FE5588FCB954 /* QuickSwitch.swift */,
 				325430994E30A62DD6956256 /* TabActivity.swift */,
 				2040025A6CD1B5641269AFF6 /* WebNotificationMessage.swift */,
+				7EC74623562558A49CCED29D /* WorkspacePin.swift */,
 				EA220AF94AABA60833038D09 /* WorkspaceTab.swift */,
 			);
 			path = MailPortCore;
@@ -324,7 +345,7 @@
 			buildConfigurationList = 3582F8A3AD02B4DD9ED2F713 /* Build configuration list for PBXNativeTarget "MailPort" */;
 			buildPhases = (
 				05B0440B8326178FCC879F4C /* Sources */,
-				698EE0DBB0FD695AA6B7E0CA /* Finish app bundle */,
+				A9112820DD07A5CAF3048F80 /* Generate app icon */,
 				3C699B5572D12070CC57AB0B /* Resources */,
 				EA6FBB1C61905D078BC76E33 /* Frameworks */,
 			);
@@ -521,7 +542,7 @@
 			shellPath = /bin/sh;
 			shellScript = "ditto \"${SCRIPT_INPUT_FILE_0}\" \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 		};
-		698EE0DBB0FD695AA6B7E0CA /* Finish app bundle */ = {
+		A9112820DD07A5CAF3048F80 /* Generate app icon */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -531,14 +552,14 @@
 			);
 			inputPaths = (
 			);
-			name = "Finish app bundle";
+			name = "Generate app icon";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\nplist=\"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleIdentifier $PRODUCT_BUNDLE_IDENTIFIER\" \"$plist\"\nif [ \"$CONFIGURATION\" = \"Debug\" ]; then\n  /usr/libexec/PlistBuddy -c \"Set :CFBundleDisplayName MailPort Dev\" \"$plist\"\nfi\nicon=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/MailPort.icns\"\nif [ ! -f \"$icon\" ]; then\n  mkdir -p \"$TARGET_TEMP_DIR/MailPort.iconset\"\n  env -i HOME=\"$HOME\" PATH=\"$PATH\" xcrun --sdk macosx swift -module-cache-path \"$TARGET_TEMP_DIR/ModuleCache\" \\\n    \"$SRCROOT/scripts/make-icon.swift\" \"$TARGET_TEMP_DIR/MailPort.iconset\" \"$icon\"\nfi\n";
+			shellScript = "set -euo pipefail\nicon=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/MailPort.icns\"\nif [ ! -f \"$icon\" ]; then\n  mkdir -p \"$TARGET_TEMP_DIR/MailPort.iconset\"\n  env -i HOME=\"$HOME\" PATH=\"$PATH\" xcrun --sdk macosx swift -module-cache-path \"$TARGET_TEMP_DIR/ModuleCache\" \\\n    \"$SRCROOT/scripts/make-icon.swift\" \"$TARGET_TEMP_DIR/MailPort.iconset\" \"$icon\"\nfi\n";
 		};
 		D68E48BE2E4F2CFBD49D3FF0 /* Copy Swift Objective-C Interface Header */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -571,9 +592,11 @@
 				1F519380051D15155025A600 /* EmbeddedWorkspaceView.swift in Sources */,
 				1D85CA61953FFE83A833CB4F /* MailPortNotifications.swift in Sources */,
 				4E0C8D95E459A60FCCA1339E /* NotificationsSetup.swift in Sources */,
+				DFAF825D41E7165A95215876 /* QuickSwitcherView.swift in Sources */,
 				7DAC619BC36B6D7CCE646A4A /* SecurityViews.swift in Sources */,
 				925AD56301191B4E869B7603 /* TabActivityBridge.swift in Sources */,
 				024CDE773EC540315734EF6C /* WebNotificationBridge.swift in Sources */,
+				966F8F4BEC490A4F5AEA209B /* WorkspaceSidebar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -582,6 +605,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9178E564B788B92CC7569A4B /* AppSecurityTests.swift in Sources */,
+				8797DA7BD9EC979BCE36BA35 /* WorkspaceSidebarTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -605,6 +629,7 @@
 				BF97FE9AA8563AD3275246D0 /* TabClosingTests.swift in Sources */,
 				B20A539CE753D40A9ACFFCBB /* TabReorderingTests.swift in Sources */,
 				A3F51387CEC2F6F3DC6CCDB1 /* WebNotificationTests.swift in Sources */,
+				AC157D43348D6F8677B62A20 /* WorkspaceNavigationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -618,8 +643,11 @@
 				B9BEF2DC254F2060F72396D6 /* BrowserLinkRouting.swift in Sources */,
 				CC77DCB12DA1096F87135590 /* GmailCompose.swift in Sources */,
 				08E3AC649706768CE09EB887 /* GoogleService.swift in Sources */,
+				0D9DDF8EE07E0752A722A8E4 /* HexColor.swift in Sources */,
+				18B295784A97BABFEA4C68C4 /* QuickSwitch.swift in Sources */,
 				5AFA7A3F076262C8937CD392 /* TabActivity.swift in Sources */,
 				A1E230B8246EDBE5E76690FE /* WebNotificationMessage.swift in Sources */,
+				CB33BE43347D0BEE8F6A0FF7 /* WorkspacePin.swift in Sources */,
 				F143CAF226B1A7B683A43B5C /* WorkspaceTab.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -815,6 +843,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MAILPORT_DISPLAY_NAME = "MailPort Dev";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -1012,6 +1041,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MAILPORT_DISPLAY_NAME = MailPort;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",

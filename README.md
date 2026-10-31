@@ -12,13 +12,17 @@ This is the sole active MailPort implementation. Add accounts and sign in on Goo
 
 Each account uses an identifier-backed persistent `WKWebsiteDataStore`. Its Mail and Calendar tabs share the same store; other accounts have separate stores. WebKit owns website data storage. The preview does not export credentials or copy Chrome cookies. Account labels are saved in `~/Library/Application Support/MailPortPreview/accounts.json`.
 
-Use the toolbar to go back, forward, reload, return to the service home page, compose, or open another Google service in an in-app tab. Right-click an account tab to edit its label/color or remove its tabs. Removing account tabs preserves the website session.
+The sidebar groups each account's services and pinned pages, with unread counts and the Calendar event dot beside them. Select an account header to collapse it. ⌃⌘S hides the sidebar, and View → Use Tab Bar switches to the compact tab strip. The toolbar shows the current account, service, email label, and page host. Use it to go back, forward, reload, or pin the current page. On services other than Gmail it also offers New Email.
 
-Drag any tab left or right over another tab to rearrange it. Each tab moves independently, including Mail and Calendar tabs for the same account. Reordering keeps the active page loaded and saves the new order for the next launch.
+⌘T opens Go To, which finds any account, service, or pinned page by typing, such as "personal cal". ⌘D pins the current page under its account; a pin stays on that service's own Google address. Drag services and pins up or down to reorder them within their account, or right-click for Move Up, Move Down, and removal. The shortcut numbers follow the new order, and removed services return through Open Service or ⇧⌘T. Pins are saved in MailPort's preferences and include the page address, so a pinned Gmail search keeps its search text there.
 
-Every tab has an × close button and a Close Tab context-menu action. ⌘W closes the active tab; ⇧⌘T reopens the last closed tab. Closing a tab preserves its account sign-in. Open tabs are restored across app restarts, including an intentionally empty tab strip. Reopen services for any saved account from the Google Apps menu.
+Right-click an account header to edit its label and color or remove it. Besides the five preset colors, the editor offers the macOS color panel and an HTML color code field such as `#1A73E8`. Remove and Keep Sign-In leaves its website data on this Mac. Remove and Sign Out deletes MailPort's cookies and website data for that account. Neither changes your Google account, email, or calendar.
 
-Shortcuts: ⌘1–9 select tabs; ⇧⌘[ / ⇧⌘] switch tabs; ⌘R reloads; ⌘N composes; ⇧⌘A adds an account. External website links open in the system browser; Google service pages and sign-in navigation remain in the app. Popups are handled in the current tab.
+In the tab strip, drag any tab left or right over another tab to rearrange it. Each tab moves independently, including Mail and Calendar tabs for the same account. Reordering keeps the active page loaded and saves the new order for the next launch.
+
+Every tab has an × close button and a Close Tab context-menu action. ⌘W closes the active tab; ⇧⌘T reopens the last closed tab. Closing a tab preserves its account sign-in. Open tabs are restored across app restarts, including an intentionally empty tab strip. Reopen services from Open Service in the sidebar or the + menu in the tab strip.
+
+Shortcuts: ⌘1–9 select tabs in the order shown, and the first nine show their shortcut beside them unless you turn that off in Settings; ⇧⌘[ / ⇧⌘] switch tabs; ⌘R reloads; ⌘N composes; ⇧⌘A adds an account. External website links open in the system browser; Google service pages and sign-in navigation remain in the app. Popups are handled in the current tab.
 
 ## Current limits
 
@@ -38,19 +42,19 @@ With Xcode and Swift 6:
 ./scripts/build.sh --test
 ```
 
-Set `MAILPORT_BUILD_DIR` to place build caches elsewhere. `MAILPORT_DIST_DIR` changes where the app is written, and `MAILPORT_SIGN_IDENTITY` signs with a named certificate instead of locally. `MAILPORT_PREVIEW_DATA_DIR` selects an isolated test profile in debug builds only; release builds ignore it. WebKit stores remain isolated by the app bundle identifier and account UUID.
+Set `MAILPORT_BUILD_DIR` to place build caches elsewhere. `MAILPORT_DIST_DIR` changes where the app is written, and `MAILPORT_SIGN_IDENTITY` signs with a named certificate instead of locally. Debug builds never open the real profile: they use `MailPortSecurityTest-securityqa` in Application Support, or the folder named by `MAILPORT_PREVIEW_DATA_DIR`. Release builds ignore that variable. WebKit stores remain isolated by the app bundle identifier and account UUID.
 
 ## Xcode
 
 Open `MailPort.xcodeproj` and select the **MailPort** scheme. ⌘R runs **MailPort Dev** and ⌘U runs all the Swift tests. The project signs with an Apple Development certificate for team `WDCGJTU726`, so Xcode must be signed in to that team.
 
-Debug builds use the bundle identifier `com.chriswilson.mailport.embedded.securityqa`, which selects a separate profile. Accounts, sign-ins, preferences, and the PIN lock are kept apart from your installed MailPort, so you will sign in again the first time. Both apps can run at once. The Release configuration uses the real identifier and your real profile, so do not switch the Run action to Release for testing.
+Debug builds use the bundle identifier `com.chriswilson.mailport.embedded.securityqa`, and the app also refuses to open the real profile in any debug build. Accounts, sign-ins, preferences, and the PIN lock are kept apart from your installed MailPort, so you will sign in again the first time. Both apps can run at once. The Release configuration uses the real identifier and your real profile, so do not switch the Run action to Release for testing.
 
 `project.yml` is the source of `MailPort.xcodeproj`. After adding, removing, or renaming files, run `xcodegen generate` (install with `brew install xcodegen`). Published releases come from `scripts/release.sh`, not from Xcode.
 
 ## Releasing
 
-`scripts/release.sh` runs the tests, signs and notarizes the app, packages a stapled disk image in `dist/release/`, tags the commit, and publishes a GitHub release. Versions must stay on `0.x.y`.
+`scripts/release.sh` runs the tests, signs and notarizes the app, packages a stapled disk image in `dist/release/`, tags the commit, and publishes a GitHub release. Versions must stay on `0.x.y`. With no version given, it adds one to the last number of the latest `v0.x.y` tag, unless `Resources/Info.plist` already has a higher version. Either way the build number goes up when the version changes.
 
 One-time setup on the release Mac:
 
@@ -65,8 +69,8 @@ Commit your work on `main`, then run one of:
 
 ```sh
 ./scripts/release.sh --dry-run   # Build and package only; no Apple or GitHub steps
-./scripts/release.sh             # Release the version in Resources/Info.plist
-./scripts/release.sh 0.6.1       # Bump the version and build number, then release
+./scripts/release.sh             # Release the next patch version after the latest tag
+./scripts/release.sh 0.7.0       # Release a specific version
 ```
 
 A failed run before publishing restores `Resources/Info.plist` and changes nothing in git. `MAILPORT_SIGN_IDENTITY`, `MAILPORT_NOTARY_PROFILE`, and `MAILPORT_RELEASE_REPO` override the certificate, notary profile, and target repository.
@@ -93,7 +97,7 @@ All 29 tests passed. Native UI checks moved a tab from first to last, verified t
 
 ## Version 0.2.4
 
-Gemini is available in Google Apps, every account submenu, and Navigate. It opens gemini.google.com/app as an in-app tab using that account’s existing website data store. Gemini tabs support closing, reopening, rearranging, and restoring across launches like other service tabs.
+Gemini is available in Open Service, Go To, and Navigate. It opens gemini.google.com/app as an in-app tab using that account’s existing website data store. Gemini tabs support closing, reopening, rearranging, and restoring across launches like other service tabs.
 
 Validation: all 29 tests passed after adding Gemini. The Google Apps menu showed Gemini for the current account and all account submenus. Selecting it opened Google Gemini at gemini.google.com/app in the same app window with the existing selected-account sign-in. No prompt submission was needed for this check.
 
@@ -104,7 +108,7 @@ The single-window application is now the main MailPort project and builds as `di
 
 ## Calendar notifications (version 0.4.0)
 
-Open the toolbar bell or MailPort → Notifications… and choose Enable notifications. Allow alerts in macOS, then choose an account and Open Calendar settings. In Google Calendar, select General → Notification settings → Desktop notifications. Repeat for each account and check that the calendars/events you use have reminder rules. Send test reminder checks native Mac delivery; a real Google event is required to validate the complete reminder path.
+Select Turn On Reminders in the sidebar, or open MailPort → Notifications…, and choose Enable notifications. Allow alerts in macOS, then choose an account and Open Calendar settings. In Google Calendar, select General → Notification settings → Desktop notifications. Repeat for each account and check that the calendars/events you use have reminder rules. Send test reminder checks native Mac delivery; a real Google event is required to validate the complete reminder path.
 
 When enabled, Calendar pages are kept alive for all saved accounts, including accounts whose Calendar tab is closed. Notifications identify the account; clicking one opens that account’s Calendar tab. Gmail web notifications are also bridged when its page is loaded and Gmail desktop notifications are enabled.
 
@@ -139,7 +143,7 @@ node --test scripts/test-tab-activity.cjs scripts/test-notification-bridge.cjs
 
 ## Colab and NotebookLM (version 0.5.1)
 
-Colab and NotebookLM are available in Google Apps, every account submenu, and Navigate. They open as normal in-app tabs using the selected account’s existing website data store, with closing, reopening, rearranging, and restoration across launches.
+Colab and NotebookLM are available in Open Service, Go To, and Navigate. They open as normal in-app tabs using the selected account’s existing website data store, with closing, reopening, rearranging, and restoration across launches.
 
 Colab opens https://colab.research.google.com/. NotebookLM opens https://notebook.google.com/, Google’s current destination for the former notebooklm.google.com address. The MailPort label remains NotebookLM for easy recognition; Google’s website may show the [Gemini Notebook name](https://workspaceupdates.googleblog.com/2026/07/notebooklm-now-gemini-notebook.html). Service access still depends on the account’s Google permissions.
 

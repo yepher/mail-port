@@ -18,6 +18,9 @@ public enum GoogleService: String, CaseIterable, Codable, Identifiable, Sendable
         }
     }
 
+    /// Account rows already say whose mail it is, so Gmail reads as Mail there.
+    public var shortTitle: String { self == .gmail ? "Mail" : title }
+
     public var subtitle: String {
         switch self {
         case .gmail: "Your inbox, exactly as you know it."

@@ -47,13 +47,21 @@ struct EmbeddedApp: App {
     var body: some Scene {
         Window("MailPort", id: "mailport") {
             EmbeddedWorkspaceView(model: model)
-                .frame(minWidth: 1000, minHeight: 700)
-                .background(WindowReader { model.mainWindow = $0 })
+                .frame(minWidth: 800, minHeight: 560)
+                .background(WindowReader { window in
+                    window.titleVisibility = .hidden
+                    model.mainWindow = window
+                })
                 .onAppear { delegate.model = model; delegate.configureCloseShortcut() }
         }
         .defaultSize(width: 1380, height: 900)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
+            SidebarCommands()
+            CommandGroup(after: .sidebar) {
+                Toggle("Use Tab Bar", isOn: Binding(get: { model.layout == .tabBar }, set: { model.layout = $0 ? .tabBar : .sidebar }))
+                    .disabled(model.security.blocksAccess)
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Message") { model.compose() }.keyboardShortcut("n").disabled(model.security.blocksAccess)
                 Button("Add Account…") { model.addAccount() }.keyboardShortcut("a", modifiers: [.command, .shift]).disabled(model.security.blocksAccess)
@@ -79,6 +87,11 @@ struct EmbeddedApp: App {
                 }
             }
             CommandMenu("Navigate") {
+                Button("Go To…") { model.showingQuickSwitch = true }.keyboardShortcut("t")
+                    .disabled(model.security.blocksAccess || model.accounts.isEmpty)
+                Button("Pin Current Page…") { model.showingPinEditor = true }.keyboardShortcut("d")
+                    .disabled(model.security.blocksAccess || !model.canPinCurrentPage)
+                Divider()
                 Button("Reload Page") { model.currentBrowser?.reload() }.keyboardShortcut("r").disabled(model.security.blocksAccess)
                 Button("Service Home") { model.home() }.keyboardShortcut("h", modifiers: [.command, .shift]).disabled(model.security.blocksAccess)
                 Divider()
