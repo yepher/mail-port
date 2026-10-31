@@ -42,11 +42,9 @@ Set `MAILPORT_BUILD_DIR` to place build caches elsewhere. `MAILPORT_DIST_DIR` ch
 
 ## Xcode
 
-Open `MailPort.xcodeproj` and select the **MailPort** scheme. ⌘R runs **MailPort Dev** and ⌘U runs all the Swift tests. No Apple certificate is needed; the project signs locally.
+Open `MailPort.xcodeproj` and select the **MailPort** scheme. ⌘R runs **MailPort Dev** and ⌘U runs all the Swift tests. The project signs with an Apple Development certificate for team `WDCGJTU726`, so Xcode must be signed in to that team.
 
 Debug builds use the bundle identifier `com.chriswilson.mailport.embedded.securityqa`, which selects a separate profile. Accounts, sign-ins, preferences, and the PIN lock are kept apart from your installed MailPort, so you will sign in again the first time. Both apps can run at once. The Release configuration uses the real identifier and your real profile, so do not switch the Run action to Release for testing.
-
-Debug builds do not use the hardened runtime. To test that behavior, use a release build from `./scripts/release.sh --dry-run`.
 
 `project.yml` is the source of `MailPort.xcodeproj`. After adding, removing, or renaming files, run `xcodegen generate` (install with `brew install xcodegen`). Published releases come from `scripts/release.sh`, not from Xcode.
 

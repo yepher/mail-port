@@ -106,7 +106,7 @@
 		6DE6018611FAC4C97006520D /* TabClosingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabClosingTests.swift; sourceTree = "<group>"; };
 		77B3651654916A1DBDC3D25B /* BrowserIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserIdentity.swift; sourceTree = "<group>"; };
 		77BF505FAEE4CB1FC4FDA850 /* EmbeddedCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedCoreTests.swift; sourceTree = "<group>"; };
-		7B4BC0B57397618885A4FF34 /* test-tab-activity.cjs */ = {isa = PBXFileReference; lastKnownFileType = text; path = "test-tab-activity.cjs"; sourceTree = "<group>"; };
+		7B4BC0B57397618885A4FF34 /* test-tab-activity.cjs */ = {isa = PBXFileReference; path = "test-tab-activity.cjs"; sourceTree = "<group>"; };
 		7E8175C9A9BBEC8228AA6A00 /* MailPort.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MailPort.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7ED48C60F6A41C365D22E4AA /* BrowserLinkRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserLinkRoutingTests.swift; sourceTree = "<group>"; };
 		817127550BD5350D2089F6B5 /* EmbeddedWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedWorkspaceView.swift; sourceTree = "<group>"; };
@@ -115,7 +115,7 @@
 		98F4707D712E1B8018D3D066 /* TabActivityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabActivityTests.swift; sourceTree = "<group>"; };
 		995F812918F343A86128DB65 /* WebNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebNotificationTests.swift; sourceTree = "<group>"; };
 		9DE255287BCD9FEEDE571C2D /* LocalDataReset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDataReset.swift; sourceTree = "<group>"; };
-		A27960EBCECCF096B6929BA6 /* test-notification-bridge.cjs */ = {isa = PBXFileReference; lastKnownFileType = text; path = "test-notification-bridge.cjs"; sourceTree = "<group>"; };
+		A27960EBCECCF096B6929BA6 /* test-notification-bridge.cjs */ = {isa = PBXFileReference; path = "test-notification-bridge.cjs"; sourceTree = "<group>"; };
 		A36E6DDB10D0E6BECF1DB843 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A75C3BADDA3A9DF6FAC90BC8 /* EmbeddedApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedApp.swift; sourceTree = "<group>"; };
 		A796AC8737B3FC05148D2C4B /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
@@ -442,6 +442,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					1660AFA2F40D1169BB92A9ED = {
+						DevelopmentTeam = WDCGJTU726;
+						ProvisioningStyle = Automatic;
+					};
 					1C8D27EB798013AEF964D2CD = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Manual;
@@ -451,8 +455,8 @@
 						ProvisioningStyle = Manual;
 					};
 					6BDFE996C5FF6E118BBC8DA3 = {
-						DevelopmentTeam = "";
-						ProvisioningStyle = Manual;
+						DevelopmentTeam = WDCGJTU726;
+						ProvisioningStyle = Automatic;
 					};
 					AD58E81BE77BDA40720707AF = {
 						DevelopmentTeam = "";
@@ -765,7 +769,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = WDCGJTU726;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -804,8 +811,6 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = MailPort;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -817,7 +822,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.embedded.securityqa;
 				PRODUCT_MODULE_NAME = MailPortEmbedded;
 				PRODUCT_NAME = MailPort;
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -874,7 +878,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = WDCGJTU726;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -994,16 +1001,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Resources/MailPort.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = WDCGJTU726;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = MailPort;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -1015,7 +1019,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.embedded;
 				PRODUCT_MODULE_NAME = MailPortEmbedded;
 				PRODUCT_NAME = MailPort;
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 			};
 			name = Release;

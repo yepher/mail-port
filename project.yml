@@ -51,6 +51,9 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: Resources/MailPort.entitlements
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: Apple Development
+        DEVELOPMENT_TEAM: WDCGJTU726
         ENABLE_HARDENED_RUNTIME: YES
       configs:
         # The .securityqa suffix selects an isolated profile in debug builds; see EmbeddedWorkspace.
@@ -105,6 +108,9 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: Apple Development
+        DEVELOPMENT_TEAM: WDCGJTU726
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MailPort.app/Contents/MacOS/MailPort"
         BUNDLE_LOADER: "$(TEST_HOST)"
 schemes:
