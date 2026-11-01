@@ -25,6 +25,26 @@ final class PINLockTests: XCTestCase {
         for pin in ["12345", "1234567", "１２３４５６", "abcdef", " 12345"] { XCTAssertFalse(PINCredential.isValidPIN(pin)) }
     }
 
+    func testInputThatCannotBeAPINCostsNoAttempt() async throws {
+        let store = MemoryPINStore()
+        let tested = PINLockEngine(store: store)
+        try await tested.enable(pin: "628493")
+        for input in ["abcdef", "12345", "1234567", "xxxxxx"] {
+            let result = try await tested.verify(input)
+            XCTAssertEqual(result, .rejected(remaining: 10))
+        }
+        XCTAssertEqual(store.value?.failures, 0)
+    }
+
+    func testRetryDelayGrowsAndFirstMistakesAreFree() {
+        XCTAssertEqual(PINLockState.retryDelay(afterFailures: 0), 0)
+        XCTAssertEqual(PINLockState.retryDelay(afterFailures: 2), 0)
+        XCTAssertEqual(PINLockState.retryDelay(afterFailures: 3), 5)
+        XCTAssertEqual(PINLockState.retryDelay(afterFailures: 9), 600)
+        let delays = (0...9).map(PINLockState.retryDelay(afterFailures:))
+        XCTAssertEqual(delays, delays.sorted())
+    }
+
     func testNineFailuresDoNotEraseAndCorrectPINResetsTheConsecutiveCount() async throws {
         let store = MemoryPINStore()
         let tested = PINLockEngine(store: store)

@@ -18,8 +18,8 @@ final class WorkspaceNavigationTests: XCTestCase {
 
     func testShortcutNumbersFollowTheGivenOrderAndStopAtNine() {
         let tabs = GoogleService.allCases.map { WorkspaceTab(accountID: work.id, service: $0) }
-        XCTAssertEqual(tabs.count, 10)
-        XCTAssertEqual(tabs.map { WorkspaceTab.shortcutNumber(of: $0, in: tabs) }, [1, 2, 3, 4, 5, 6, 7, 8, 9, nil])
+        XCTAssertGreaterThan(tabs.count, 9)
+        XCTAssertEqual(tabs.prefix(10).map { WorkspaceTab.shortcutNumber(of: $0, in: tabs) }, [1, 2, 3, 4, 5, 6, 7, 8, 9, nil])
         XCTAssertNil(WorkspaceTab.shortcutNumber(of: WorkspaceTab(accountID: UUID(), service: .gmail), in: tabs))
     }
 

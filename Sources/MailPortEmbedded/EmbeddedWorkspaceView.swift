@@ -55,6 +55,7 @@ struct EmbeddedWorkspaceView: View {
         .sheet(isPresented: $model.showingDownloads, onDismiss: { model.completeDownloadRetry() }) { DownloadsView(model: model) }
         .sheet(isPresented: $model.showingQuickSwitch) { QuickSwitcherView(model: model) }
         .sheet(isPresented: $model.showingPinEditor) { PinEditor(model: model) }
+        .sheet(isPresented: $model.showingAccountSearch) { AccountSearchView(model: model) }
         .sheet(isPresented: $model.showingVideoOptions, onDismiss: { model.completeVideoOptions() }) {
             if let url = model.videoOptionsURL { YouTubeResolutionView(model: model, url: url) }
         }
@@ -73,9 +74,8 @@ struct EmbeddedWorkspaceView: View {
             Button("OK") { model.errorMessage = nil }
         } message: { Text(model.errorMessage ?? "") }
         .confirmationDialog("Remove \(model.accountPendingRemoval?.name ?? "account") from MailPort?", isPresented: Binding(get: { model.accountPendingRemoval != nil }, set: { if !$0 { model.accountPendingRemoval = nil } })) {
-            Button("Remove and Keep Sign-In", role: .destructive) { if let account = model.accountPendingRemoval { model.removeAccount(account) } }
             Button("Remove and Sign Out", role: .destructive) { if let account = model.accountPendingRemoval { Task { await model.signOutAndRemoveAccount(account) } } }
-        } message: { Text("Its tabs and pins are removed either way. Keeping the sign-in leaves its website data on this Mac. Signing out deletes MailPort’s cookies and website data for it. Your Google account, email, and calendar are not affected.") }
+        } message: { Text("This removes its tabs and pins, and deletes MailPort’s cookies and website data for it. Your Google account, email, and calendar are not affected.") }
     }
 
     private var detail: some View {
@@ -98,6 +98,15 @@ struct EmbeddedWorkspaceView: View {
                     Image(systemName: "pip").font(.system(size: 40)).foregroundStyle(.secondary)
                     Text("Video is playing in a floating window").font(.headline)
                     Button("Return Video to Tab") { model.controlVideo("popOut") }
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if model.isDetached(model.selection) {
+                VStack(spacing: 16) {
+                    Image(systemName: "macwindow.on.rectangle").font(.system(size: 40)).foregroundStyle(.secondary)
+                    Text("This view is in its own window").font(.headline)
+                    HStack {
+                        Button("Show Window") { model.selection.flatMap { model.detachedViews[$0]?.window }?.makeKeyAndOrderFront(nil) }
+                        Button("Return to Main Window") { model.toggleDetached() }
+                    }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let browser = model.currentBrowser {
                 BrowserPane(browser: browser)
@@ -155,6 +164,9 @@ struct EmbeddedWorkspaceView: View {
                             .labelStyle(.titleAndIcon)
                     }.help("Save media, open in YouTube, or copy the video link")
                 }
+                Button { model.toggleDetached() } label: {
+                    Label(model.isDetached(model.selection) ? "Return View" : "Pop Out View", systemImage: "macwindow.on.rectangle")
+                }.disabled(model.currentBrowser == nil).help("Show this view in its own borderless window (⌥⌘P)")
                 Button { model.showingPinEditor = true } label: { Label("Pin Current Page", systemImage: "pin") }
                     .disabled(!model.canPinCurrentPage).help("Pin this page to the sidebar (⌘D)")
                 // Gmail has its own Compose button, so this appears only on other services.
@@ -183,6 +195,7 @@ struct EmbeddedWorkspaceView: View {
                                     Image(systemName: tab.service.symbol).foregroundStyle(Color(nsColor: account.nsColor)).font(.system(size: 13))
                                     Text(account.name).font(.system(size: 12, weight: model.selection == tab ? .semibold : .regular)).lineLimit(1)
                                     Text(tab.service.shortTitle).font(.system(size: 10)).foregroundStyle(.secondary)
+                                    if model.hibernatedTabs[tab] != nil { HibernatedBadge() }
                                     TabActivityBadge(activity: model.tabActivity[tab], service: tab.service, now: now)
                                     if let browser = model.videoBrowser(for: tab) { VideoPlayingBadge(browser: browser) }
                                     if model.accountsNeedingSignIn.contains(account.id) {
@@ -209,6 +222,8 @@ struct EmbeddedWorkspaceView: View {
                             }
                             .contextMenu {
                                 Button("Close Tab") { model.close(tab) }
+                                Button(model.isDetached(tab) ? "Return to Main Window" : "Pop Out View") { model.toggleDetached(tab) }
+                                Button("Hibernate Now") { model.hibernate(tab) }.disabled(!model.canHibernate(tab))
                                 Divider()
                                 Button("Edit \(account.name)…") { model.editAccount(account) }
                                 AccountNotificationMenu(model: model, account: account, now: now)
@@ -322,6 +337,13 @@ private struct WebContent: NSViewRepresentable {
     let webView: WKWebView
     func makeNSView(context: Context) -> WebViewHost { WebViewHost(webView: webView) }
     func updateNSView(_ view: WebViewHost, context: Context) {}
+}
+
+struct HibernatedBadge: View {
+    var body: some View {
+        Image(systemName: "moon.zzz").font(.system(size: 10)).foregroundStyle(.tertiary)
+            .accessibilityLabel("Hibernating").help("Unloaded to save memory. It reloads when you select it.")
+    }
 }
 
 struct TabActivityBadge: View {

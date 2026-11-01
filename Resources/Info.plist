@@ -47,6 +47,24 @@
 	<string>Copyright © 2026 Chris Wilson</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Allow microphone access when you choose to join a Google Meet call.</string>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>New MailPort Message</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>composeWithSelection</string>
+			<key>NSPortName</key>
+			<string>MailPort</string>
+			<key>NSSendTypes</key>
+			<array>
+				<string>public.utf8-plain-text</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>UTExportedTypeDeclarations</key>

@@ -48,6 +48,15 @@ public struct GmailCompose: Equatable, Sendable {
         )
     }
 
+    /// A draft body as an email link, so text from other apps takes the same path
+    /// as any other link: PIN lock, the default account, and review before sending.
+    public static func mailto(body: String, limit: Int = 6000) -> URL? {
+        var allowed = CharacterSet.alphanumerics
+        allowed.insert(charactersIn: "-._~")
+        guard let encoded = String(body.prefix(limit)).addingPercentEncoding(withAllowedCharacters: allowed) else { return nil }
+        return URL(string: "mailto:?body=" + encoded)
+    }
+
     public var url: URL {
         var components = URLComponents(string: "https://mail.google.com/mail/u/0/")!
         var items = [URLQueryItem(name: "view", value: "cm"), URLQueryItem(name: "fs", value: "1")]
@@ -57,6 +66,18 @@ public struct GmailCompose: Equatable, Sendable {
         // Gmail handles this as form-style query data. Preserve literal '+' characters.
         components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         return components.url!
+    }
+}
+
+public enum GmailSearch {
+    /// Opens a Gmail search. Nil for a search with nothing to look for.
+    public static func url(query: String) -> URL? {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        var allowed = CharacterSet.urlFragmentAllowed
+        allowed.remove(charactersIn: "/+&=?#")
+        guard let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: allowed) else { return nil }
+        return URL(string: "https://mail.google.com/mail/u/0/#search/" + encoded)
     }
 }
 

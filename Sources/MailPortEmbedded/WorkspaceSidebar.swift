@@ -95,6 +95,7 @@ private struct SidebarAccount: View {
         let below = WorkspaceTab.neighbor(of: tab, in: model.navigationTabs, offset: 1)
         return SidebarRow(title: tab.service.shortTitle, symbol: tab.service.symbol, color: color, selected: model.selection == tab,
             dragging: draggingRow == tab.id, label: name) { model.select(tab) } trailing: {
+            if model.hibernatedTabs[tab] != nil { HibernatedBadge() }
             TabActivityBadge(activity: model.tabActivity[tab], service: tab.service, now: now)
             if let browser = model.videoBrowser(for: tab) { VideoPlayingBadge(browser: browser) }
             ShortcutHint(number: model.shortcutNumber(for: tab))
@@ -102,6 +103,9 @@ private struct SidebarAccount: View {
         .contextMenu {
             Button("Move Up") { if let above { withAnimation(.easeInOut(duration: 0.15)) { model.moveTab(tab, over: above) } } }.disabled(above == nil)
             Button("Move Down") { if let below { withAnimation(.easeInOut(duration: 0.15)) { model.moveTab(tab, over: below) } } }.disabled(below == nil)
+            Divider()
+            Button(model.isDetached(tab) ? "Return to Main Window" : "Pop Out View") { model.toggleDetached(tab) }
+            Button("Hibernate Now") { model.hibernate(tab) }.disabled(!model.canHibernate(tab))
             Divider()
             Button("Remove from Sidebar") { model.close(tab) }
         }
@@ -142,6 +146,10 @@ private struct SidebarAccount: View {
                     }
                 }
                 Spacer(minLength: 4)
+                if let problem = model.reminderProblem(for: account, at: now) {
+                    Image(systemName: "bell.badge.fill").font(.system(size: 10)).foregroundStyle(.orange)
+                        .accessibilityLabel(problem).help(problem)
+                }
                 if model.notificationSettings(for: account).isMuted(at: now) {
                     Image(systemName: "bell.slash").font(.system(size: 10)).foregroundStyle(.secondary)
                         .accessibilityLabel("Notifications muted").help(model.notificationSettings(for: account).isManuallyMuted(at: now) ? "Notifications muted manually" : "Notifications muted by schedule")
@@ -165,6 +173,9 @@ private struct SidebarAccount: View {
         .contextMenu {
             Button("Edit \(account.name)…") { model.editAccount(account) }
             AccountNotificationMenu(model: model, account: account, now: now)
+            Divider()
+            Button("Move Account Up") { model.moveAccount(account, by: -1) }.disabled(model.accounts.first == account)
+            Button("Move Account Down") { model.moveAccount(account, by: 1) }.disabled(model.accounts.last == account)
             Divider()
             Button("Remove \(account.name)…", role: .destructive) { model.accountPendingRemoval = account }
         }
@@ -226,7 +237,7 @@ struct AccountNotificationMenu: View {
                 Button("Mute Until I Unmute") { model.muteNotifications(for: account, until: .distantFuture) }
             }
             Divider()
-            Button("Notification Schedule…") { model.openSecuritySettings() }
+            Button("Notification Schedule…") { model.openSecuritySettings(page: .notifications) }
             Toggle("Hide Message Previews", isOn: Binding(get: { settings.hidesPreviews }, set: { model.setHidesPreviews($0, for: account) }))
         }
     }

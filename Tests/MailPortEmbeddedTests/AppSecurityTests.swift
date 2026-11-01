@@ -23,6 +23,7 @@ final class AppSecurityTests: XCTestCase {
         let engine = PINLockEngine(store: FixturePINStore())
         try await engine.enable(pin: "628493")
         let model = EmbeddedWorkspace(testingDirectory: directory, securityEngine: engine)
+        model.security.attemptDelay = { _ in 0 }
         for _ in 0..<200 where model.security.checking { try await Task.sleep(for: .milliseconds(5)) }
         XCTAssertFalse(model.security.checking)
         return (model, engine, directory)
@@ -103,6 +104,43 @@ final class AppSecurityTests: XCTestCase {
         XCTAssertTrue(model.accounts.isEmpty)
         await model.security.unlock(pin: "628493")
         XCTAssertFalse(model.security.blocksAccess)
+    }
+
+    @MainActor func testWaitAfterRepeatedFailuresBlocksAttemptsWithoutSpendingThem() async throws {
+        let (model, _, directory) = try await fixture()
+        defer { try? FileManager.default.removeItem(at: directory); UserDefaults.standard.removePersistentDomain(forName: model.preferenceDomain) }
+        model.security.attemptDelay = { $0 >= 2 ? 60 : 0 }
+        await model.security.unlock(pin: "000000")
+        await model.security.unlock(pin: "000000")
+        XCTAssertEqual(model.security.failures, 2)
+        XCTAssertNotNil(model.security.retryAfter)
+        await model.security.unlock(pin: "000000")
+        XCTAssertEqual(model.security.failures, 2)
+        await model.security.unlock(pin: "628493")
+        XCTAssertTrue(model.security.isLocked, "During the wait no attempt is checked, even the correct PIN")
+    }
+
+    @MainActor func testScreenLockAndIdleFollowTheirSettings() async throws {
+        let (model, _, directory) = try await fixture()
+        defer { try? FileManager.default.removeItem(at: directory); UserDefaults.standard.removePersistentDomain(forName: model.preferenceDomain) }
+        await model.security.unlock(pin: "628493")
+        model.security.setLocksWithScreen(false)
+        model.security.screenDidLock()
+        XCTAssertFalse(model.security.isLocked)
+        model.security.setLocksWithScreen(true)
+        model.security.screenDidLock()
+        XCTAssertTrue(model.security.isLocked)
+        await model.security.unlock(pin: "628493")
+        model.security.idleSeconds = { 3600 }
+        model.security.lockIfIdle()
+        XCTAssertFalse(model.security.isLocked, "Idle locking is off until chosen")
+        model.security.setAutoLockMinutes(15)
+        model.security.idleSeconds = { 60 }
+        model.security.lockIfIdle()
+        XCTAssertFalse(model.security.isLocked)
+        model.security.idleSeconds = { 15 * 60 }
+        model.security.lockIfIdle()
+        XCTAssertTrue(model.security.isLocked)
     }
 
     @MainActor func testConcurrentSubmissionsCountAsOnlyOneAttempt() async throws {

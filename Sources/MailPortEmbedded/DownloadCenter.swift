@@ -53,6 +53,7 @@ final class DownloadCenter: ObservableObject {
         guard entries.contains(where: { $0.id == id && ($0.state == .failed || $0.state == .cancelled) }) else { return }
         retries[id]?()
     }
+    func cancelRunning() { for id in entries.filter({ $0.state == .running }).map(\.id) { cancel(id) } }
     func retire(owner: UUID) {
         for id in entries.filter({ $0.owner == owner }).map(\.id) {
             cancel(id)

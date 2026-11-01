@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import MailPortCore
 import MailPortSecurity
 
 struct PINLockScreen: View {
@@ -18,11 +19,17 @@ struct PINLockScreen: View {
                 if security.error != nil { Button("Retry clearing local data") { security.retryErase() }.disabled(security.busy) }
             } else if !security.unavailable {
                 Text("Enter your six-digit PIN to continue.").foregroundStyle(.secondary)
-                SecureField("PIN", text: $pin).textFieldStyle(.roundedBorder).frame(width: 220)
+                PINDigitsField(title: "PIN", text: $pin).frame(width: 220)
                     .focused($focused).disabled(security.busy)
-                            .onSubmit { unlock() }
-                Button(security.busy ? "Checking…" : "Unlock") { unlock() }
-                    .buttonStyle(.borderedProminent).disabled(pin.count != 6 || security.busy)
+                    .onSubmit { unlock() }
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let wait = security.retryAfter.map { Int($0.timeIntervalSince(context.date).rounded(.up)) } ?? 0
+                    VStack(spacing: 8) {
+                        Button(security.busy ? "Checking…" : "Unlock") { unlock() }
+                            .buttonStyle(.borderedProminent).disabled(pin.count != 6 || security.busy || wait > 0)
+                        if wait > 0 { Text("Try again in \(wait) \(wait == 1 ? "second" : "seconds").").font(.callout).foregroundStyle(.secondary) }
+                    }
+                }
                 Text(security.failures >= 9 ? "One attempt remains. Another incorrect PIN will erase all MailPort accounts and saved sign-ins on this Mac." : "10 consecutive incorrect PINs erase MailPort’s local accounts, saved sign-ins, and cached data.")
                     .font(.callout).foregroundStyle(security.failures >= 7 ? .red : .secondary).multilineTextAlignment(.center)
             }
@@ -34,7 +41,7 @@ struct PINLockScreen: View {
             .onChange(of: security.isLocked) { _, _ in pin = ""; focused = true }
     }
     private func unlock() {
-        guard pin.count == 6, !security.busy else { return }
+        guard pin.count == 6, !security.busy, (security.retryAfter ?? .distantPast) <= Date() else { return }
         let value = pin; pin = ""
         Task { await security.unlock(pin: value); focused = true }
     }
@@ -52,78 +59,108 @@ struct SecuritySettingsView: View {
     @State private var acknowledged = false
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView { settings.padding(28) }
+            settings
             Divider()
             HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }.padding(14)
-        }.frame(width: 530, height: 620)
+        }.frame(width: 560, height: 640)
     }
     private var settings: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Label("MailPort settings", systemImage: "gearshape").font(.title2.bold())
-            GroupBox("Workspace backup") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Save accounts, services, pins and workspace preferences. Backups contain names, email addresses and pin URLs; keep them private. Sign-ins, cookies, PIN and downloaded files are excluded.")
-                        .font(.caption).foregroundStyle(.secondary)
-                    HStack {
-                        Button("Export workspace…") { model.exportWorkspace() }
-                        Button("Restore workspace…") { model.chooseWorkspaceBackup() }
-                    }
-                    if let status = model.backupStatus { Text(status).font(.caption).foregroundStyle(.secondary) }
-                }.padding(6)
-            }
-            Toggle("Show keyboard shortcuts next to views", isOn: Binding(get: { model.showsShortcutHints }, set: { model.setShowsShortcutHints($0) }))
-            if updates.isAvailable {
-                Toggle("Check for updates automatically", isOn: $updates.checksAutomatically)
-            }
-            Divider()
-            if !model.accounts.isEmpty {
-                NotificationScheduleSettings(model: model)
-                Divider()
-            }
-            Label("YouTube", systemImage: "play.rectangle").font(.headline)
-            Toggle("Automatically skip skippable ads", isOn: Binding(get: { model.skipsYouTubeAds }, set: { model.setSkipsYouTubeAds($0) }))
-            Text("Clicks YouTube’s Skip button when it becomes available. Unskippable ads still play.").font(.caption).foregroundStyle(.secondary)
-            Toggle("Enable video and audio downloads", isOn: Binding(get: { model.allowsYouTubeDownloads }, set: { model.setAllowsYouTubeDownloads($0) }))
-            Text("Requires a one-time installation of yt-dlp, Deno, and FFmpeg using Homebrew. These tools are only used to save video and audio; other YouTube features work without them.")
-                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if model.allowsYouTubeDownloads {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Open Terminal and run:").font(.callout)
-                    HStack {
-                        Text("brew install yt-dlp deno ffmpeg").font(.system(.callout, design: .monospaced)).textSelection(.enabled)
-                        Spacer()
-                        Button("Copy") {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString("brew install yt-dlp deno ffmpeg", forType: .string)
-                        }
-                    }
-                    Link("Need Homebrew?", destination: URL(string: "https://brew.sh")!)
-                    Text("After installation finishes, use Save Media in the YouTube toolbar. MailPort does not install these tools automatically.")
-                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                }.padding(10).background(.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
-            }
-            Text("Choose from the available MP4 resolutions before saving video. FFmpeg merges video and audio without re-encoding; audio-only saves M4A. Account cookies are never exported; videos requiring sign-in may not download.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Divider()
-            DefaultMailSettings(model: model)
-            Divider()
-            if !model.accounts.isEmpty {
-                DockBadgeSettings(model: model)
-                Divider()
-            }
-            Label("Security", systemImage: "lock.shield").font(.headline)
-            Text("Require a PIN after your Mac sleeps and whenever MailPort launches.")
-                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if security.enabled { enabledControls } else { setupControls }
-            GroupBox {
-                Text("After 10 consecutive failures, MailPort removes its local account list, Google sessions, cookies, cached website data, tab history, and settings. Your Google accounts, emails, calendar events, and files saved outside MailPort are not deleted.")
-                    .font(.callout).fixedSize(horizontal: false, vertical: true).padding(8)
-            }
-            Text("The failure count survives restarts and resets after a correct PIN. Notifications and account pages are paused while MailPort is locked.")
-                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Text("This is an app privacy lock. It does not encrypt website data or replace macOS login security and FileVault.")
-                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if let error = security.error { Text(error).font(.callout).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
+        TabView(selection: $model.settingsPage) {
+            page { general }.tabItem { Text("General") }.tag(SettingsPage.general)
+            page { accountSettings }.tabItem { Text("Accounts") }.tag(SettingsPage.accounts)
+            page {
+                if model.accounts.isEmpty { Text("Add an account to set its notification schedule.").foregroundStyle(.secondary) }
+                else { NotificationScheduleSettings(model: model) }
+            }.tabItem { Text("Notifications") }.tag(SettingsPage.notifications)
+            page { youtube }.tabItem { Text("YouTube") }.tag(SettingsPage.youtube)
+            page { securitySettings }.tabItem { Text("Security") }.tag(SettingsPage.security)
+        }.padding(12)
+    }
+    private func page<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        ScrollView { VStack(alignment: .leading, spacing: 18) { content() }.frame(maxWidth: .infinity, alignment: .leading).padding(16) }
+    }
+    @ViewBuilder private var general: some View {
+        GroupBox("Workspace backup") {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Save accounts, services, pins and workspace preferences. Backups contain names, email addresses and pin URLs; keep them private. Sign-ins, cookies, PIN and downloaded files are excluded.")
+                    .font(.caption).foregroundStyle(.secondary)
+                HStack {
+                    Button("Export workspace…") { model.exportWorkspace() }
+                    Button("Restore workspace…") { model.chooseWorkspaceBackup() }
+                }
+                if let status = model.backupStatus { Text(status).font(.caption).foregroundStyle(.secondary) }
+            }.padding(6)
         }
+        Toggle("Show keyboard shortcuts next to views", isOn: Binding(get: { model.showsShortcutHints }, set: { model.setShowsShortcutHints($0) }))
+        if updates.isAvailable {
+            Toggle("Check for updates automatically", isOn: $updates.checksAutomatically)
+        }
+        Toggle("New email from any app with ⌃⌥⌘N", isOn: Binding(get: { model.globalComposeShortcut }, set: { model.setGlobalComposeShortcut($0) }))
+        Divider()
+        Toggle("Hibernate idle views to save memory", isOn: Binding(get: { model.hibernationEnabled }, set: { model.setHibernationEnabled($0) }))
+        Picker("Hibernate after", selection: Binding(get: { model.hibernationIdleMinutes }, set: { model.setHibernationIdleMinutes($0) })) {
+            ForEach(TabHibernation.idleChoices, id: \.self) { minutes in
+                Text(minutes < 60 ? "\(minutes) minutes" : (minutes == 60 ? "1 hour" : "\(minutes / 60) hours")).tag(minutes)
+            }
+        }.frame(maxWidth: 260).disabled(!model.hibernationEnabled)
+        Text("Idle views unload and reload when you select them. MailPort briefly checks hibernated Mail about every 5 minutes and alerts you to new messages by count. Calendar stays loaded while reminders are on. Meet, Colab, playing video, downloads and popped-out views never hibernate.")
+            .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+    }
+    @ViewBuilder private var accountSettings: some View {
+        DefaultMailSettings(model: model)
+        if !model.accounts.isEmpty {
+            Divider()
+            DockBadgeSettings(model: model)
+        }
+    }
+    @ViewBuilder private var youtube: some View {
+        Toggle("Automatically skip skippable ads", isOn: Binding(get: { model.skipsYouTubeAds }, set: { model.setSkipsYouTubeAds($0) }))
+        Text("Clicks YouTube’s Skip button when it becomes available. Unskippable ads still play.").font(.caption).foregroundStyle(.secondary)
+        Toggle("Enable video and audio downloads", isOn: Binding(get: { model.allowsYouTubeDownloads }, set: { model.setAllowsYouTubeDownloads($0) }))
+        Text("Requires a one-time installation of yt-dlp, Deno, and FFmpeg using Homebrew. These tools are only used to save video and audio; other YouTube features work without them.")
+            .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        if model.allowsYouTubeDownloads {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Open Terminal and run:").font(.callout)
+                HStack {
+                    Text("brew install yt-dlp deno ffmpeg").font(.system(.callout, design: .monospaced)).textSelection(.enabled)
+                    Spacer()
+                    Button("Copy") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString("brew install yt-dlp deno ffmpeg", forType: .string)
+                    }
+                }
+                Link("Need Homebrew?", destination: URL(string: "https://brew.sh")!)
+                Text("After installation finishes, use Save Media in the YouTube toolbar. MailPort does not install these tools automatically.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }.padding(10).background(.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
+        }
+        Text("Choose from the available MP4 resolutions before saving video. FFmpeg merges video and audio without re-encoding; audio-only saves M4A. Account cookies are never exported; videos requiring sign-in may not download.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+    }
+    @ViewBuilder private var securitySettings: some View {
+        Text("Require a PIN after your Mac sleeps and whenever MailPort launches.")
+            .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        if security.enabled { enabledControls } else { setupControls }
+        if security.enabled {
+            Toggle("Also lock when the screen locks", isOn: Binding(get: { security.locksWithScreen }, set: { security.setLocksWithScreen($0) }))
+            Picker("Lock when idle", selection: Binding(get: { security.autoLockMinutes }, set: { security.setAutoLockMinutes($0) })) {
+                ForEach(AppSecurity.autoLockChoices, id: \.self) { minutes in
+                    Text(minutes == 0 ? "Never" : (minutes == 60 ? "After 1 hour" : "After \(minutes) minutes")).tag(minutes)
+                }
+            }.frame(maxWidth: 260)
+            Text("Reminders and account pages pause while MailPort is locked, including while your screen is locked.")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+        GroupBox {
+            Text("After 10 consecutive failures, MailPort removes its local account list, Google sessions, cookies, cached website data, tab history, and settings. Your Google accounts, emails, calendar events, and files saved outside MailPort are not deleted.")
+                .font(.callout).fixedSize(horizontal: false, vertical: true).padding(8)
+        }
+        Text("The failure count survives restarts and resets after a correct PIN. Repeated failures add a wait before the next attempt. Notifications and account pages are paused while MailPort is locked.")
+            .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        Text("This is an app privacy lock. It does not encrypt website data or replace macOS login security and FileVault.")
+            .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        if let error = security.error { Text(error).font(.callout).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
+        LeftoverSignIns(model: model)
     }
     private var enabledControls: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -153,6 +190,27 @@ struct SecuritySettingsView: View {
         }
     }
 
+}
+
+/// Older versions could keep a removed account's sign-in with nothing able to reach it.
+private struct LeftoverSignIns: View {
+    @ObservedObject var model: EmbeddedWorkspace
+    @State private var count = 0
+
+    var body: some View {
+        Group {
+            if count > 0 {
+                HStack {
+                    Text(count == 1 ? "1 removed account left its sign-in on this Mac." : "\(count) removed accounts left their sign-ins on this Mac.")
+                        .font(.callout).fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    Button("Delete") {
+                        Task { await model.removeLeftoverSignIns(); count = await model.leftoverSignIns().count }
+                    }
+                }
+            }
+        }.task { count = await model.leftoverSignIns().count }
+    }
 }
 
 private struct DockBadgeSettings: View {

@@ -13,16 +13,29 @@ public struct Account: Identifiable, Codable, Equatable, Sendable {
     /// An HTML color code that overrides `color`. It's a separate field so older
     /// builds can still read the account list and show the preset instead.
     public var customColor: String?
+    /// Bundle identifier of the browser for this account's outside links. Nil uses the default.
+    /// Optional, so older builds can still read the account list.
+    public var linkBrowser: String?
 
-    public init(id: UUID = UUID(), name: String, email: String = "", color: AccountColor = .blue, customColor: String? = nil) {
+    public init(id: UUID = UUID(), name: String, email: String = "", color: AccountColor = .blue, customColor: String? = nil, linkBrowser: String? = nil) {
         self.id = id
         self.name = name
         self.email = email
         self.color = color
         self.customColor = customColor
+        self.linkBrowser = linkBrowser
     }
 
     public var hexColor: HexColor? { customColor.flatMap(HexColor.init) }
+
+    /// One bad saved label shouldn't hide every account or strand this account's sign-in.
+    public func repaired() -> Account {
+        if (try? validated()) != nil { return self }
+        var account = self
+        if account.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { account.name = "Account" }
+        if (try? account.validated()) == nil { account.email = "" }
+        return account
+    }
 
     public func validated() throws -> Account {
         var account = self

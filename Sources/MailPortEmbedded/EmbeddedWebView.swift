@@ -16,7 +16,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
     static let todayURL = URL(string: "https://calendar.google.com/calendar/u/0/r/day")!
     let webView: WKWebView
-    let account: Account
+    var account: Account
     let service: GoogleService
     @Published private(set) var title: String
     @Published private(set) var url: URL?
@@ -31,6 +31,9 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     var onMailto: ((URL) -> Void)?
     var onActivity: ((TabActivity?) -> Void)?
     var onSignInChange: ((Bool) -> Void)?
+    /// Offers a Google link to its own service in this account. False sends it to a browser.
+    var onOpenInService: ((GoogleService, URL) -> Bool)?
+    var onDownloadsFinished: (() -> Void)?
     @Published var showingFind = false
     @Published var findText = ""
     @Published private(set) var findMissed = false
@@ -42,6 +45,11 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     private var openingAttachment = false
     private var discardedForSecurity = false
     private var loadRequested = false
+    /// A failed or crashed page that hasn't come back yet.
+    private(set) var needsRecovery = false
+    private var recoveryAttempts = 0
+    private var lastFailure: Date?
+    private var recoveryTimer: Timer?
     private let navigationLogger = Logger(subsystem: "com.chriswilson.mailport.embedded", category: "BrowserNavigation")
 
     private var observations: [NSKeyValueObservation] = []
@@ -94,7 +102,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         }
         if !loadsInitialPage { return }
         if activityOnly {
-            load(Self.todayURL)
+            load(homeURL)
         } else if service == .calendar || service == .gmail {
             Task { [weak self] in
                 await MailPortNotifications.shared.refresh()
@@ -105,6 +113,25 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             }
         } else { load(service.url) }
     }
+
+    /// Calendar's background page stays on today, whichever date the user is browsing.
+    private var homeURL: URL { activityOnly && service == .calendar ? Self.todayURL : service.url }
+
+    private static var scripts: [String: String] = [:]
+
+    /// Page scripts run often, so each is read from disk once.
+    private static func script(_ name: String) -> String? {
+        if let source = scripts[name] { return source }
+        guard let file = Bundle.main.url(forResource: name, withExtension: "js"),
+              let source = try? String(contentsOf: file, encoding: .utf8) else { return nil }
+        scripts[name] = source
+        return source
+    }
+
+    var hasActiveDownloads: Bool { !downloads.isEmpty || activeDownloadForTesting }
+    private var activeDownloadForTesting = false
+    func markDownloadForTesting(active: Bool) { activeDownloadForTesting = active }
+    var isCapturingMedia: Bool { webView.cameraCaptureState != .none || webView.microphoneCaptureState != .none }
 
     func load(_ url: URL) {
         guard !discardedForSecurity else { return }
@@ -123,8 +150,32 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     func reload() {
         guard !discardedForSecurity else { return }
         errorMessage = nil
-        if webView.url == nil { load(service.url) }
+        if webView.url == nil { load(homeURL) }
         else { webView.reload() }
+    }
+
+    /// Retries with growing gaps. A page that keeps failing never hammers Google,
+    /// and the gaps only start over after ten quiet minutes.
+    private func scheduleRecovery() {
+        guard !discardedForSecurity else { return }
+        needsRecovery = true
+        if let lastFailure, Date().timeIntervalSince(lastFailure) > 600 { recoveryAttempts = 0 }
+        lastFailure = Date()
+        recoveryTimer?.invalidate()
+        let timer = Timer(timeInterval: PageRecovery.delay(attempt: recoveryAttempts), repeats: false) { [weak self] _ in
+            // Installed exclusively on the main run loop.
+            MainActor.assumeIsolated { self?.recover() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        recoveryTimer = timer
+        recoveryAttempts += 1
+    }
+
+    /// Tries again now. Called when the network returns or the Mac wakes.
+    func recover() {
+        guard needsRecovery, !discardedForSecurity else { return }
+        recoveryTimer?.invalidate(); recoveryTimer = nil
+        reload()
     }
 
     /// Reloads a page left on sign-in once another page shows the account is signed in.
@@ -137,8 +188,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     /// Nil means YouTube didn't provide captions for this video.
     func readTranscript() async throws -> VideoTranscript? {
         guard !discardedForSecurity, let url = webView.url,
-              let file = Bundle.main.url(forResource: "TranscriptReader", withExtension: "js") else { return nil }
-        let source = try String(contentsOf: file, encoding: .utf8)
+              let source = Self.script("TranscriptReader") else { return nil }
         // The player lives in the page's world, so its result is untrusted; VideoTranscript checks it.
         let result = try await webView.callAsyncJavaScript(source, contentWorld: .page)
         return (result as? [String: Any]).flatMap { VideoTranscript(message: $0, url: url) }
@@ -149,9 +199,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     var skipsYouTubeAds = false { didSet { updateYouTubeAdSkipping() } }
 
     func updateYouTubeAdSkipping() {
-        guard service == .youtube, !discardedForSecurity,
-              let file = Bundle.main.url(forResource: "YouTubeSkipAds", withExtension: "js"),
-              let template = try? String(contentsOf: file, encoding: .utf8) else { return }
+        guard service == .youtube, !discardedForSecurity, let template = Self.script("YouTubeSkipAds") else { return }
         youtubeSkipTimer?.invalidate()
         youtubeSkipTimer = nil
         if skipsYouTubeAds {
@@ -211,8 +259,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     func performVideoAction(_ action: String) async throws -> VideoPlaybackState {
         guard service == .youtube, !discardedForSecurity,
               let pageURL = webView.url, pageURL.scheme == "https", pageURL.host == "www.youtube.com",
-              let resource = Bundle.main.url(forResource: "YouTubePlayback", withExtension: "js") else { return .none }
-        let source = try String(contentsOf: resource, encoding: .utf8)
+              let source = Self.script("YouTubePlayback") else { return .none }
         let result = try await webView.callAsyncJavaScript(source, arguments: ["action": action], contentWorld: action == "status" ? .defaultClient : .page)
         guard !discardedForSecurity, webView.url == pageURL else { return .none }
         let state = VideoPlaybackState(message: result as? [String: Any] ?? [:])
@@ -223,7 +270,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     func videoFrame() async throws -> VideoFrame? {
         guard service == .youtube, !discardedForSecurity, webView.url?.host == "www.youtube.com",
               webView.fullscreenState == .notInFullscreen,
-              let resource = Bundle.main.url(forResource: "YouTubePlayback", withExtension: "js") else { return nil }
+              let source = Self.script("YouTubePlayback") else { return nil }
         let pageURL = webView.url
         // Dismiss native/web menus without clicking the player (which toggles playback).
         if let window = webView.window, window.attachedSheet == nil,
@@ -236,7 +283,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
                 target?.keyDown(with: escape)
             }
         }
-        let result = try await webView.callAsyncJavaScript(try String(contentsOf: resource, encoding: .utf8), arguments: ["action": "frame"], contentWorld: .page)
+        let result = try await webView.callAsyncJavaScript(source, arguments: ["action": "frame"], contentWorld: .page)
         guard !discardedForSecurity, webView.url == pageURL,
               let frame = (result as? [String: Any])?["frame"] as? [String: Any] else { return nil }
         return VideoFrame(message: frame)
@@ -271,12 +318,13 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     func discardForSecurity() {
         notificationBridgeReady = false
         discardedForSecurity = true
+        recoveryTimer?.invalidate(); recoveryTimer = nil; needsRecovery = false
         videoPlaybackTimer?.invalidate(); videoPlaybackTimer = nil
         videoPlayback = .none
         webView.closeAllMediaPresentations(completionHandler: nil)
         youtubeSkipTimer?.invalidate(); youtubeSkipTimer = nil
         youtubeSkipCheckPending = false
-        onActivity = nil; onMailto = nil; onSignInChange = nil
+        onActivity = nil; onMailto = nil; onSignInChange = nil; onOpenInService = nil; onDownloadsFinished = nil
         webView.stopLoading()
         webView.pauseAllMediaPlayback(completionHandler: nil)
         webView.navigationDelegate = nil; webView.uiDelegate = nil
@@ -346,6 +394,24 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
 
     private func openExternal(_ url: URL) {
+        if let target = BrowserLinkRouting.service(for: url), onOpenInService?(target, url) == true { return }
+        openInBrowser(url)
+    }
+
+    /// Uses the browser chosen for this account, or the default browser.
+    func openInBrowser(_ url: URL) {
+        if let identifier = account.linkBrowser,
+           let browser = NSWorkspace.shared.urlForApplication(withBundleIdentifier: identifier) {
+            NSWorkspace.shared.open([url], withApplicationAt: browser, configuration: NSWorkspace.OpenConfiguration()) { [weak self] _, error in
+                guard error != nil else { return }
+                Task { @MainActor [weak self] in self?.openInDefaultBrowser(url) }
+            }
+            return
+        }
+        openInDefaultBrowser(url)
+    }
+
+    private func openInDefaultBrowser(_ url: URL) {
         let opened = NSWorkspace.shared.open(url)
         navigationLogger.info("External navigation handed to default browser: \(opened)")
         if !opened { errorMessage = "macOS couldn’t open this link in your default browser." }
@@ -430,6 +496,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         refreshVideoPlayback()
         if webView.url?.host == service.url.host { authenticating = false }
         openingAttachment = false
+        needsRecovery = false
         updateState()
         if let url = webView.url, let required = BrowserLinkRouting.signInRequired(at: url, service: service) {
             onSignInChange?(required)
@@ -447,18 +514,21 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
 
     private func reportNavigationError(_ error: Error) {
         let nsError = error as NSError
-        // Cancellation is normal when a link becomes a download or another
-        // navigation replaces the page before its request has finished.
-        if !(nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled) {
+        // Normal when a link becomes a download or another navigation replaces
+        // the page before its request has finished.
+        if !PageRecovery.isExpected(domain: nsError.domain, code: nsError.code) {
             errorMessage = error.localizedDescription
         }
+        if PageRecovery.isTransient(domain: nsError.domain, code: nsError.code) { scheduleRecovery() }
         updateState()
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         videoPlayback = .none
         onActivity?(nil)
-        errorMessage = "This page’s web process stopped. Reload the page to continue."
+        errorMessage = "This page’s web process stopped. MailPort will reload it."
+        // Nobody may be looking at a background page, and its reminders depend on it.
+        scheduleRecovery()
         updateState()
     }
 
@@ -576,6 +646,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         downloads.removeValue(forKey: key); downloadDestinations.removeValue(forKey: key)
         downloadRecords.removeValue(forKey: key)
         refreshDownloadProgress()
+        if downloads.isEmpty { onDownloadsFinished?() }
     }
 
     func download(_ download: WKDownload, decideDestinationUsing response: URLResponse,

@@ -9,6 +9,28 @@ final class EmbeddedDelegate: NSObject, NSApplicationDelegate {
     func applicationDidBecomeActive(_ notification: Notification) {
         Task { await MailPortNotifications.shared.refresh() }
     }
+    func applicationDidFinishLaunching(_ notification: Notification) { NSApp.servicesProvider = self }
+
+    /// The Services menu entry: other apps' selected text becomes a draft to review.
+    @objc func composeWithSelection(_ pasteboard: NSPasteboard, userData: String, error: AutoreleasingUnsafeMutablePointer<NSString>) {
+        guard let text = pasteboard.string(forType: .string), let link = GmailCompose.mailto(body: text) else { return }
+        application(NSApp, open: [link])
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard let model, model.downloadCenter.runningCount > 0 else { return .terminateNow }
+        let count = model.downloadCenter.runningCount
+        let alert = NSAlert()
+        alert.messageText = count == 1 ? "A download is still running." : "\(count) downloads are still running."
+        alert.informativeText = "Quitting cancels unfinished downloads."
+        alert.addButton(withTitle: "Keep Downloading")
+        alert.addButton(withTitle: "Quit")
+        guard alert.runModal() == .alertSecondButtonReturn else { return .terminateCancel }
+        // Helpers outlive MailPort unless told to stop, and unfinished files would stay behind.
+        model.downloadCenter.cancelRunning()
+        return .terminateNow
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         if model?.security.enabled == true { model?.security.lock() }
     }
@@ -94,6 +116,8 @@ struct EmbeddedApp: App {
     @StateObject private var model = EmbeddedWorkspace()
     @ObservedObject private var updates = AppUpdates.shared
     private var canUsePage: Bool { !model.security.blocksAccess && model.currentBrowser != nil }
+    /// The find bar lives in the main window, which doesn't show a detached page.
+    private var canFind: Bool { canUsePage && !model.isDetached(model.selection) }
 
     var body: some Scene {
         Window("MailPort", id: "mailport") {
@@ -124,13 +148,14 @@ struct EmbeddedApp: App {
             }
             CommandGroup(after: .pasteboard) {
                 Divider()
-                Button("Find…") { model.currentBrowser?.showFind() }.keyboardShortcut("f").disabled(!canUsePage)
-                Button("Find Next") { model.currentBrowser?.find() }.keyboardShortcut("g").disabled(!canUsePage)
-                Button("Find Previous") { model.currentBrowser?.find(backwards: true) }.keyboardShortcut("g", modifiers: [.command, .shift]).disabled(!canUsePage)
+                Button("Find…") { model.currentBrowser?.showFind() }.keyboardShortcut("f").disabled(!canFind)
+                Button("Find Next") { model.currentBrowser?.find() }.keyboardShortcut("g").disabled(!canFind)
+                Button("Find Previous") { model.currentBrowser?.find(backwards: true) }.keyboardShortcut("g", modifiers: [.command, .shift]).disabled(!canFind)
             }
             CommandGroup(replacing: .help) {
                 Button("MailPort Help") { NSWorkspace.shared.open(URL(string: "https://github.com/yepher/mail-port#readme")!) }
                 Button("Report an Issue…") { NSWorkspace.shared.open(URL(string: "https://github.com/yepher/mail-port/issues/new")!) }
+                Button("Copy Diagnostics") { model.copyDiagnostics() }
             }
             CommandGroup(replacing: .printItem) {
                 Button("Print…") { model.currentBrowser?.printPage() }.keyboardShortcut("p").disabled(!canUsePage)
@@ -162,8 +187,19 @@ struct EmbeddedApp: App {
             CommandMenu("Navigate") {
                 Button("Go To…") { model.showingQuickSwitch = true }.keyboardShortcut("t")
                     .disabled(model.security.blocksAccess || model.accounts.isEmpty)
+                Button("Search All Accounts…") { model.showingAccountSearch = true }.keyboardShortcut("f", modifiers: [.command, .option])
+                    .disabled(model.security.blocksAccess || model.accounts.isEmpty)
                 Button("Pin Current Page…") { model.showingPinEditor = true }.keyboardShortcut("d")
                     .disabled(model.security.blocksAccess || !model.canPinCurrentPage)
+                Divider()
+                Button("Back") { model.currentBrowser?.back() }.keyboardShortcut("[").disabled(model.security.blocksAccess || model.currentBrowser?.canGoBack != true)
+                Button("Forward") { model.currentBrowser?.forward() }.keyboardShortcut("]").disabled(model.security.blocksAccess || model.currentBrowser?.canGoForward != true)
+                Button("Open in Browser") { model.openPageInBrowser() }.keyboardShortcut("o", modifiers: [.command, .shift]).disabled(model.currentPageLink == nil)
+                Button("Copy Page Link") { model.copyPageLink() }.keyboardShortcut("c", modifiers: [.command, .shift]).disabled(model.currentPageLink == nil)
+                Divider()
+                Button(model.isDetached(model.selection) ? "Return View to Main Window" : "Pop Out View") { model.toggleDetached() }
+                    .keyboardShortcut("p", modifiers: [.command, .option]).disabled(!canUsePage)
+                Divider()
                 Button(model.currentBrowser?.videoPlayback.isPlaying == true ? "Pause Video" : "Play Video") { model.controlVideo("toggle") }
                     .disabled(!canUsePage || model.currentBrowser?.videoPlayback.hasVideo != true)
                 Button(model.poppedOutVideo != nil && model.poppedOutVideo == model.selection ? "Return Video to Tab" : "Pop Out Video") { model.controlVideo("popOut") }

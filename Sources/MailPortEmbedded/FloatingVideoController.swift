@@ -37,17 +37,17 @@ private final class FloatingVideoPanel: NSPanel {
 }
 
 @MainActor
-private final class VideoDragBar: NSVisualEffectView {
+final class VideoDragBar: NSVisualEffectView {
     override func mouseDown(with event: NSEvent) { window?.performDrag(with: event) }
 }
 
 @MainActor
-private final class VideoDragTitle: NSTextField {
+final class VideoDragTitle: NSTextField {
     override func mouseDown(with event: NSEvent) { window?.performDrag(with: event) }
 }
 
 @MainActor
-private final class FloatingVideoButton: NSButton {
+final class FloatingVideoButton: NSButton {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 

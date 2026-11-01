@@ -10,6 +10,7 @@ struct EmbeddedAccountEditor: View {
     @State private var email: String
     @State private var color: AccountColor
     @State private var customCode: String
+    @State private var linkBrowser: String?
     @State private var error: String?
     @FocusState private var focus: Bool
 
@@ -20,6 +21,15 @@ struct EmbeddedAccountEditor: View {
         _email = State(initialValue: existing?.email ?? "")
         _color = State(initialValue: existing?.color ?? .teal)
         _customCode = State(initialValue: existing?.hexColor?.code ?? "")
+        _linkBrowser = State(initialValue: existing?.linkBrowser)
+    }
+
+    /// Every app macOS would open a web link with, by bundle identifier.
+    private var browsers: [(id: String, name: String)] {
+        let apps = NSWorkspace.shared.urlsForApplications(toOpen: URL(string: "https://example.com")!)
+        return apps.compactMap { url in
+            Bundle(url: url)?.bundleIdentifier.map { ($0, FileManager.default.displayName(atPath: url.path)) }
+        }
     }
 
     private var customColor: HexColor? { HexColor(customCode) }
@@ -69,6 +79,13 @@ struct EmbeddedAccountEditor: View {
                     Text("Enter an HTML color code, such as #1A73E8 or #F80.").font(.caption).foregroundStyle(.red)
                 }
             }
+            VStack(alignment: .leading, spacing: 5) {
+                Picker("Open other links in", selection: $linkBrowser) {
+                    Text("Default browser").tag(String?.none)
+                    ForEach(browsers, id: \.id) { browser in Text(browser.name).tag(String?.some(browser.id)) }
+                }.font(.callout.weight(.medium))
+                Text("Google links open in this account’s views. Everything else opens here.").font(.caption).foregroundStyle(.secondary)
+            }
             Text(existing == nil ? "After adding the account, sign in on Google’s page in its Mail view. The account label does not sign you in." : "Labels and colors don’t change the Google identity already signed in here.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if let error { Text(error).font(.caption).foregroundStyle(.red) }
@@ -76,7 +93,7 @@ struct EmbeddedAccountEditor: View {
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Button(existing == nil ? "Add account" : "Save") {
-                    do { try model.saveAccount(Account(id: existing?.id ?? UUID(), name: name, email: email, color: color, customColor: customColor?.code)); dismiss() }
+                    do { try model.saveAccount(Account(id: existing?.id ?? UUID(), name: name, email: email, color: color, customColor: customColor?.code, linkBrowser: linkBrowser)); dismiss() }
                     catch { self.error = error.localizedDescription }
                 }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction).disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || customCodeIsInvalid)
             }

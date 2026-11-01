@@ -68,6 +68,19 @@ public struct PINLockState: Codable, Equatable, Sendable {
     public var enabled: Bool { credential != nil }
     public static let failureLimit = 10
     public static let disabled = Self(credential: nil, failures: 0, resetPending: false)
+    /// Slows repeated guesses, so the erase limit can't be reached by accident or in moments.
+    public static func retryDelay(afterFailures failures: Int) -> TimeInterval {
+        switch failures {
+        case ..<3: 0
+        case 3: 5
+        case 4: 15
+        case 5: 30
+        case 6: 60
+        case 7: 120
+        case 8: 300
+        default: 600
+        }
+    }
     public init(credential: PINCredential?, failures: Int = 0, resetPending: Bool = false) {
         self.credential = credential; self.failures = failures; self.resetPending = resetPending
     }
@@ -171,6 +184,8 @@ public actor PINLockEngine {
         var current = try readState(requireExisting: true)
         guard let credential = current.credential else { throw PINLockError.invalidState }
         if current.resetPending { return .resetRequired }
+        // Something that can't be a PIN says nothing about who is typing, so it costs no attempt.
+        guard PINCredential.isValidPIN(pin) else { return .rejected(remaining: PINLockState.failureLimit - current.failures) }
         if try credential.matches(pin) {
             current.failures = 0
             try store.write(current)

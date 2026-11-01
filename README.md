@@ -34,12 +34,23 @@ The name and color are labels only. The Google account is whichever one you sign
 
 - **Switch views:** select a service in the sidebar, or press ⌘1–9. The first nine views show their shortcut.
 - **Go To:** press ⌘T and type, such as `personal cal`, to find any account, service, or pinned page.
-- **Open a service:** select **Open Service** under an account. Mail, Calendar, Drive, Contacts, Chat, Meet, YouTube, Gemini, Colab, and NotebookLM are available.
+- **Search every account:** press ⌥⌘F and enter a Gmail search. It runs in each account's Mail view, and you choose which account's results to see.
+- **Open a service:** select **Open Service** under an account. Mail, Calendar, Drive, Docs, Sheets, Slides, Contacts, Chat, Meet, YouTube, Gemini, Colab, and NotebookLM are available.
 - **Check where you are:** the toolbar shows the current account, its email label, and the page's address.
 
-Links to other websites open in your default browser. Unread counts appear beside Mail, and a green dot beside Calendar means a timed event is happening now.
+Google links stay in the account you clicked them in, so a Meet link in Work's Calendar opens Work's Meet view. Links to other websites open in your default browser, or in the browser chosen for that account when you edit it. Press ⇧⌘O to open the current page in a browser, or ⇧⌘C to copy its link.
+
+Unread counts appear beside Mail, and a green dot beside Calendar means a timed event is happening now. An orange bell on an account means its Calendar couldn't load, so reminders are paused. MailPort retries by itself, and right away when the network returns or your Mac wakes.
 
 An orange warning and a **Sign In** row mean Google signed the account out. Select **Sign In** and finish on Google's page. Its unread count and Calendar dot then come back.
+
+### Pop out a view
+
+To keep a view in its own window, such as Calendar on a second display, press ⌥⌘P, select **Pop Out View** in the toolbar, or right-click the view. The window has no title bar and shows the same page, so nothing reloads.
+
+Move the pointer to the window's top edge to reveal its controls. Drag the title to move the window, and drag any edge or the lower-right grip to resize it. Select the pin, or press ⌃⌘P, to keep it on top of other windows and on every desktop. Select it again to turn that off. MailPort remembers each view's position and pin setting.
+
+To bring the view back, press ⌘W in its window or select the X. Popped-out views close when MailPort locks.
 
 ### Control and pop out YouTube videos
 
@@ -89,9 +100,19 @@ In **Settings > Workspace backup**, choose **Export workspace** to save a JSON f
 
 Open a video in YouTube and choose **Save Media > Save Transcript** in the toolbar, or choose Navigate > Save Video Transcript. MailPort saves the video's captions as a text file with timestamps, using your Mac's language when it's available, then English. Subtitles may flicker on for a moment. If an ad is playing, MailPort waits for it to finish, so saving can take a moment. Not every video has captions. Saved transcripts are for your own use, and the video's rights still belong to its owner.
 
+### Save memory with hibernation
+
+Views you haven't used for 30 minutes unload and show a moon. They reload where you left them when you select them. To change the time or turn this off, open **Settings > General**. To unload one now, right-click it and choose **Hibernate Now**. Under memory pressure, MailPort hibernates after 5 minutes instead.
+
+- **Mail** keeps working while hibernated. MailPort briefly checks each account about every 5 minutes and updates its unread count. If the count rose, you get an alert such as "2 new messages", without a sender or subject.
+- **Calendar** stays loaded while reminders are on, because reminders only fire from a loaded page. It can hibernate if notifications are off or the account is muted until you unmute it.
+- **In use:** the selected view, popped-out views, playing video, downloads, pages signing in, Meet, and Colab never hibernate.
+
+Low Power Mode doubles the time between checks.
+
 ### Organize the sidebar
 
-- **Reorder:** drag a service or pin up or down within its account, or right-click it for **Move Up** and **Move Down**. Shortcut numbers follow the new order.
+- **Reorder:** drag a service or pin up or down within its account, or right-click it for **Move Up** and **Move Down**. Shortcut numbers follow the new order. To reorder accounts, right-click an account's header.
 - **Remove a service:** right-click it and choose **Remove from Sidebar**, or press ⌘W. You stay signed in. Press ⇧⌘T or use **Open Service** to bring it back.
 - **Collapse an account:** select its header.
 - **Hide the sidebar:** press ⌃⌘S.
@@ -109,9 +130,9 @@ Pins work on each service's main Google address. They're stored on your Mac and 
 Right-click an account's header.
 
 - **Edit** changes its name, email label, and color. Pick a preset, use the color panel, or enter an HTML code such as `#1A73E8`.
-- **Remove** offers two choices. **Remove and Keep Sign-In** leaves its website data on your Mac. **Remove and Sign Out** deletes MailPort's cookies and website data for that account.
+- **Remove** deletes MailPort's cookies and website data for that account. It doesn't change your Google account, email, or calendar.
 
-Neither choice changes your Google account, email, or calendar.
+Older versions could keep a removed account's sign-in on your Mac, where nothing could use it again. If any remain, **Settings > Security** offers to delete them.
 
 ### Open email links in MailPort
 
@@ -119,6 +140,11 @@ Neither choice changes your Google account, email, or calendar.
 2. Under **Open email links with**, choose an account, or keep **Ask each time**.
 
 Links open as a draft for you to review in Gmail. Nothing sends until you send it.
+
+### Start an email from any app
+
+- **Keyboard:** turn on **New email from any app** in **Settings > General**, then press ⌃⌥⌘N anywhere.
+- **Selected text:** choose **New MailPort Message** from an app's Services menu to start a draft with that text. Long selections are shortened to 6,000 characters.
 
 ### Turn on Calendar reminders
 
@@ -128,7 +154,7 @@ Links open as a draft for you to review in Gmail. Nothing sends until you send i
 4. In Google Calendar, go to General > Notification settings and select **Desktop notifications**.
 5. Repeat steps 3 and 4 for each account.
 
-MailPort must be running, online, and signed in for reminders to arrive. They can be missed while the app is quit, locked, or your Mac is asleep. Clicking a Calendar reminder opens that account's Calendar. Gmail notifications also appear when they're enabled in Gmail and its page is loaded.
+MailPort must be running, online, and signed in for reminders to arrive. They can be missed while the app is quit, locked, or your Mac is asleep. With a PIN, MailPort also locks when your screen locks unless you turn that off, so reminders pause then too. Clicking a Calendar reminder opens that account's Calendar. Gmail notifications also appear when they're enabled in Gmail and its page is loaded.
 
 The Notifications window includes per-account diagnostics for Calendar connection and mute status, plus **Send test reminder** and **Refresh diagnostics**. It distinguishes an alert submitted to macOS from one found in Notification Center, and separates test alerts from actual Calendar reminders. A test verifies Mac delivery; a real event verifies Google's reminder rules. Focus settings can prevent banners even when an alert was accepted. Diagnostic history clears when MailPort locks.
 
@@ -136,7 +162,7 @@ To quiet one account, right-click its header and choose **Notifications**. You c
 
 ### Schedule account notifications
 
-Open **Settings > Notification schedules**, or right-click an account and choose **Notifications > Notification Schedule**. Define each account’s schedule by selecting days and entering your own start and end times, then choose **Notify only during these hours** or **Mute during these hours**. You can configure the schedule while it is off, then enable it when ready. Every account can use different days, hours and rules.
+Open **Settings > Notifications**, or right-click an account and choose **Notifications > Notification Schedule**. Define each account’s schedule by selecting days and entering your own start and end times, then choose **Notify only during these hours** or **Mute during these hours**. You can configure the schedule while it is off, then enable it when ready. Every account can use different days, hours and rules.
 
 Schedules follow the Mac’s local time zone and apply to MailPort’s Gmail and Calendar alerts. Overnight windows start on the selected days; equal start/end times mean the entire selected day. Manual mute takes priority. **Resume Schedule** clears a manual mute without changing the schedule. Muted alerts are skipped, not queued. Schedule changes take effect for incoming alerts, and schedules are saved across restarts and included in workspace backups.
 
@@ -146,7 +172,9 @@ The Dock icon shows your total unread mail. To choose which accounts count, open
 
 ### Lock MailPort with a PIN
 
-PIN lock is off by default. To turn it on, open Settings (⌘,), select **Require a PIN after sleep**, and choose a six-digit PIN. MailPort then asks for the PIN when it launches and after your Mac sleeps. Press ⌃⌘L to lock it right away.
+PIN lock is off by default. To turn it on, open Settings (⌘,), select **Require a PIN after sleep**, and choose a six-digit PIN. MailPort then asks for the PIN when it launches, after your Mac sleeps, and when your screen locks. In **Settings > Security** you can turn off locking with the screen, or lock after a period of inactivity. Press ⌃⌘L to lock it right away.
+
+After three incorrect PINs in a row, MailPort makes you wait before trying again, from 5 seconds up to 10 minutes.
 
 > [!WARNING]
 > Ten incorrect PIN entries in a row erase MailPort's accounts, saved Google sign-ins, and settings on this Mac. Restarting the app doesn't reset the count. Your Google accounts, email, and calendars aren't affected, and neither are files you've downloaded.
@@ -163,8 +191,15 @@ MailPort checks for new versions automatically and asks before installing one. Y
 | --- | --- |
 | Go to an account, service, or pin | ⌘T |
 | Switch to view 1–9 | ⌘1–⌘9 |
+| Search all accounts | ⌥⌘F |
 | Next or previous view | ⇧⌘] or ⇧⌘[ |
+| Back or forward | ⌘[ or ⌘] |
+| Pop out a view, or return it | ⌥⌘P |
+| Keep a popped-out view on top | ⌃⌘P in its window |
+| Open the page in a browser | ⇧⌘O |
+| Copy the page's link | ⇧⌘C |
 | New email | ⌘N |
+| New email from any app, once turned on | ⌃⌥⌘N |
 | Pin the current page | ⌘D |
 | Find in page | ⌘F |
 | Find next or previous | ⌘G or ⇧⌘G |
@@ -181,7 +216,7 @@ MailPort checks for new versions automatically and asks before installing one. Y
 
 ## Privacy
 
-MailPort has no server and doesn't use a Google API. Its only other connection is the update check, which reads the latest release from GitHub. Sign-ins are handled by Google's own pages and stored locally by WebKit, with each account kept separate. Unread counts and Calendar dots read only counts and event times, not message contents or event titles.
+MailPort has no server and doesn't use a Google API. Its only other connections are the update check, which reads the latest release from GitHub, and the optional YouTube download tools, which contact YouTube directly. Sign-ins are handled by Google's own pages and stored locally by WebKit, with each account kept separate. Unread counts and Calendar dots read only counts and event times, not message contents or event titles.
 
 ## Current limits
 
@@ -192,7 +227,7 @@ MailPort has no server and doesn't use a Google API. Its only other connection i
 
 ## Get help
 
-Choose Help > MailPort Help to open this page, or Help > Report a Problem to [open an issue](https://github.com/yepher/mail-port/issues/new). If Google's sign-in stops working, please say so; it's the thing most likely to break.
+Choose Help > MailPort Help to open this page, or Help > Report an Issue to [open an issue](https://github.com/yepher/mail-port/issues/new). Review what you share before submitting. Help > Copy Diagnostics copies version and connection details to include, without names, addresses, or page links. If Google's sign-in stops working, please say so; it's the thing most likely to break.
 
 ## Contributing
 
@@ -201,5 +236,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for build, test, and release instructions
 ## License
 
 MailPort is free to use, change, and share, including at work. You can't sell it, or sell a product or service based substantially on it, without a separate license from the author. See [LICENSE](LICENSE) for the full terms. The app includes [Sparkle](https://sparkle-project.org), which has its own license.
-
-Report problems with **Help > Report an Issue…**, which opens GitHub’s new-issue page in your browser. Review what you share before submitting.

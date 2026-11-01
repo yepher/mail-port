@@ -9,7 +9,7 @@ public struct AccountStore: Sendable {
     public func load() throws -> [Account] {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
         let accounts = try JSONDecoder().decode([Account].self, from: Data(contentsOf: fileURL))
-        return try validated(accounts)
+        return try validated(accounts.map { $0.repaired() })
     }
 
     public func save(_ accounts: [Account]) throws {

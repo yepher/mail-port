@@ -46,10 +46,12 @@ The Release configuration uses your real accounts, so don't switch the Run actio
 
 ```sh
 ./scripts/build.sh --test
-node --test scripts/test-tab-activity.cjs scripts/test-notification-bridge.cjs
+node --test scripts/test-*.cjs
 ```
 
-Tests must not reach the network or real accounts. Use a disposable directory named `MailPortSecurityTest-*` and fixture accounts, as the existing tests do. Add a regression test with each bug fix.
+Tests must not reach the network or real accounts. Use a disposable directory named `MailPortSecurityTest-*` and fixture accounts, as the existing tests do. Set `loadsPages = false` on a model whose tabs open pages. Add a regression test with each bug fix.
+
+GitHub Actions runs the Swift and JavaScript tests on every push to `main` and on pull requests.
 
 ## Project layout
 
@@ -76,6 +78,10 @@ Tests must not reach the network or real accounts. Use a disposable directory na
 **Keep bad data contained.** One invalid saved value shouldn't block the account list. Reject bad input in the editor, and fall back safely when loading.
 
 **Clear state when locking.** Anything new that holds account data must be cleared in `suspendForLock()` and covered by the local data reset.
+
+**Keep background checks count-only.** Hibernated Mail is read through a page with no notification bridge, and its alerts come from the unread count alone. Don't read senders or subjects to improve them. `TabHibernation` decides what may unload, so add anything new that must stay loaded there.
+
+**Never delete sign-ins while the account list is unreadable.** Without that list, every website store looks unused. Anything that compares stores with accounts must check `storageAvailable` first.
 
 **Protect the PIN lock.** PINs are stored only as a salted PBKDF2-HMAC-SHA256 verifier with 200,000 rounds, and the verifier and failure counter live in the Keychain. Missing or unreadable security records leave the app locked.
 

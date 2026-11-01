@@ -71,3 +71,39 @@ struct QuickSwitcherView: View {
         model.go(to: items[index])
     }
 }
+
+/// Runs one Gmail search in every account. Results stay in each account's Mail view.
+struct AccountSearchView: View {
+    @ObservedObject var model: EmbeddedWorkspace
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+    @State private var searched: String?
+    @FocusState private var focus: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Search all accounts").font(.title3.bold())
+            TextField("Gmail search, such as from:sam has:attachment", text: $query)
+                .textFieldStyle(.roundedBorder).focused($focus).onSubmit(search)
+            if let searched {
+                Text("Showing “\(searched)” in each account’s Mail. Choose one to see its results.")
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                ForEach(model.accounts) { account in
+                    Button(account.name) { dismiss(); model.open(.gmail, account: account) }.buttonStyle(.bordered)
+                }
+            }
+            HStack {
+                Spacer()
+                Button("Close") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Search", action: search).buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
+                    .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }.padding(24).frame(width: 440).onAppear { focus = true }
+    }
+
+    private func search() {
+        guard GmailSearch.url(query: query) != nil else { return }
+        model.searchAllAccounts(query)
+        searched = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}

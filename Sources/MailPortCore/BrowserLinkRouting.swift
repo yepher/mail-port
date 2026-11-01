@@ -23,6 +23,22 @@ public enum BrowserLinkRouting {
         return query.contains { $0.name == "view" && $0.value == "att" }
     }
 
+    /// The service that shows this address, so a Google link can stay in its account.
+    /// Nil means no service does, and the link belongs in a browser.
+    public static func service(for url: URL) -> GoogleService? {
+        guard url.scheme?.lowercased() == "https", url.user == nil, url.password == nil,
+              let host = url.host?.lowercased() else { return nil }
+        if host == "docs.google.com" {
+            let path = url.path.lowercased()
+            if path.hasPrefix("/document") { return .docs }
+            if path.hasPrefix("/spreadsheets") { return .sheets }
+            if path.hasPrefix("/presentation") { return .slides }
+            return nil
+        }
+        if host == "notebooklm.google.com" { return .notebooklm }
+        return GoogleService.allCases.first { $0.url.host?.lowercased() == host }
+    }
+
     public static func externalURL(for url: URL, service: GoogleService, topLevel: Bool,
         download: Bool = false, authenticating: Bool = false, userLink: Bool = false,
         attachment: Bool = false) -> URL? {

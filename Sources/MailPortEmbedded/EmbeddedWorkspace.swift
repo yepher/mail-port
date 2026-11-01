@@ -1,11 +1,13 @@
 import AppKit
 import Combine
+import Network
 import UniformTypeIdentifiers
 import WebKit
 import MailPortCore
 import MailPortSecurity
 
 enum WorkspaceLayout: String { case sidebar, tabBar }
+enum SettingsPage: String, CaseIterable { case general, accounts, notifications, youtube, security }
 
 @MainActor
 final class EmbeddedWorkspace: ObservableObject {
@@ -24,6 +26,8 @@ final class EmbeddedWorkspace: ObservableObject {
     private var pendingDownloadRetry: UUID?
     @Published var showingNotifications = false
     @Published var showingSecuritySettings = false
+    @Published var settingsPage = SettingsPage.general
+    @Published var showingAccountSearch = false
     @Published var showingQuickSwitch = false
     @Published var showingPinEditor = false
     @Published var accountPendingRemoval: Account?
@@ -52,6 +56,13 @@ final class EmbeddedWorkspace: ObservableObject {
     @Published private(set) var accountsNeedingSignIn: Set<UUID> = []
     @Published private(set) var serviceZoom: [GoogleService: Double] = [:]
     @Published private(set) var defaultMailAccountID: UUID?
+    /// Views showing in their own borderless windows.
+    @Published private(set) var detachedViews: [WorkspaceTab: DetachedViewController] = [:]
+    /// Views whose pages are unloaded, with the address to come back to.
+    @Published private(set) var hibernatedTabs: [WorkspaceTab: URL] = [:]
+    @Published private(set) var hibernationEnabled = true
+    @Published private(set) var hibernationIdleMinutes = TabHibernation.defaultIdleMinutes
+    @Published private(set) var globalComposeShortcut = false
     @Published var layout: WorkspaceLayout = .sidebar {
         didSet { preferences.set(layout.rawValue, forKey: "workspaceLayout") }
     }
@@ -67,6 +78,19 @@ final class EmbeddedWorkspace: ObservableObject {
     private var stores: [UUID: WKWebsiteDataStore] = [:]
     private var browsers: [WorkspaceTab: BrowserTab] = [:]
     private var calendarMonitors: [UUID: BrowserTab] = [:]
+    private var monitorStarted: [UUID: Date] = [:]
+    /// Short-lived pages that reread a hibernated Mail view's unread count.
+    private var mailChecks: [WorkspaceTab: (browser: BrowserTab, started: Date, sample: TabActivity?)] = [:]
+    private var lastChecks: [WorkspaceTab: Date] = [:]
+    private var knownUnread: [WorkspaceTab: Int] = [:]
+    private var lastUsed: [WorkspaceTab: Date] = [:]
+    private var memoryPressureUntil: Date?
+    private var memoryPressure: DispatchSourceMemoryPressure?
+    private var pathMonitor: NWPathMonitor?
+    private var isOnline = true
+    private var wakeObserver: NSObjectProtocol?
+    /// Tests turn this off so that nothing reaches the network.
+    var loadsPages = true
     private var activityDay = Calendar.current.startOfDay(for: Date())
     private var activityTimer: Timer?
     private var browserChanges: AnyCancellable?
@@ -158,6 +182,8 @@ final class EmbeddedWorkspace: ObservableObject {
             if let webID { self.currentBrowser?.notificationBridge.clicked(webID) }
         }
         Task { await notifications.refresh() }
+        GlobalComposeHotKey.shared.onPress = { [weak self] in self?.showWindow(); self?.compose() }
+        startWatchingConditions()
         security.start()
         activityTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
@@ -169,16 +195,71 @@ final class EmbeddedWorkspace: ObservableObject {
                     for monitor in self.calendarMonitors.values {
                         monitor.load(URL(string: "https://calendar.google.com/calendar/u/0/r/day")!)
                     }
+                    for tab in self.lastChecks.keys where tab.service == .calendar { self.lastChecks[tab] = nil }
                 }
+                self.runHibernation()
             }
         }
+    }
+
+    /// Pages recover when the network returns or the Mac wakes, rather than waiting
+    /// for their next retry. Memory pressure makes hibernation act sooner.
+    private func startWatchingConditions() {
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] path in
+            let online = path.status == .satisfied
+            DispatchQueue.main.async { MainActor.assumeIsolated { self?.networkChanged(online: online) } }
+        }
+        monitor.start(queue: .global(qos: .utility))
+        pathMonitor = monitor
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.recoverPages() }
+        }
+        let source = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .main)
+        source.setEventHandler { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.memoryPressureUntil = Date().addingTimeInterval(600)
+                self.runHibernation()
+            }
+        }
+        source.resume()
+        memoryPressure = source
+    }
+
+    private func networkChanged(online: Bool) {
+        let returned = online && !isOnline
+        isOnline = online
+        if returned { recoverPages() }
+    }
+
+    func recoverPages() {
+        guard !security.blocksAccess else { return }
+        for browser in Array(browsers.values) + Array(calendarMonitors.values) { browser.recover() }
+    }
+
+    /// Why this account's reminders can't arrive right now, or nil if nothing is wrong.
+    /// Reminders that were turned off or muted aren't a problem.
+    func reminderProblem(for account: Account, at now: Date = Date()) -> String? {
+        guard MailPortNotifications.shared.permission == "granted",
+              !notificationSettings(for: account).isMuted(at: now) else { return nil }
+        if accountsNeedingSignIn.contains(account.id) { return "Reminders are paused until this account signs in." }
+        guard let browser = browsers[WorkspaceTab(accountID: account.id, service: .calendar)] else {
+            return "Calendar isn’t loaded, so reminders can’t arrive."
+        }
+        return browser.needsRecovery ? "Calendar couldn’t load, so reminders are paused. MailPort keeps retrying." : nil
     }
 
     private func restoreWorkspace() {
         skipsYouTubeAds = preferences.bool(forKey: "youtubeAutoSkipAds")
         allowsYouTubeDownloads = preferences.bool(forKey: "youtubeMediaDownloads")
         popOutVideoOpacity = VideoOpacity.normalized((preferences.object(forKey: "popOutVideoOpacity") as? Double) ?? 1)
+        hibernationEnabled = preferences.object(forKey: "hibernatesIdleViews") as? Bool ?? true
+        let idle = preferences.integer(forKey: "hibernationIdleMinutes")
+        hibernationIdleMinutes = TabHibernation.idleChoices.contains(idle) ? idle : TabHibernation.defaultIdleMinutes
         guard !security.blocksAccess else { return }
+        globalComposeShortcut = preferences.bool(forKey: "globalComposeShortcut")
+        GlobalComposeHotKey.shared.setEnabled(globalComposeShortcut)
         storageAvailable = true
         do {
             accounts = try accountStore.load()
@@ -221,6 +302,7 @@ final class EmbeddedWorkspace: ObservableObject {
     private func suspendForLock() {
         clearVideoDockMenu?()
         closeFloatingVideo()
+        for controller in Array(detachedViews.values) { controller.close() }
         openingFloatingVideo = false
         popOutVideoOpacity = 1
         cancelMediaDownload()
@@ -231,7 +313,7 @@ final class EmbeddedWorkspace: ObservableObject {
         showingHelp = false; showingNotifications = false; showingSecuritySettings = false
         showingBackupRestore = false; pendingBackup = nil; backupStatus = nil
         showingDownloads = false; pendingDownloadRetry = nil
-        showingQuickSwitch = false; showingPinEditor = false; accountPendingRemoval = nil
+        showingQuickSwitch = false; showingPinEditor = false; showingAccountSearch = false; accountPendingRemoval = nil
         pendingCompose = nil; errorMessage = nil
         func dismissSheets(in window: NSWindow) {
             for sheet in window.sheets {
@@ -242,7 +324,9 @@ final class EmbeddedWorkspace: ObservableObject {
         if let mainWindow { dismissSheets(in: mainWindow) }
         MailPortNotifications.shared.setPrivacyLocked(true)
         browserChanges = nil
-        for browser in Array(browsers.values) + Array(calendarMonitors.values) { browser.discardForSecurity() }
+        for browser in Array(browsers.values) + Array(calendarMonitors.values) + mailChecks.values.map(\.browser) { browser.discardForSecurity() }
+        mailChecks.removeAll(); hibernatedTabs.removeAll(); lastChecks.removeAll(); knownUnread.removeAll()
+        lastUsed.removeAll(); monitorStarted.removeAll()
         currentBrowser = nil
         downloadCenter.clearForLock()
         browsers.removeAll(); calendarMonitors.removeAll(); stores.removeAll()
@@ -263,9 +347,9 @@ final class EmbeddedWorkspace: ObservableObject {
             websiteIdentifiers: identifiers, includeDefaultStore: !testingMode)
     }
 
-    func openSecuritySettings() {
+    func openSecuritySettings(page: SettingsPage = .general) {
         showWindow()
-        if !security.blocksAccess { showingSecuritySettings = true }
+        if !security.blocksAccess { settingsPage = page; showingSecuritySettings = true }
     }
 
     func select(_ tab: WorkspaceTab) {
@@ -273,6 +357,8 @@ final class EmbeddedWorkspace: ObservableObject {
         guard let account = accounts.first(where: { $0.id == tab.accountID }) else { return }
         if !tabs.contains(tab) { tabs.append(tab) }
         ensureBrowser(for: tab, account: account)
+        if let selection { lastUsed[selection] = Date() }
+        lastUsed[tab] = Date()
         selection = tab
         if collapsedAccounts.remove(tab.accountID) != nil { persistCollapsedAccounts() }
         lastAccountID = tab.accountID
@@ -282,6 +368,7 @@ final class EmbeddedWorkspace: ObservableObject {
         preferences.set(tab.id, forKey: "selectedTab")
         persistTabs()
         prepareTabActivity()
+        detachedViews[tab]?.window?.makeKeyAndOrderFront(nil)
     }
 
     func open(_ service: GoogleService, account: Account? = nil) {
@@ -295,6 +382,7 @@ final class EmbeddedWorkspace: ObservableObject {
         guard tabs.contains(tab) else { return }
         let next = WorkspaceTab.selection(afterClosing: tab, in: navigationTabs, selected: selection)
         if poppedOutVideo == tab { closeFloatingVideo() }
+        detachedViews[tab]?.close()
         if tab.service == .youtube { browsers[tab]?.discardForSecurity() }
         tabs.removeAll { $0 == tab }
         if selection == tab {
@@ -305,10 +393,19 @@ final class EmbeddedWorkspace: ObservableObject {
             if let next { select(next) }
         }
         if tab.service != .calendar || MailPortNotifications.shared.permission != "granted" {
-            browsers.removeValue(forKey: tab)?.discardForSecurity()
+            if let browser = browsers[tab], browser.hasActiveDownloads {
+                // Closing a view shouldn't quietly throw away a file it's still saving.
+                browser.onDownloadsFinished = { [weak self] in
+                    guard let self, !self.tabs.contains(tab) else { return }
+                    self.browsers.removeValue(forKey: tab)?.discardForSecurity()
+                }
+            } else {
+                browsers.removeValue(forKey: tab)?.discardForSecurity()
+            }
         }
+        forgetBackgroundState(of: tab)
         tabActivity.removeValue(forKey: tab)
-        if tab.service == .calendar { calendarMonitors.removeValue(forKey: tab.accountID)?.webView.stopLoading() }
+        if tab.service == .calendar { calendarMonitors.removeValue(forKey: tab.accountID)?.discardForSecurity(); monitorStarted[tab.accountID] = nil }
         recentlyClosed.removeAll { $0 == tab }
         recentlyClosed.append(tab)
         if recentlyClosed.count > 20 { recentlyClosed.removeFirst() }
@@ -325,11 +422,25 @@ final class EmbeddedWorkspace: ObservableObject {
         persistTabs()
     }
 
-    private func ensureBrowser(for tab: WorkspaceTab, account: Account) {
-        guard browsers[tab] == nil else { return }
+    private func forgetBackgroundState(of tab: WorkspaceTab) {
+        mailChecks.removeValue(forKey: tab)?.browser.discardForSecurity()
+        hibernatedTabs[tab] = nil; lastChecks[tab] = nil; knownUnread[tab] = nil; lastUsed[tab] = nil
+    }
+
+    private func dataStore(for account: Account) -> WKWebsiteDataStore {
         let store = stores[account.id] ?? WKWebsiteDataStore(forIdentifier: account.id)
         stores[account.id] = store
-        let browser = BrowserTab(account: account, service: tab.service, store: store)
+        return store
+    }
+
+    private func ensureBrowser(for tab: WorkspaceTab, account: Account) {
+        guard browsers[tab] == nil else { return }
+        let saved = hibernatedTabs.removeValue(forKey: tab)
+        mailChecks.removeValue(forKey: tab)?.browser.discardForSecurity()
+        let browser = BrowserTab(account: account, service: tab.service, store: dataStore(for: account), loadsInitialPage: loadsPages && saved == nil)
+        if let saved, loadsPages { browser.load(saved) }
+        lastUsed[tab] = Date()
+        browser.onOpenInService = { [weak self] service, url in self?.openInService(service, url: url, from: tab) ?? false }
         browser.skipsYouTubeAds = skipsYouTubeAds
         browser.downloadCenter = downloadCenter
         browser.downloadWindow = { [weak self] in self?.mainWindow }
@@ -344,20 +455,181 @@ final class EmbeddedWorkspace: ObservableObject {
 
     private func prepareTabActivity() {
         guard !security.blocksAccess else { return }
+        let lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
         for tab in tabs {
             guard let account = accounts.first(where: { $0.id == tab.accountID }) else { continue }
-            if tab.service == .gmail { ensureBrowser(for: tab, account: account) }
-            if tab.service == .calendar, calendarMonitors[account.id] == nil {
-                let store = stores[account.id] ?? WKWebsiteDataStore(forIdentifier: account.id)
-                stores[account.id] = store
-                // Observe today's view independently of whichever date the user is browsing.
-                // This page has no native notification bridge, so it cannot duplicate alerts.
-                let monitor = BrowserTab(account: account, service: .calendar, store: store, activityOnly: true)
-                monitor.onActivity = { [weak self] sample in self?.recordActivity(sample, for: tab) }
-                monitor.onSignInChange = { [weak self] needed in self?.updateSignIn(needed, for: account.id) }
-                calendarMonitors[account.id] = monitor
+            if tab.service == .gmail, hibernatedTabs[tab] == nil { ensureBrowser(for: tab, account: account) }
+            guard tab.service == .calendar, calendarMonitors[account.id] == nil else { continue }
+            // With hibernation on, today's view is a brief periodic look, one account
+            // at a time, instead of a second Calendar page per account all day.
+            if hibernationEnabled {
+                guard calendarMonitors.isEmpty, isOnline, TabHibernation.isCheckDue(lastCheck: lastChecks[tab],
+                    interval: TabHibernation.checkInterval(for: .calendar, lowPower: lowPower), now: Date()) else { continue }
+                lastChecks[tab] = Date()
+                monitorStarted[account.id] = Date()
+            }
+            // Observe today's view independently of whichever date the user is browsing.
+            // This page has no native notification bridge, so it cannot duplicate alerts.
+            let monitor = BrowserTab(account: account, service: .calendar, store: dataStore(for: account), activityOnly: true, loadsInitialPage: loadsPages)
+            let keepsLastSample = hibernationEnabled
+            monitor.onActivity = { [weak self] sample in if sample != nil || !keepsLastSample { self?.recordActivity(sample, for: tab) } }
+            monitor.onSignInChange = { [weak self] needed in self?.updateSignIn(needed, for: account.id) }
+            calendarMonitors[account.id] = monitor
+        }
+    }
+
+    /// Reminders only fire from a loaded page, so Calendar stays awake while they're
+    /// wanted. An account muted with no end date is the exception.
+    private func remindersWanted(for accountID: UUID) -> Bool {
+        guard MailPortNotifications.shared.permission == "granted" else { return false }
+        return notificationSettings[accountID]?.mutedUntil != .distantFuture
+    }
+
+    private func pageState(of tab: WorkspaceTab, browser: BrowserTab) -> TabHibernation.PageState {
+        var state = TabHibernation.PageState()
+        state.isSelected = selection == tab
+        state.isDetached = detachedViews[tab] != nil
+        state.isPlaying = browser.videoPlayback.isPlaying || poppedOutVideo == tab
+        state.isCapturing = browser.isCapturingMedia
+        state.isDownloading = browser.hasActiveDownloads
+        state.isLoading = browser.isLoading
+        state.needsSignIn = accountsNeedingSignIn.contains(tab.accountID)
+        state.deliversReminders = tab.service == .calendar && remindersWanted(for: tab.accountID)
+        return state
+    }
+
+    func canHibernate(_ tab: WorkspaceTab) -> Bool {
+        guard !security.blocksAccess, let browser = browsers[tab] else { return false }
+        return TabHibernation.canHibernate(tab.service, state: pageState(of: tab, browser: browser))
+    }
+
+    /// Runs once a minute. Unloads idle pages, finishes checks that have had time to
+    /// render, then starts at most one more, so accounts don't all load at once.
+    func runHibernation(at now: Date = Date()) {
+        guard !security.blocksAccess, hibernationEnabled else { return }
+        finishChecks(at: now)
+        let pressured = memoryPressureUntil.map { now < $0 } ?? false
+        let limit = pressured ? TabHibernation.pressuredIdleLimit : TimeInterval(hibernationIdleMinutes * 60)
+        for (tab, browser) in browsers {
+            let idle = now.timeIntervalSince(lastUsed[tab] ?? now)
+            if TabHibernation.shouldHibernate(tab.service, idleFor: idle, limit: limit, state: pageState(of: tab, browser: browser)) {
+                hibernate(tab, at: now)
             }
         }
+        guard isOnline else { return }
+        prepareTabActivity()
+        startMailCheck(at: now)
+    }
+
+    func hibernate(_ tab: WorkspaceTab, at now: Date = Date()) {
+        guard canHibernate(tab), let browser = browsers.removeValue(forKey: tab) else { return }
+        // Only a page in this service's own address comes back; anything else starts at home.
+        hibernatedTabs[tab] = browser.url.flatMap { WorkspacePin.canPin($0, in: tab.service) ? $0 : nil } ?? tab.service.url
+        browser.discardForSecurity()
+        lastChecks[tab] = now
+        if tab.service == .gmail {
+            knownUnread[tab] = tabActivity[tab]?.unreadCount
+            holdActivity(for: tab)
+        }
+    }
+
+    /// An unloaded page can't refresh its count, so the last one stands until the next check.
+    private func holdActivity(for tab: WorkspaceTab) {
+        guard let sample = tabActivity[tab] else { return }
+        let interval = TabHibernation.checkInterval(for: tab.service, lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled)
+        tabActivity[tab] = sample.lasting(Date().timeIntervalSince(sample.sampledAt) + interval * 2)
+    }
+
+    private func startMailCheck(at now: Date) {
+        guard mailChecks.isEmpty else { return }
+        let lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+        let interval = TabHibernation.checkInterval(for: .gmail, lowPower: lowPower)
+        let due = hibernatedTabs.keys.filter { tab in
+            tab.service == .gmail && !accountsNeedingSignIn.contains(tab.accountID)
+                && TabHibernation.isCheckDue(lastCheck: lastChecks[tab], interval: interval, now: now)
+        }.min { (lastChecks[$0] ?? .distantPast) < (lastChecks[$1] ?? .distantPast) }
+        guard let tab = due, let account = accounts.first(where: { $0.id == tab.accountID }) else { return }
+        lastChecks[tab] = now
+        // No notification bridge: this page only reads a count, and can't send Gmail's own alerts.
+        let browser = BrowserTab(account: account, service: .gmail, store: dataStore(for: account), activityOnly: true, loadsInitialPage: loadsPages)
+        browser.onActivity = { [weak self] sample in
+            if let sample { self?.mailChecks[tab]?.sample = sample }
+        }
+        browser.onSignInChange = { [weak self] needed in self?.updateSignIn(needed, for: account.id) }
+        mailChecks[tab] = (browser, now, nil)
+    }
+
+    private func finishChecks(at now: Date) {
+        for (id, started) in monitorStarted where now.timeIntervalSince(started) >= TabHibernation.checkDuration {
+            calendarMonitors.removeValue(forKey: id)?.discardForSecurity()
+            monitorStarted[id] = nil
+            holdActivity(for: WorkspaceTab(accountID: id, service: .calendar))
+        }
+        for (tab, check) in mailChecks where now.timeIntervalSince(check.started) >= TabHibernation.checkDuration {
+            mailChecks[tab] = nil
+            check.browser.discardForSecurity()
+            guard let sample = check.sample else { continue }
+            recordActivity(sample, for: tab)
+            holdActivity(for: tab)
+            announceNewMail(TabHibernation.newMessages(previous: knownUnread[tab], current: sample.unreadCount), for: tab)
+            knownUnread[tab] = sample.unreadCount
+        }
+    }
+
+    var activeMailChecks: Int { mailChecks.count }
+    private(set) var lastAnnouncedNewMail = 0
+
+    /// Gives a running check its sample, as the page would.
+    func hibernationCheckFinished(_ tab: WorkspaceTab, sample: TabActivity?) { mailChecks[tab]?.sample = sample }
+
+    /// Gmail can't alert while unloaded, so a higher count stands in. It's a count
+    /// only: reading a sender or subject would mean reading the message list.
+    private func announceNewMail(_ count: Int, for tab: WorkspaceTab) {
+        lastAnnouncedNewMail = count
+        guard count > 0, let account = accounts.first(where: { $0.id == tab.accountID }),
+              let message = WebNotificationMessage(["kind": "show", "id": UUID().uuidString, "title": TabHibernation.newMailTitle(count)]) else { return }
+        Task { _ = await MailPortNotifications.shared.deliver(message, account: account, service: .gmail) }
+    }
+
+    func setHibernationEnabled(_ enabled: Bool) {
+        guard !security.blocksAccess else { return }
+        hibernationEnabled = enabled
+        preferences.set(enabled, forKey: "hibernatesIdleViews")
+        for id in Array(calendarMonitors.keys) {
+            calendarMonitors.removeValue(forKey: id)?.discardForSecurity()
+            monitorStarted[id] = nil
+        }
+        if !enabled {
+            for tab in hibernatedTabs.keys where tab.service == .gmail || (tab.service == .calendar && remindersWanted(for: tab.accountID)) {
+                if let account = accounts.first(where: { $0.id == tab.accountID }) { ensureBrowser(for: tab, account: account) }
+            }
+        }
+        prepareTabActivity()
+    }
+
+    func setHibernationIdleMinutes(_ minutes: Int) {
+        guard !security.blocksAccess, TabHibernation.idleChoices.contains(minutes) else { return }
+        hibernationIdleMinutes = minutes
+        preferences.set(minutes, forKey: "hibernationIdleMinutes")
+    }
+
+    func setGlobalComposeShortcut(_ enabled: Bool) {
+        guard !security.blocksAccess else { return }
+        globalComposeShortcut = enabled
+        preferences.set(enabled, forKey: "globalComposeShortcut")
+        GlobalComposeHotKey.shared.setEnabled(enabled)
+    }
+
+    /// A Google link stays in the account it was clicked in. Only the page in front
+    /// may do this, so a background page can't pull the window to another view.
+    private func openInService(_ service: GoogleService, url: URL, from source: WorkspaceTab) -> Bool {
+        guard !security.blocksAccess, selection == source || detachedViews[source] != nil,
+              service != source.service, accounts.contains(where: { $0.id == source.accountID }) else { return false }
+        let target = WorkspaceTab(accountID: source.accountID, service: service)
+        select(target)
+        browsers[target]?.load(url)
+        showWindow()
+        return true
     }
 
     func dockBadgeLabel(at now: Date = Date()) -> String? {
@@ -403,6 +675,8 @@ final class EmbeddedWorkspace: ObservableObject {
         guard !security.blocksAccess else { return }
         notificationSettings[accountID] = settings
         if let data = try? JSONEncoder().encode(notificationSettings) { preferences.set(data, forKey: "accountNotifications") }
+        // Unmuting has to bring back a Calendar page that hibernated while muted.
+        if MailPortNotifications.shared.permission == "granted" { prepareCalendarReminders() }
     }
 
     /// Loaded videos stay controllable even when their account isn't selected.
@@ -468,9 +742,54 @@ final class EmbeddedWorkspace: ObservableObject {
         poppedOutVideo = nil
     }
 
+    func isDetached(_ tab: WorkspaceTab?) -> Bool { tab.map { detachedViews[$0] != nil } ?? false }
+
+    private var savedDetachedFrames: [String: [Double]] {
+        preferences.dictionary(forKey: "detachedViewFrames") as? [String: [Double]] ?? [:]
+    }
+
+    private func savedDetachedFrame(for tab: WorkspaceTab) -> NSRect? {
+        guard let values = savedDetachedFrames[tab.id], values.count == 4 else { return nil }
+        return NSRect(x: values[0], y: values[1], width: values[2], height: values[3])
+    }
+
+    private func saveDetachedFrame(_ frame: NSRect, for tab: WorkspaceTab) {
+        guard !security.blocksAccess else { return }
+        var frames = savedDetachedFrames
+        frames[tab.id] = [Double(frame.origin.x), Double(frame.origin.y), Double(frame.width), Double(frame.height)]
+        preferences.set(frames, forKey: "detachedViewFrames")
+    }
+
+    private func saveDetachedPin(_ pinned: Bool, for tab: WorkspaceTab) {
+        guard !security.blocksAccess else { return }
+        var saved = Set(preferences.stringArray(forKey: "detachedViewPins") ?? [])
+        if pinned { saved.insert(tab.id) } else { saved.remove(tab.id) }
+        preferences.set(Array(saved), forKey: "detachedViewPins")
+    }
+
+    /// Moves a view's page into its own borderless window, or brings it back.
+    func toggleDetached(_ tab: WorkspaceTab? = nil) {
+        guard !security.blocksAccess, let tab = tab ?? selection,
+              let account = accounts.first(where: { $0.id == tab.accountID }) else { return }
+        if let controller = detachedViews[tab] { controller.close(); return }
+        if poppedOutVideo == tab { closeFloatingVideo() }
+        ensureBrowser(for: tab, account: account)
+        guard let browser = browsers[tab] else { return }
+        let screens = NSScreen.screens.map(\.visibleFrame)
+        let fallback = (mainWindow?.screen ?? NSScreen.main)?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 800)
+        let frame = DetachedViewController.placement(saved: savedDetachedFrame(for: tab), screens: screens, fallback: fallback)
+        let pinned = (preferences.stringArray(forKey: "detachedViewPins") ?? []).contains(tab.id)
+        let controller = DetachedViewController(tab: tab, browser: browser, title: "\(account.name) · \(tab.service.shortTitle)", frame: frame, pinned: pinned)
+        controller.onFrameChange = { [weak self] frame in self?.saveDetachedFrame(frame, for: tab) }
+        controller.onPinChange = { [weak self] pinned in self?.saveDetachedPin(pinned, for: tab) }
+        controller.onReturn = { [weak self] in self?.detachedViews[tab] = nil }
+        detachedViews[tab] = controller
+        controller.showWindow(nil)
+    }
+
     private func popOutVideo(_ tab: WorkspaceTab) {
         if poppedOutVideo == tab { closeFloatingVideo(); select(tab); showWindow(); return }
-        guard !openingFloatingVideo, let browser = browsers[tab], browser.videoPlayback.hasVideo else { return }
+        guard detachedViews[tab] == nil, !openingFloatingVideo, let browser = browsers[tab], browser.videoPlayback.hasVideo else { return }
         openingFloatingVideo = true
         Task { @MainActor [weak self, weak browser] in
             guard let self, let browser else { return }
@@ -536,7 +855,7 @@ final class EmbeddedWorkspace: ObservableObject {
             }
             guard !self.security.blocksAccess, self.browsers[tab] === browser else { return }
             browser.refreshVideoPlayback()
-            if !NSWorkspace.shared.open(url) { self.errorMessage = "YouTube couldn’t be opened in your default browser." }
+            browser.openInBrowser(url)
         }
     }
 
@@ -593,6 +912,13 @@ final class EmbeddedWorkspace: ObservableObject {
 
     func restoreWorkspace(includeAppearance: Bool) {
         guard !security.blocksAccess, let backup = pendingBackup else { return }
+        // An unreadable account list is the only link between sign-ins and their
+        // accounts. Saving here would replace the file MailPort said it preserved.
+        guard storageAvailable else {
+            errorMessage = "MailPort can’t restore while it can’t read its account list. Your saved files have been preserved."
+            cancelBackupRestore()
+            return
+        }
         do {
             let imported = try backup.importing(alongside: accounts)
             let combined = accounts + imported.accounts
@@ -807,7 +1133,10 @@ final class EmbeddedWorkspace: ObservableObject {
 
     func prepareCalendarReminders() {
         guard !security.blocksAccess else { return }
-        for account in accounts { ensureBrowser(for: WorkspaceTab(accountID: account.id, service: .calendar), account: account) }
+        for account in accounts {
+            let tab = WorkspaceTab(accountID: account.id, service: .calendar)
+            if hibernatedTabs[tab] == nil || remindersWanted(for: account.id) { ensureBrowser(for: tab, account: account) }
+        }
     }
 
     func openCalendarNotificationSettings(account: Account) {
@@ -879,6 +1208,93 @@ final class EmbeddedWorkspace: ObservableObject {
         persistPins()
     }
 
+    var currentPageLink: URL? {
+        guard !security.blocksAccess, let url = currentBrowser?.url, url.scheme?.lowercased() == "https" else { return nil }
+        return url
+    }
+
+    func copyPageLink() {
+        guard let url = currentPageLink else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+    }
+
+    func openPageInBrowser() {
+        if let url = currentPageLink { currentBrowser?.openInBrowser(url) }
+    }
+
+    /// Runs one Gmail search in every account, leaving the current account in front.
+    func searchAllAccounts(_ query: String) {
+        guard !security.blocksAccess, let url = GmailSearch.url(query: query) else { return }
+        let front = selectedAccount ?? accounts.first
+        for account in accounts where account.id != front?.id {
+            let tab = WorkspaceTab(accountID: account.id, service: .gmail)
+            if !tabs.contains(tab) { tabs.append(tab) }
+            ensureBrowser(for: tab, account: account)
+            browsers[tab]?.load(url)
+        }
+        persistTabs()
+        if let front {
+            select(WorkspaceTab(accountID: front.id, service: .gmail))
+            currentBrowser?.load(url)
+        }
+    }
+
+    /// Facts for a bug report. No names, addresses, page titles or links.
+    func diagnostics() -> String {
+        let info = Bundle.main.infoDictionary
+        let version = "\(info?["CFBundleShortVersionString"] as? String ?? "unknown") (\(info?["CFBundleVersion"] as? String ?? "unknown"))"
+        var lines = [
+            "MailPort \(version)",
+            "macOS \(ProcessInfo.processInfo.operatingSystemVersionString)",
+            "WebKit \(BrowserTab.browserIdentity.engineBuild)",
+            "Browser identity: \(BrowserTab.browserIdentity.applicationNameForUserAgent)",
+            "Notifications: \(MailPortNotifications.shared.permission)",
+            "Online: \(isOnline)",
+            "PIN lock: \(security.enabled ? "on" : "off")",
+            "Hibernation: \(hibernationEnabled ? "on, \(hibernationIdleMinutes) min" : "off")",
+            "Accounts: \(accounts.count)"
+        ]
+        for (index, account) in accounts.enumerated() {
+            let open = tabs.filter { $0.accountID == account.id }.map(\.service.rawValue).joined(separator: ", ")
+            let asleep = hibernatedTabs.keys.filter { $0.accountID == account.id }.count
+            let signIn = accountsNeedingSignIn.contains(account.id) ? "needs sign-in" : "signed in"
+            lines.append("Account \(index + 1): \(signIn); views: \(open); hibernated: \(asleep); reminders: \(reminderProblem(for: account) == nil ? "ok" : "problem")")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    func copyDiagnostics() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(diagnostics(), forType: .string)
+    }
+
+    /// Accounts appear in this order in the sidebar, Go To, and ⌘1–9.
+    func moveAccount(_ account: Account, by offset: Int) {
+        guard !security.blocksAccess, storageAvailable, let index = accounts.firstIndex(of: account),
+              accounts.indices.contains(index + offset) else { return }
+        var reordered = accounts
+        reordered.swapAt(index, index + offset)
+        do {
+            try accountStore.save(reordered)
+            accounts = reordered
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    /// Website data no listed account uses. Older versions could leave this behind.
+    func leftoverSignIns() async -> [UUID] {
+        guard !security.blocksAccess, storageAvailable else { return [] }
+        let listed = Set(accounts.map(\.id))
+        return await LocalDataReset.allWebsiteIdentifiers().filter { !listed.contains($0) }
+    }
+
+    func removeLeftoverSignIns() async {
+        for id in await leftoverSignIns() {
+            do { try await LocalDataReset.eraseWebsiteData(id: id) }
+            catch { errorMessage = error.localizedDescription }
+        }
+    }
+
     func nextTab(_ delta: Int) {
         guard !security.blocksAccess else { return }
         let ordered = navigationTabs
@@ -925,6 +1341,9 @@ final class EmbeddedWorkspace: ObservableObject {
         try accountStore.save(updated)
         accounts = updated
         showingAccountEditor = false
+        // Open pages name this account in alerts and downloads.
+        for browser in Array(browsers.values) + Array(calendarMonitors.values) + mailChecks.values.map(\.browser)
+        where browser.account.id == validated.id { browser.account = validated }
         if isNew {
             tabs.append(contentsOf: WorkspaceTab.pinnedTabs(for: [validated]))
             select(WorkspaceTab(accountID: validated.id, service: .gmail))
@@ -941,10 +1360,12 @@ final class EmbeddedWorkspace: ObservableObject {
             accounts = updated
             tabs.removeAll { $0.accountID == account.id }
             recentlyClosed.removeAll { $0.accountID == account.id }
-            if poppedOutVideo?.accountID == account.id { closeFloatingVideo() }
+            releaseWindows(of: account)
             for (tab, browser) in browsers where tab.accountID == account.id { browser.discardForSecurity() }
             browsers = browsers.filter { $0.key.accountID != account.id }
-            calendarMonitors.removeValue(forKey: account.id)?.webView.stopLoading()
+            calendarMonitors.removeValue(forKey: account.id)?.discardForSecurity()
+            monitorStarted[account.id] = nil
+            forgetBackgroundState(of: account)
             tabActivity = tabActivity.filter { $0.key.accountID != account.id }
             stores.removeValue(forKey: account.id)
             pins.removeAll { $0.accountID == account.id }
@@ -964,10 +1385,28 @@ final class EmbeddedWorkspace: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    /// A floating window keeps its web view alive, and WebKit can't delete a store still in use.
+    private func releaseWindows(of account: Account) {
+        if poppedOutVideo?.accountID == account.id { closeFloatingVideo() }
+        for (tab, controller) in detachedViews where tab.accountID == account.id { controller.close() }
+    }
+
+    private func forgetBackgroundState(of account: Account) {
+        for (tab, check) in mailChecks where tab.accountID == account.id {
+            check.browser.discardForSecurity()
+            mailChecks[tab] = nil
+        }
+        hibernatedTabs = hibernatedTabs.filter { $0.key.accountID != account.id }
+        lastChecks = lastChecks.filter { $0.key.accountID != account.id }
+        knownUnread = knownUnread.filter { $0.key.accountID != account.id }
+        lastUsed = lastUsed.filter { $0.key.accountID != account.id }
+    }
+
     /// Deletes the website data before the account, so a failed removal can be
     /// retried from the sidebar instead of leaving a sign-in nothing points to.
     func signOutAndRemoveAccount(_ account: Account) async {
         guard !security.blocksAccess, accounts.contains(account) else { return }
+        releaseWindows(of: account)
         for tab in tabs where tab.accountID == account.id { tabActivity.removeValue(forKey: tab) }
         if selection?.accountID == account.id {
             browserChanges = nil
@@ -979,6 +1418,8 @@ final class EmbeddedWorkspace: ObservableObject {
         for (tab, browser) in browsers where tab.accountID == account.id { browser.discardForSecurity() }
         browsers = browsers.filter { $0.key.accountID != account.id }
         calendarMonitors.removeValue(forKey: account.id)?.discardForSecurity()
+        monitorStarted[account.id] = nil
+        forgetBackgroundState(of: account)
         stores.removeValue(forKey: account.id)
         persistTabs()
         if let next = navigationTabs.first { select(next) }
