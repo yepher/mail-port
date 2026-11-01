@@ -2,7 +2,9 @@
 
 MailPort puts Gmail, Calendar, YouTube, and your other Google services in one Mac window, with every account a click away. Each account keeps its own sign-in, and pages stay loaded as you switch between them.
 
-![MailPort with Work and Personal accounts in the sidebar](docs/screenshot.png)
+![MailPort demo with Work and Personal accounts, Google services, and a floating YouTube player](docs/screenshot.png)
+
+*Illustrative demo with fictional accounts and messages.*
 
 MailPort is an independent preview, not affiliated with or endorsed by Google. It shows Google's own web pages, and Google may reject its embedded browser or ask for extra verification, so sign-in isn't guaranteed for every account.
 
