@@ -136,7 +136,7 @@ To quiet one account, right-click its header and choose **Notifications**. You c
 
 ### Schedule account notifications
 
-Open **Settings > Notification schedules**, or right-click an account and choose **Notifications > Notification Schedule**. Select weekdays and a time range, then choose **Notify only during these hours** or **Mute during these hours**. The presets configure Work for weekdays 9–5 and Personal for all times outside weekdays 9–5, including weekends. Adjust the days and times to suit you.
+Open **Settings > Notification schedules**, or right-click an account and choose **Notifications > Notification Schedule**. Define each account’s schedule by selecting days and entering your own start and end times, then choose **Notify only during these hours** or **Mute during these hours**. You can configure the schedule while it is off, then enable it when ready. Every account can use different days, hours and rules.
 
 Schedules follow the Mac’s local time zone and apply to MailPort’s Gmail and Calendar alerts. Overnight windows start on the selected days; equal start/end times mean the entire selected day. Manual mute takes priority. **Resume Schedule** clears a manual mute without changing the schedule. Muted alerts are skipped, not queued. Schedule changes take effect for incoming alerts, and schedules are saved across restarts and included in workspace backups.
 

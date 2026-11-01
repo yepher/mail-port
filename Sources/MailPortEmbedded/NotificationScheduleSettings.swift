@@ -32,8 +32,9 @@ private struct AccountScheduleEditor: View {
     var body: some View {
         GroupBox(account.name) {
             VStack(alignment: .leading, spacing: 10) {
-                Toggle("Use notification schedule", isOn: Binding(get: { schedule.enabled }, set: { enabled in change { $0.enabled = enabled } }))
-                if schedule.enabled {
+                Toggle("Enable this account’s schedule", isOn: Binding(get: { schedule.enabled }, set: { enabled in change { $0.enabled = enabled } }))
+                Text("Select your days and enter your start and end times.").font(.caption).foregroundStyle(.secondary)
+                Group {
                     Picker("Rule", selection: Binding(get: { schedule.mode }, set: { mode in change { $0.mode = mode } })) {
                         Text("Notify only during these hours").tag(NotificationSchedule.Mode.notifyDuring)
                         Text("Mute during these hours").tag(NotificationSchedule.Mode.muteDuring)
@@ -61,14 +62,10 @@ private struct AccountScheduleEditor: View {
                     }
                     TimelineView(.periodic(from: .now, by: 30)) { context in
                         let settings = model.notificationSettings(for: account)
-                        Text(settings.isManuallyMuted(at: context.date) ? "Currently muted manually. The schedule resumes when that mute ends." : (schedule.isMuted(at: context.date) ? "Currently muted by schedule." : "Currently allowed by schedule."))
+                        Text(!schedule.enabled ? "Schedule is off. Configure it above, then enable it when ready." : settings.isManuallyMuted(at: context.date) ? "Currently muted manually. The schedule resumes when that mute ends." : (schedule.isMuted(at: context.date) ? "Currently muted by schedule." : "Currently allowed by schedule."))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                HStack {
-                    Button("Work: weekdays 9–5") { model.setNotificationSchedule(NotificationSchedule(), for: account) }
-                    Button("Personal: outside 9–5") { model.setNotificationSchedule(NotificationSchedule(mode: .muteDuring), for: account) }
-                }.controlSize(.small)
             }.padding(6)
         }
     }
