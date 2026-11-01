@@ -63,7 +63,7 @@ struct NotificationsSetup: View {
                             Text(account.name).font(.headline)
                             Text(model.calendarReminderReadiness(account: account))
                             let settings = model.notificationSettings[account.id] ?? AccountNotificationSettings()
-                            Text(settings.isMuted(at: Date()) ? "Reminders are muted for this account." : "Account reminders are not muted.")
+                            Text(settings.isManuallyMuted(at: Date()) ? "Reminders are muted manually." : (settings.schedule?.isMuted(at: Date()) == true ? "Reminders are muted by schedule." : "Account reminders are not muted."))
                             if let receipt = notifications.receipts[account.id] {
                                 if let date = receipt.submitted { Text("Calendar alert submitted: \(date.formatted())") }
                                 if let date = receipt.delivered { Text("Calendar alert seen in Notification Center: \(date.formatted())") }

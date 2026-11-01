@@ -134,6 +134,12 @@ The Notifications window includes per-account diagnostics for Calendar connectio
 
 To quiet one account, right-click its header and choose **Notifications**. You can mute it for an hour, until tomorrow morning, or until you unmute it. A muted account shows a crossed-out bell, and alerts sent while it's muted are skipped, not saved for later. **Hide Message Previews** shows only "New mail" or "Calendar reminder" with the account name. These choices don't change your Google settings.
 
+### Schedule account notifications
+
+Open **Settings > Notification schedules**, or right-click an account and choose **Notifications > Notification Schedule**. Select weekdays and a time range, then choose **Notify only during these hours** or **Mute during these hours**. The presets configure Work for weekdays 9–5 and Personal for all times outside weekdays 9–5, including weekends. Adjust the days and times to suit you.
+
+Schedules follow the Mac’s local time zone and apply to MailPort’s Gmail and Calendar alerts. Overnight windows start on the selected days; equal start/end times mean the entire selected day. Manual mute takes priority. **Resume Schedule** clears a manual mute without changing the schedule. Muted alerts are skipped, not queued. Schedule changes take effect for incoming alerts, and schedules are saved across restarts and included in workspace backups.
+
 ### See unread mail in the Dock
 
 The Dock icon shows your total unread mail. To choose which accounts count, open Settings (⌘,) and use **Count unread mail in the Dock**. Only accounts with a Mail view open can be counted, and the badge clears while MailPort is locked.

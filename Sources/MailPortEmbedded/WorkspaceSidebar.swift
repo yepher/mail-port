@@ -144,7 +144,7 @@ private struct SidebarAccount: View {
                 Spacer(minLength: 4)
                 if model.notificationSettings(for: account).isMuted(at: now) {
                     Image(systemName: "bell.slash").font(.system(size: 10)).foregroundStyle(.secondary)
-                        .accessibilityLabel("Notifications muted").help("Notifications muted")
+                        .accessibilityLabel("Notifications muted").help(model.notificationSettings(for: account).isManuallyMuted(at: now) ? "Notifications muted manually" : "Notifications muted by schedule")
                 }
                 if collapsed, needsSignIn {
                     Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 11)).foregroundStyle(.orange)
@@ -218,14 +218,15 @@ struct AccountNotificationMenu: View {
 
     var body: some View {
         Menu("Notifications") {
-            if settings.isMuted(at: now) {
-                Button("Unmute") { model.muteNotifications(for: account, until: nil) }
+            if settings.isManuallyMuted(at: now) {
+                Button(settings.schedule?.enabled == true ? "Resume Schedule" : "Unmute") { model.muteNotifications(for: account, until: nil) }
             } else {
                 Button("Mute for 1 Hour") { model.muteNotifications(for: account, until: now.addingTimeInterval(3600)) }
                 Button("Mute Until Tomorrow") { model.muteNotifications(for: account, until: AccountNotificationSettings.tomorrowMorning(after: now)) }
                 Button("Mute Until I Unmute") { model.muteNotifications(for: account, until: .distantFuture) }
             }
             Divider()
+            Button("Notification Schedule…") { model.openSecuritySettings() }
             Toggle("Hide Message Previews", isOn: Binding(get: { settings.hidesPreviews }, set: { model.setHidesPreviews($0, for: account) }))
         }
     }

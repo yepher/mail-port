@@ -76,6 +76,10 @@ struct SecuritySettingsView: View {
                 Toggle("Check for updates automatically", isOn: $updates.checksAutomatically)
             }
             Divider()
+            if !model.accounts.isEmpty {
+                NotificationScheduleSettings(model: model)
+                Divider()
+            }
             Label("YouTube", systemImage: "play.rectangle").font(.headline)
             Toggle("Automatically skip skippable ads", isOn: Binding(get: { model.skipsYouTubeAds }, set: { model.setSkipsYouTubeAds($0) }))
             Text("Clicks YouTube’s Skip button when it becomes available. Unskippable ads still play.").font(.caption).foregroundStyle(.secondary)

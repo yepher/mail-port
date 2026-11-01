@@ -386,6 +386,13 @@ final class EmbeddedWorkspace: ObservableObject {
         store(settings, for: account.id)
     }
 
+    func setNotificationSchedule(_ schedule: NotificationSchedule?, for account: Account) {
+        guard accounts.contains(where: { $0.id == account.id }), schedule?.isValid ?? true else { return }
+        var settings = notificationSettings(for: account)
+        settings.schedule = schedule
+        store(settings, for: account.id)
+    }
+
     func setHidesPreviews(_ hides: Bool, for account: Account) {
         var settings = notificationSettings(for: account)
         settings.hidesPreviews = hides

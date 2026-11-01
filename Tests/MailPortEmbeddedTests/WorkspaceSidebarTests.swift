@@ -34,6 +34,31 @@ final class WorkspaceSidebarTests: XCTestCase {
         return (model, directory, preferences)
     }
 
+    @MainActor func testNotificationSchedulePersistsBacksUpAndCannotChangeWhileLocked() async throws {
+        let (model, directory, _) = try await fixture()
+        let schedule = NotificationSchedule(mode: .muteDuring, weekdays: [2, 3, 4, 5, 6], startMinute: 480, endMinute: 1080)
+        model.setNotificationSchedule(schedule, for: work)
+        let reopened = EmbeddedWorkspace(testingDirectory: directory, securityEngine: PINLockEngine(store: FixturePINStore()))
+        for _ in 0..<200 where reopened.security.checking { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertEqual(reopened.notificationSettings(for: work).schedule, schedule)
+        XCTAssertNil(reopened.notificationSettings(for: personal).schedule)
+        let backup = WorkspaceBackup(accounts: [work], tabs: [], pins: [], notifications: [work.id: model.notificationSettings(for: work)])
+        let imported = try WorkspaceBackup.decode(backup.encoded()).importing(alongside: [work])
+        XCTAssertEqual(imported.notifications[imported.accounts[0].id]?.schedule, schedule)
+        let enabled = await model.security.enable(pin: "628493")
+        XCTAssertTrue(enabled)
+        model.security.lock()
+        model.setNotificationSchedule(nil, for: work)
+        XCTAssertTrue(model.notificationSettings.isEmpty)
+        let stored = EmbeddedWorkspace(testingDirectory: directory, securityEngine: PINLockEngine(store: FixturePINStore()))
+        for _ in 0..<200 where stored.security.checking { try await Task.sleep(for: .milliseconds(5)) }
+        // Read persisted settings directly while the new model correctly remains locked.
+        let prefs = try XCTUnwrap(UserDefaults(suiteName: model.preferenceDomain))
+        let data = try XCTUnwrap(prefs.data(forKey: "accountNotifications"))
+        let decoded = try JSONDecoder().decode([UUID: AccountNotificationSettings].self, from: data)
+        XCTAssertEqual(decoded[work.id]?.schedule, schedule)
+    }
+
     @MainActor func testBackupRestoreAddsNewProfilesAndPreservesExistingPreferences() async throws {
         let (model, directory, preferences) = try await fixture()
         let original = model.accounts

@@ -13,6 +13,7 @@
 		0BC8FD71CC4FFFC66775C17C /* YouTubeSkipAds.js in Resources */ = {isa = PBXBuildFile; fileRef = 5AE957D36DABB2D546B61149 /* YouTubeSkipAds.js */; };
 		0CCC21F678BB6E6C41F503F1 /* WorkspaceBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DAAE99909006D959845C3EE /* WorkspaceBackupTests.swift */; };
 		0D9DDF8EE07E0752A722A8E4 /* HexColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C6F8F6A069CEF2961E41C5 /* HexColor.swift */; };
+		16FC65951730B1DD1E99AEBC /* NotificationScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8BB61D18094D315E71D160 /* NotificationScheduleTests.swift */; };
 		1825C1F39DB2BD1421D3C750 /* VideoPlaybackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308FE3E0A6D3AA02102F440A /* VideoPlaybackTests.swift */; };
 		18B295784A97BABFEA4C68C4 /* QuickSwitch.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF6529FFFE31FE5588FCB954 /* QuickSwitch.swift */; };
 		1A4E548386E1F925F2B478F7 /* EmbeddedWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CC5358895BFE47CB6C82723 /* EmbeddedWebView.swift */; };
@@ -30,6 +31,7 @@
 		2F7087E7D41D267707938568 /* YouTubeSkipInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60F8D532BF7E2858488DE01A /* YouTubeSkipInput.swift */; };
 		34F4822A099A399DB939B41D /* YouTubeResolutionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8697441397590C91DCA394C /* YouTubeResolutionView.swift */; };
 		36C023708EDED7EF413797E1 /* AppSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87641FCBF1B788076E5B0B3A /* AppSecurity.swift */; };
+		370284E3D7216658A5FCCEEA /* NotificationScheduleSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C335E9A3BA8D85D931256096 /* NotificationScheduleSettings.swift */; };
 		496258A55C60F2953ACE9C4C /* DownloadCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA215E3D3EADB8F32837B5B2 /* DownloadCenter.swift */; };
 		4AF5281DEF46BEE0BDDF673C /* TabActivity.js in Resources */ = {isa = PBXBuildFile; fileRef = C0E13B5EA7B9F7825479BCDC /* TabActivity.js */; };
 		4B08AEEA8AE24A8863B64397 /* LocalDataReset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DE255287BCD9FEEDE571C2D /* LocalDataReset.swift */; };
@@ -130,6 +132,7 @@
 		1DAAE99909006D959845C3EE /* WorkspaceBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceBackupTests.swift; sourceTree = "<group>"; };
 		2040025A6CD1B5641269AFF6 /* WebNotificationMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebNotificationMessage.swift; sourceTree = "<group>"; };
 		26A0F57055B338CBD857C7B9 /* EmbeddedWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedWorkspace.swift; sourceTree = "<group>"; };
+		2A8BB61D18094D315E71D160 /* NotificationScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationScheduleTests.swift; sourceTree = "<group>"; };
 		2C8B1D0E16685352A831286D /* test-youtube-playback.cjs */ = {isa = PBXFileReference; path = "test-youtube-playback.cjs"; sourceTree = "<group>"; };
 		2CE8703A72E5A438F9188E42 /* MailPort.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MailPort.entitlements; sourceTree = "<group>"; };
 		308FE3E0A6D3AA02102F440A /* VideoPlaybackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlaybackTests.swift; sourceTree = "<group>"; };
@@ -185,6 +188,7 @@
 		B6A3990848349494CE73A0DB /* VideoTranscript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoTranscript.swift; sourceTree = "<group>"; };
 		BE034367492853A53B156A66 /* YouTubeMedia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeMedia.swift; sourceTree = "<group>"; };
 		C0E13B5EA7B9F7825479BCDC /* TabActivity.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = TabActivity.js; sourceTree = "<group>"; };
+		C335E9A3BA8D85D931256096 /* NotificationScheduleSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationScheduleSettings.swift; sourceTree = "<group>"; };
 		C5D3E55E656CC21D77BF5E4C /* WorkspaceRestoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceRestoreView.swift; sourceTree = "<group>"; };
 		C9B0F5BDD7978127AF92CDD8 /* NotificationBridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = NotificationBridge.js; sourceTree = "<group>"; };
 		C9DAF4EE8C34AC2B9CDEAFC1 /* project.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = project.yml; sourceTree = "<group>"; };
@@ -287,6 +291,7 @@
 				3E0C557486BE2FC14DD683E6 /* BrowserIdentityTests.swift */,
 				7ED48C60F6A41C365D22E4AA /* BrowserLinkRoutingTests.swift */,
 				77BF505FAEE4CB1FC4FDA850 /* EmbeddedCoreTests.swift */,
+				2A8BB61D18094D315E71D160 /* NotificationScheduleTests.swift */,
 				98F4707D712E1B8018D3D066 /* TabActivityTests.swift */,
 				6DE6018611FAC4C97006520D /* TabClosingTests.swift */,
 				F41A79D91C725EA5C38DF929 /* TabReorderingTests.swift */,
@@ -329,6 +334,7 @@
 				817127550BD5350D2089F6B5 /* EmbeddedWorkspaceView.swift */,
 				3779D85D8061497BA8920250 /* FloatingVideoController.swift */,
 				A798B3A79A025DC2AE4A2BFF /* MailPortNotifications.swift */,
+				C335E9A3BA8D85D931256096 /* NotificationScheduleSettings.swift */,
 				1923421427A4680301247026 /* NotificationsSetup.swift */,
 				6FACCDA15101A7799D8BFD17 /* QuickSwitcherView.swift */,
 				B412E7924DA1FB249B8D3F6C /* SecurityViews.swift */,
@@ -687,6 +693,7 @@
 				1F519380051D15155025A600 /* EmbeddedWorkspaceView.swift in Sources */,
 				7145898CAAFD3F4D41D4EB33 /* FloatingVideoController.swift in Sources */,
 				1D85CA61953FFE83A833CB4F /* MailPortNotifications.swift in Sources */,
+				370284E3D7216658A5FCCEEA /* NotificationScheduleSettings.swift in Sources */,
 				4E0C8D95E459A60FCCA1339E /* NotificationsSetup.swift in Sources */,
 				DFAF825D41E7165A95215876 /* QuickSwitcherView.swift in Sources */,
 				7DAC619BC36B6D7CCE646A4A /* SecurityViews.swift in Sources */,
@@ -730,6 +737,7 @@
 				A8C25C73D8A76D426E0F8D9B /* BrowserIdentityTests.swift in Sources */,
 				A86DF19237C14A024CF9E40A /* BrowserLinkRoutingTests.swift in Sources */,
 				24B28E4D663E0481D8BD8C2F /* EmbeddedCoreTests.swift in Sources */,
+				16FC65951730B1DD1E99AEBC /* NotificationScheduleTests.swift in Sources */,
 				7358E7B28A7EC1FCD9F74B4F /* TabActivityTests.swift in Sources */,
 				BF97FE9AA8563AD3275246D0 /* TabClosingTests.swift in Sources */,
 				B20A539CE753D40A9ACFFCBB /* TabReorderingTests.swift in Sources */,

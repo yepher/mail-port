@@ -31,7 +31,7 @@ public struct WorkspaceBackup: Codable, Sendable {
               ids.count == accounts.count, Set(tabs).count == tabs.count, Set(pins.map(\.id)).count == pins.count,
               tabs.allSatisfy({ ids.contains($0.accountID) }),
               pins.allSatisfy({ ids.contains($0.accountID) && $0.isValid && $0.url.absoluteString.utf8.count < 16384 }),
-              collapsed.isSubset(of: ids), badgeExcluded.isSubset(of: ids), Set(notifications.keys).isSubset(of: ids),
+              collapsed.isSubset(of: ids), badgeExcluded.isSubset(of: ids), Set(notifications.keys).isSubset(of: ids), notifications.values.allSatisfy({ $0.schedule?.isValid ?? true }),
               defaultMailAccount.map({ ids.contains($0) }) ?? true,
               ["sidebar", "tabBar"].contains(layout), videoOpacity.isFinite, (0.15...1).contains(videoOpacity),
               zoom.allSatisfy({ GoogleService(rawValue: $0.key) != nil && PageZoom.isValid($0.value) }) else { throw Invalid.configuration }
