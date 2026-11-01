@@ -66,6 +66,33 @@ final class TabHibernationTests: XCTestCase {
         XCTAssertFalse(held.isFresh(at: start.addingTimeInterval(901)))
     }
 
+    private func calendarSample(_ events: [(Double, Double)], at now: Date) throws -> TabActivity {
+        let values = events.map { ["start": $0.0 * 1000, "end": $0.1 * 1000] }
+        return try XCTUnwrap(TabActivity(message: ["kind": "calendar", "events": values], service: .calendar, now: now))
+    }
+
+    func testVisiblePageAddsAnEventWithoutClearingToday() throws {
+        let now = Date()
+        let base = now.timeIntervalSince1970
+        let monitored = try calendarSample([(base - 7200, base - 3600)], at: now.addingTimeInterval(-600)).lasting(1800)
+        let visible = try calendarSample([(base - 60, base + 3600)], at: now)
+        XCTAssertFalse(monitored.hasCurrentEvent(at: now))
+        let merged = monitored.adding(visible)
+        XCTAssertTrue(merged.hasCurrentEvent(at: now), "A new event shows at once")
+        XCTAssertEqual(merged.events.count, 2)
+        XCTAssertEqual(merged.adding(visible).events.count, 2, "Repeat samples don't pile up")
+        let otherWeek = try calendarSample([(base + 86_400 * 7, base + 86_400 * 7 + 3600)], at: now)
+        XCTAssertTrue(merged.adding(otherWeek).hasCurrentEvent(at: now), "Browsing elsewhere doesn't lose today")
+    }
+
+    func testStaleLookAtTodayGivesWayToTheVisiblePage() throws {
+        let now = Date()
+        let base = now.timeIntervalSince1970
+        let stale = try calendarSample([(base - 60, base + 60)], at: now.addingTimeInterval(-3600))
+        let visible = try calendarSample([], at: now)
+        XCTAssertTrue(stale.adding(visible).events.isEmpty)
+    }
+
     func testRecoveryOnlyRetriesFailuresTimeCanFix() {
         XCTAssertTrue(PageRecovery.isTransient(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet))
         XCTAssertTrue(PageRecovery.isTransient(domain: NSURLErrorDomain, code: NSURLErrorTimedOut))

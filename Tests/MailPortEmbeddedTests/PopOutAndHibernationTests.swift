@@ -169,6 +169,41 @@ final class PopOutAndHibernationTests: XCTestCase {
         XCTAssertEqual(model.lastAnnouncedNewMail, 2)
     }
 
+    @MainActor func testEventOnTheVisibleCalendarLightsTheDotAtOnce() async throws {
+        let model = try await fixture()
+        let calendar = tab(.calendar)
+        model.select(calendar)
+        let now = Date()
+        let base = now.timeIntervalSince1970 * 1000
+        let event = ["start": base - 60_000, "end": base + 3_600_000]
+        XCTAssertNil(model.tabActivity[calendar])
+        let page = try XCTUnwrap(model.currentBrowser)
+        page.onActivity?(TabActivity(message: ["kind": "calendar", "events": [event]], service: .calendar, now: now))
+        XCTAssertEqual(model.tabActivity[calendar]?.hasCurrentEvent(at: now), true)
+        page.onActivity?(nil)
+        XCTAssertEqual(model.tabActivity[calendar]?.hasCurrentEvent(at: now), true, "Reloading the page doesn't drop the dot")
+    }
+
+    @MainActor func testChangeOnTheVisibleCalendarBringsTheNextCheckForward() async throws {
+        let model = try await fixture()
+        let calendar = tab(.calendar), mail = tab(.gmail, personal)
+        model.select(mail)
+        model.select(calendar)
+        let start = Date()
+        let base = start.timeIntervalSince1970 * 1000
+        func sample(_ events: [[String: Double]], at time: Date) throws -> TabActivity {
+            try XCTUnwrap(TabActivity(message: ["kind": "calendar", "events": events], service: .calendar, now: time))
+        }
+        let event = ["start": base, "end": base + 3_600_000]
+        model.recordVisibleCalendar(try sample([event], at: start), for: calendar, at: start)
+        model.runHibernation(at: start.addingTimeInterval(TabHibernation.checkDuration))
+        XCTAssertFalse(model.isCalendarCheckRunning, "The first check has finished")
+        let later = start.addingTimeInterval(180)
+        model.recordVisibleCalendar(try sample([], at: later), for: calendar, at: later)
+        model.runHibernation(at: later)
+        XCTAssertTrue(model.isCalendarCheckRunning, "Deleting an event doesn't wait 15 minutes")
+    }
+
     @MainActor func testLockClearsHibernationState() async throws {
         let model = try await fixture(pin: "628493")
         await model.security.unlock(pin: "628493")

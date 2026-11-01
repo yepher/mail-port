@@ -79,7 +79,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         super.init()
         notificationBridge = WebNotificationBridge(tab: self)
         if !activityOnly { notificationBridge.install(on: contentController) }
-        if service == .gmail || activityOnly {
+        if service == .gmail || service == .calendar || activityOnly {
             let bridge = TabActivityBridge(tab: self)
             activityBridge = bridge
             bridge.install(on: contentController)
@@ -182,7 +182,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     func leaveSignIn() {
         guard let url = webView.url,
               BrowserLinkRouting.isAuthenticationURL(url) || BrowserLinkRouting.signInRequired(at: url, service: service) == true else { return }
-        load(activityOnly ? Self.todayURL : service.url)
+        load(homeURL)
     }
 
     /// Nil means YouTube didn't provide captions for this video.

@@ -83,6 +83,7 @@ final class EmbeddedWorkspace: ObservableObject {
     private var mailChecks: [WorkspaceTab: (browser: BrowserTab, started: Date, sample: TabActivity?)] = [:]
     private var lastChecks: [WorkspaceTab: Date] = [:]
     private var knownUnread: [WorkspaceTab: Int] = [:]
+    private var visibleEvents: [WorkspaceTab: [CalendarEventWindow]] = [:]
     private var lastUsed: [WorkspaceTab: Date] = [:]
     private var memoryPressureUntil: Date?
     private var memoryPressure: DispatchSourceMemoryPressure?
@@ -325,7 +326,7 @@ final class EmbeddedWorkspace: ObservableObject {
         MailPortNotifications.shared.setPrivacyLocked(true)
         browserChanges = nil
         for browser in Array(browsers.values) + Array(calendarMonitors.values) + mailChecks.values.map(\.browser) { browser.discardForSecurity() }
-        mailChecks.removeAll(); hibernatedTabs.removeAll(); lastChecks.removeAll(); knownUnread.removeAll()
+        mailChecks.removeAll(); hibernatedTabs.removeAll(); lastChecks.removeAll(); knownUnread.removeAll(); visibleEvents.removeAll()
         lastUsed.removeAll(); monitorStarted.removeAll()
         currentBrowser = nil
         downloadCenter.clearForLock()
@@ -424,7 +425,7 @@ final class EmbeddedWorkspace: ObservableObject {
 
     private func forgetBackgroundState(of tab: WorkspaceTab) {
         mailChecks.removeValue(forKey: tab)?.browser.discardForSecurity()
-        hibernatedTabs[tab] = nil; lastChecks[tab] = nil; knownUnread[tab] = nil; lastUsed[tab] = nil
+        hibernatedTabs[tab] = nil; lastChecks[tab] = nil; knownUnread[tab] = nil; lastUsed[tab] = nil; visibleEvents[tab] = nil
     }
 
     private func dataStore(for account: Account) -> WKWebsiteDataStore {
@@ -449,6 +450,8 @@ final class EmbeddedWorkspace: ObservableObject {
         browser.webView.pageZoom = serviceZoom[tab.service] ?? PageZoom.standard
         if tab.service == .gmail {
             browser.onActivity = { [weak self] sample in self?.recordActivity(sample, for: tab) }
+        } else if tab.service == .calendar {
+            browser.onActivity = { [weak self] sample in if let sample { self?.recordVisibleCalendar(sample, for: tab) } }
         }
         browsers[tab] = browser
     }
@@ -577,6 +580,7 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     var activeMailChecks: Int { mailChecks.count }
+    var isCalendarCheckRunning: Bool { !monitorStarted.isEmpty }
     private(set) var lastAnnouncedNewMail = 0
 
     /// Gives a running check its sample, as the page would.
@@ -647,6 +651,17 @@ final class EmbeddedWorkspace: ObservableObject {
     }
 
     func recordActivity(_ sample: TabActivity?, for tab: WorkspaceTab) { tabActivity[tab] = sample }
+
+    /// Today's dot responds as soon as the Calendar page in use shows a change. That
+    /// page can only add events, so a change also brings the next look at today forward,
+    /// which is what clears a deleted one. Browsing other weeks can't load pages constantly.
+    func recordVisibleCalendar(_ sample: TabActivity, for tab: WorkspaceTab, at now: Date = Date()) {
+        let today = sample.events(on: now)
+        let changed = visibleEvents[tab].map { $0 != today } ?? false
+        visibleEvents[tab] = today
+        recordActivity(tabActivity[tab]?.adding(sample) ?? sample, for: tab)
+        if changed, let last = lastChecks[tab], now.timeIntervalSince(last) >= 120 { lastChecks[tab] = nil }
+    }
 
     func notificationSettings(for account: Account) -> AccountNotificationSettings {
         notificationSettings[account.id] ?? AccountNotificationSettings()
@@ -1399,6 +1414,7 @@ final class EmbeddedWorkspace: ObservableObject {
         hibernatedTabs = hibernatedTabs.filter { $0.key.accountID != account.id }
         lastChecks = lastChecks.filter { $0.key.accountID != account.id }
         knownUnread = knownUnread.filter { $0.key.accountID != account.id }
+        visibleEvents = visibleEvents.filter { $0.key.accountID != account.id }
         lastUsed = lastUsed.filter { $0.key.accountID != account.id }
     }
 

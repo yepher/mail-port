@@ -16,9 +16,9 @@ public struct CalendarEventWindow: Equatable, Sendable {
 }
 
 public struct TabActivity: Equatable, Sendable {
-    public let unreadCount: Int?
-    public let events: [CalendarEventWindow]
-    public let sampledAt: Date
+    public private(set) var unreadCount: Int?
+    public private(set) var events: [CalendarEventWindow]
+    public private(set) var sampledAt: Date
     /// How long a sample can be trusted. Pages that are watched live stay near the default.
     public private(set) var lifetime: TimeInterval = 300
 
@@ -45,6 +45,23 @@ public struct TabActivity: Equatable, Sendable {
     }
 
     public func isFresh(at now: Date) -> Bool { (-60...lifetime).contains(now.timeIntervalSince(sampledAt)) }
+
+    /// Adds what the visible Calendar page shows to the last look at today. That page
+    /// may be on another week, so its sample can add events but never clear them.
+    public func adding(_ visible: TabActivity) -> TabActivity {
+        guard isFresh(at: visible.sampledAt) else { return visible }
+        var merged = self
+        merged.events += visible.events.filter { !events.contains($0) }
+        merged.sampledAt = visible.sampledAt
+        return merged
+    }
+
+    /// Events that touch the given day, which is all the sidebar's dot cares about.
+    public func events(on day: Date, calendar: Calendar = .current) -> [CalendarEventWindow] {
+        let start = calendar.startOfDay(for: day)
+        let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start.addingTimeInterval(86_400)
+        return events.filter { $0.start < end && start < $0.end }
+    }
 
     /// The same sample, trusted until the next periodic check of an unloaded page.
     public func lasting(_ lifetime: TimeInterval) -> TabActivity {
