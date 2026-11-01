@@ -47,10 +47,12 @@ struct EmbeddedWorkspaceView: View {
             let action = openWindow
             model.reopenWindow = { action(id: "mailport") }
         }
-        .sheet(isPresented: $model.showingSecuritySettings) { SecuritySettingsView(model: model, security: security) }
+        .sheet(isPresented: $model.showingSecuritySettings, onDismiss: { model.showPendingBackup() }) { SecuritySettingsView(model: model, security: security) }
         .sheet(isPresented: $model.showingAccountEditor) { EmbeddedAccountEditor(model: model, existing: model.editingAccount) }
         .sheet(isPresented: $model.showingNotifications) { NotificationsSetup(model: model) }
         .sheet(isPresented: $model.showingHelp) { PreviewHelp() }
+        .sheet(isPresented: $model.showingBackupRestore, onDismiss: { model.cancelBackupRestore() }) { WorkspaceRestoreView(model: model) }
+        .sheet(isPresented: $model.showingDownloads, onDismiss: { model.completeDownloadRetry() }) { DownloadsView(model: model) }
         .sheet(isPresented: $model.showingQuickSwitch) { QuickSwitcherView(model: model) }
         .sheet(isPresented: $model.showingPinEditor) { PinEditor(model: model) }
         .sheet(isPresented: $model.showingVideoOptions, onDismiss: { model.completeVideoOptions() }) {
@@ -143,10 +145,15 @@ struct EmbeddedWorkspaceView: View {
                         }
                         Button(model.savingTranscript ? "Reading Transcript…" : "Save Transcript…") { model.saveTranscript() }
                             .disabled(!model.canSaveTranscript)
+                        Divider()
+                        Button { model.openVideoInYouTube() } label: { Label("Open in YouTube", systemImage: "arrow.up.right.square") }
+                            .disabled(model.shareableVideoURL == nil)
+                        Button { model.copyVideoLink() } label: { Label("Copy Video Link", systemImage: "link") }
+                            .disabled(model.shareableVideoURL == nil)
                     } label: {
                         Label(model.savingTranscript ? "Reading Transcript…" : "Save Media", systemImage: "arrow.down.circle")
                             .labelStyle(.titleAndIcon)
-                    }.help("Save this video’s transcript, video, or audio")
+                    }.help("Save media, open in YouTube, or copy the video link")
                 }
                 Button { model.showingPinEditor = true } label: { Label("Pin Current Page", systemImage: "pin") }
                     .disabled(!model.canPinCurrentPage).help("Pin this page to the sidebar (⌘D)")

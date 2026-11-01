@@ -36,6 +36,7 @@ struct WorkspaceSidebar: View {
                 if notifications.permission != "granted" {
                     SidebarAction(title: "Turn On Reminders", symbol: "bell") { model.showingNotifications = true }
                 }
+                SidebarAction(title: "Downloads", symbol: "arrow.down.circle") { model.showingDownloads = true }
                 SidebarAction(title: "Settings", symbol: "gearshape") { model.openSecuritySettings() }
             }.padding(8)
         }

@@ -46,7 +46,9 @@ public enum YouTubeMedia {
     }
 
     public static func arguments(url: URL, audio: Bool, output: String, height: Int? = nil, ffmpeg: String? = nil) -> [String] {
-        var arguments = ["--ignore-config", "--no-playlist", "--no-overwrites", "--no-progress", "--quiet"]
+        var arguments = ["--ignore-config", "--no-playlist", "--no-overwrites", "--quiet", "--progress", "--newline",
+                         "--progress-template", "download:MAILPORT_PROGRESS:%(progress._percent_str)s",
+                         "--progress-template", "postprocess:MAILPORT_PROCESSING"]
         let size = height.map { "[height=\($0)]" } ?? ""
         let video = "bestvideo[ext=mp4]\(size)+bestaudio[ext=m4a]/best[ext=mp4][vcodec!=none][acodec!=none]\(size)"
         arguments += ["--format", audio ? "bestaudio[ext=m4a]" : video]

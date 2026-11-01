@@ -34,6 +34,45 @@ final class WorkspaceSidebarTests: XCTestCase {
         return (model, directory, preferences)
     }
 
+    @MainActor func testBackupRestoreAddsNewProfilesAndPreservesExistingPreferences() async throws {
+        let (model, directory, preferences) = try await fixture()
+        let original = model.accounts
+        preferences.set(true, forKey: "youtubeMediaDownloads")
+        let source = Account(name: work.name, email: "fixture@example.com", color: .rose)
+        let pin = WorkspacePin(accountID: source.id, service: .gmail, name: "Project", url: search)!
+        // No tabs: this integration test never opens a page or contacts Google.
+        let backup = WorkspaceBackup(accounts: [source], tabs: [], pins: [pin], layout: "tabBar", shortcutHints: false, videoOpacity: 0.4)
+        try model.previewWorkspaceBackup(backup.encoded())
+        model.restoreWorkspace(includeAppearance: false)
+        XCTAssertEqual(Array(model.accounts.prefix(2)), original)
+        let restored = try XCTUnwrap(model.accounts.last)
+        XCTAssertNotEqual(restored.id, source.id)
+        XCTAssertEqual(restored.name, work.name + " (restored)")
+        XCTAssertEqual(model.pins.last?.accountID, restored.id)
+        XCTAssertTrue(model.accountsNeedingSignIn.contains(restored.id))
+        XCTAssertEqual(model.layout, .sidebar); XCTAssertTrue(model.showsShortcutHints)
+        XCTAssertEqual(model.popOutVideoOpacity, 1)
+        XCTAssertTrue(preferences.bool(forKey: "youtubeMediaDownloads"))
+        XCTAssertNil(model.pendingBackup)
+        XCTAssertEqual(try AccountStore(directory: directory).load(), model.accounts)
+    }
+
+    @MainActor func testInvalidBackupAndLockCannotChangeWorkspace() async throws {
+        let (model, _, _) = try await fixture()
+        let original = model.accounts
+        XCTAssertThrowsError(try model.previewWorkspaceBackup(Data("{}".utf8)))
+        XCTAssertEqual(model.accounts, original)
+        let backup = WorkspaceBackup(accounts: [Account(name: "Imported")], tabs: [], pins: [])
+        try model.previewWorkspaceBackup(backup.encoded())
+        let enabled = await model.security.enable(pin: "628493")
+        XCTAssertTrue(enabled)
+        var cancelled = false
+        _ = model.downloadCenter.begin(account: "Fixture", source: "Mail", destination: URL(fileURLWithPath: "/tmp/fixture.pdf"), cancel: { cancelled = true })
+        model.security.lock()
+        XCTAssertNil(model.pendingBackup); XCTAssertTrue(model.downloadCenter.entries.isEmpty); XCTAssertTrue(cancelled)
+        XCTAssertThrowsError(try model.previewWorkspaceBackup(backup.encoded()))
+    }
+
     @MainActor func testPopOutFramePersistsAndInvalidSavedGeometryIsIgnored() async throws {
         let (model, directory, preferences) = try await fixture()
         let frame = CGRect(x: -800, y: 200, width: 640, height: 360)

@@ -130,7 +130,7 @@ struct EmbeddedApp: App {
             }
             CommandGroup(replacing: .help) {
                 Button("MailPort Help") { NSWorkspace.shared.open(URL(string: "https://github.com/yepher/mail-port#readme")!) }
-                Button("Report a Problem…") { NSWorkspace.shared.open(URL(string: "https://github.com/yepher/mail-port/issues/new")!) }
+                Button("Report an Issue…") { NSWorkspace.shared.open(URL(string: "https://github.com/yepher/mail-port/issues/new")!) }
             }
             CommandGroup(replacing: .printItem) {
                 Button("Print…") { model.currentBrowser?.printPage() }.keyboardShortcut("p").disabled(!canUsePage)
@@ -169,6 +169,7 @@ struct EmbeddedApp: App {
                 Button(model.poppedOutVideo != nil && model.poppedOutVideo == model.selection ? "Return Video to Tab" : "Pop Out Video") { model.controlVideo("popOut") }
                     .disabled(!canUsePage || model.currentBrowser?.videoPlayback.hasVideo != true)
                 Divider()
+                Button("Downloads…") { model.showWindow(); model.showingDownloads = true }.disabled(model.security.blocksAccess)
                 Button("Save YouTube Video…") { model.saveMedia(audio: false) }.disabled(!model.canSaveMedia)
                 Button("Save YouTube Audio…") { model.saveMedia(audio: true) }.disabled(!model.canSaveMedia)
                 Button("Save Video Transcript…") { model.saveTranscript() }

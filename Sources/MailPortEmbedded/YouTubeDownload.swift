@@ -5,6 +5,7 @@ import MailPortCore
 /// Runs only locally installed helpers, with explicit arguments and no exported cookies.
 @MainActor
 final class YouTubeDownload {
+    var onProgress: ((Double?, String) -> Void)?
     private var process: Process?
     private var cancelled = false
     private let executable: URL?
@@ -71,11 +72,39 @@ final class YouTubeDownload {
         let errors = try FileHandle(forWritingTo: log)
         defer { try? errors.close(); process = nil }
         var stdout = FileHandle.nullDevice
+        var progressReader: FileHandle?
+        var progressTimer: Timer?
+        var buffered = ""
+        if output == nil {
+            let progressFile = folder.appendingPathComponent("progress.txt")
+            FileManager.default.createFile(atPath: progressFile.path, contents: nil)
+            stdout = try FileHandle(forWritingTo: progressFile)
+            let reader = try FileHandle(forReadingFrom: progressFile)
+            progressReader = reader
+            let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let data = try? reader.read(upToCount: 16384), !data.isEmpty else { return }
+                    buffered += String(decoding: data, as: UTF8.self)
+                    while let end = buffered.firstIndex(of: "\n") {
+                        let line = String(buffered[..<end]); buffered.removeSubrange(...end)
+                        if line.hasPrefix("MAILPORT_PROGRESS:"),
+                           let percent = Double(line.dropFirst("MAILPORT_PROGRESS:".count).trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "%", with: "")),
+                           percent.isFinite, (0...100).contains(percent) {
+                            self?.onProgress?(percent / 100, "Downloading stream · \(Int(percent))%")
+                        } else if line.hasPrefix("MAILPORT_PROCESSING") { self?.onProgress?(nil, "Processing media…") }
+                    }
+                    if buffered.count > 32768 { buffered = "" }
+                }
+            }
+            progressTimer = timer; RunLoop.main.add(timer, forMode: .common)
+            onProgress?(nil, "Downloading…")
+        }
+        defer { progressTimer?.invalidate(); try? progressReader?.close() }
         if let output {
             FileManager.default.createFile(atPath: output.path, contents: nil)
             stdout = try FileHandle(forWritingTo: output)
         }
-        defer { if output != nil { try? stdout.close() } }
+        defer { try? stdout.close() }
         let task = Process()
         task.executableURL = helper
         task.arguments = arguments

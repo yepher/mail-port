@@ -60,6 +60,17 @@ struct SecuritySettingsView: View {
     private var settings: some View {
         VStack(alignment: .leading, spacing: 18) {
             Label("MailPort settings", systemImage: "gearshape").font(.title2.bold())
+            GroupBox("Workspace backup") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Save accounts, services, pins and workspace preferences. Backups contain names, email addresses and pin URLs; keep them private. Sign-ins, cookies, PIN and downloaded files are excluded.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        Button("Export workspace…") { model.exportWorkspace() }
+                        Button("Restore workspace…") { model.chooseWorkspaceBackup() }
+                    }
+                    if let status = model.backupStatus { Text(status).font(.caption).foregroundStyle(.secondary) }
+                }.padding(6)
+            }
             Toggle("Show keyboard shortcuts next to views", isOn: Binding(get: { model.showsShortcutHints }, set: { model.setShowsShortcutHints($0) }))
             if updates.isAvailable {
                 Toggle("Check for updates automatically", isOn: $updates.checksAutomatically)

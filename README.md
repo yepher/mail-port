@@ -6,6 +6,11 @@ MailPort puts Gmail, Calendar, YouTube, and your other Google services in one Ma
 
 MailPort is an independent preview, not affiliated with or endorsed by Google. It shows Google's own web pages, and Google may reject its embedded browser or ask for extra verification, so sign-in isn't guaranteed for every account.
 
+> Why did I make this app?
+
+*I used another app called [MailPlane](https://mailplaneapp.com/) for many years but they stopped supporting it long ago and it will stop working on Mac in the near future because it is Intel based app. There were also many features I always wanted that it just did not support. So I finally got tired of seeing the Apple nag that app is going away and that drove me to make the app I actually wanted MailPlane to actually be in the first place.*
+
+
 ## Install
 
 MailPort needs macOS 14 or later on Apple silicon.
@@ -46,6 +51,8 @@ Select **Pop Out Video** in the YouTube toolbar, Navigate menu, or Dock menu to 
 
 Closing the YouTube view, removing its account, or locking MailPort closes the floating window and stops that view’s playback. These controls do not require download helpers.
 
+The **Save Media** menu also offers **Open in YouTube** to pause the MailPort player and open the current video in your default browser and **Copy Video Link** to copy a clean video URL without playlist or tracking parameters. These actions work without enabling downloads or installing helpers.
+
 ### Optional YouTube tools
 
 Both options are off by default in Settings:
@@ -61,6 +68,16 @@ defaults write com.chriswilson.mailport.embedded youtubeMediaDownloads -bool tru
 ```
 
 Use `false` to disable. Debug builds use an isolated `com.chriswilson.mailport.testing.*` preference domain; use Settings there. PIN locking cancels active media downloads; files already saved outside MailPort remain on disk.
+
+### Manage downloads
+
+Open **Downloads** at the bottom of the sidebar or in the **Navigate** menu. Website downloads and YouTube media saves show progress, cancellation, failures and **Show in Finder**. Failed or cancelled YouTube saves can be retried; ordinary downloads offer Retry only when their original request is a safe GET request and its account view is still available. A retry asks where to save again. Progress can restart between video and audio streams, and some servers do not report a total size. History lasts for the current session and clears when MailPort locks; clearing history never deletes saved files.
+
+### Back up your workspace
+
+In **Settings > Workspace backup**, choose **Export workspace** to save a JSON file containing account labels and colors, open services, pins and workspace preferences. This includes email labels and pin URLs, which can contain search terms. Keep the file private. Sign-ins, cookies, passwords, the lock PIN and downloaded files are excluded.
+
+**Restore workspace** previews the file before adding accounts as new profiles; existing accounts and sign-ins stay in place. Sign in again to each restored account. Layout, shortcut hints, zoom and video opacity restore only if you select that option. YouTube opt-ins and macOS notification permissions are never imported.
 
 ### Read and print pages
 
@@ -112,6 +129,8 @@ Links open as a draft for you to review in Gmail. Nothing sends until you send i
 5. Repeat steps 3 and 4 for each account.
 
 MailPort must be running, online, and signed in for reminders to arrive. They can be missed while the app is quit, locked, or your Mac is asleep. Clicking a Calendar reminder opens that account's Calendar. Gmail notifications also appear when they're enabled in Gmail and its page is loaded.
+
+The Notifications window includes per-account diagnostics for Calendar connection and mute status, plus **Send test reminder** and **Refresh diagnostics**. It distinguishes an alert submitted to macOS from one found in Notification Center, and separates test alerts from actual Calendar reminders. A test verifies Mac delivery; a real event verifies Google's reminder rules. Focus settings can prevent banners even when an alert was accepted. Diagnostic history clears when MailPort locks.
 
 To quiet one account, right-click its header and choose **Notifications**. You can mute it for an hour, until tomorrow morning, or until you unmute it. A muted account shows a crossed-out bell, and alerts sent while it's muted are skipped, not saved for later. **Hide Message Previews** shows only "New mail" or "Calendar reminder" with the account name. These choices don't change your Google settings.
 
@@ -176,3 +195,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for build, test, and release instructions
 ## License
 
 MailPort is free to use, change, and share, including at work. You can't sell it, or sell a product or service based substantially on it, without a separate license from the author. See [LICENSE](LICENSE) for the full terms. The app includes [Sparkle](https://sparkle-project.org), which has its own license.
+
+Report problems with **Help > Report an Issue…**, which opens GitHub’s new-issue page in your browser. Review what you share before submitting.

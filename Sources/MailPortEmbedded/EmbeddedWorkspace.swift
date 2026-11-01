@@ -16,6 +16,12 @@ final class EmbeddedWorkspace: ObservableObject {
     @Published var showingAccountEditor = false
     @Published var editingAccount: Account?
     @Published var showingHelp = false
+    @Published var showingBackupRestore = false
+    @Published private(set) var pendingBackup: WorkspaceBackup?
+    @Published var backupStatus: String?
+    @Published var showingDownloads = false
+    let downloadCenter = DownloadCenter()
+    private var pendingDownloadRetry: UUID?
     @Published var showingNotifications = false
     @Published var showingSecuritySettings = false
     @Published var showingQuickSwitch = false
@@ -139,7 +145,7 @@ final class EmbeddedWorkspace: ObservableObject {
             if notifications.permission == "granted" { self.prepareCalendarReminders() }
             else {
                 for tab in Array(self.browsers.keys) where tab.service == .calendar && !self.tabs.contains(tab) {
-                    self.browsers.removeValue(forKey: tab)?.webView.stopLoading()
+                    self.browsers.removeValue(forKey: tab)?.discardForSecurity()
                 }
             }
             for browser in self.browsers.values { browser.notificationBridge.updatePermission() }
@@ -223,13 +229,22 @@ final class EmbeddedWorkspace: ObservableObject {
         // Remove sensitive views and AppKit sheets before returning from the sleep hook.
         showingAccountEditor = false; editingAccount = nil
         showingHelp = false; showingNotifications = false; showingSecuritySettings = false
+        showingBackupRestore = false; pendingBackup = nil; backupStatus = nil
+        showingDownloads = false; pendingDownloadRetry = nil
         showingQuickSwitch = false; showingPinEditor = false; accountPendingRemoval = nil
         pendingCompose = nil; errorMessage = nil
-        for sheet in mainWindow?.sheets ?? [] { mainWindow?.endSheet(sheet); sheet.orderOut(nil) }
+        func dismissSheets(in window: NSWindow) {
+            for sheet in window.sheets {
+                dismissSheets(in: sheet)
+                window.endSheet(sheet); sheet.orderOut(nil)
+            }
+        }
+        if let mainWindow { dismissSheets(in: mainWindow) }
         MailPortNotifications.shared.setPrivacyLocked(true)
         browserChanges = nil
         for browser in Array(browsers.values) + Array(calendarMonitors.values) { browser.discardForSecurity() }
         currentBrowser = nil
+        downloadCenter.clearForLock()
         browsers.removeAll(); calendarMonitors.removeAll(); stores.removeAll()
         accounts.removeAll(); tabs.removeAll(); recentlyClosed.removeAll(); tabActivity.removeAll()
         pins.removeAll(); collapsedAccounts.removeAll(); accountsNeedingSignIn.removeAll(); defaultMailAccountID = nil
@@ -290,7 +305,7 @@ final class EmbeddedWorkspace: ObservableObject {
             if let next { select(next) }
         }
         if tab.service != .calendar || MailPortNotifications.shared.permission != "granted" {
-            browsers.removeValue(forKey: tab)?.webView.stopLoading()
+            browsers.removeValue(forKey: tab)?.discardForSecurity()
         }
         tabActivity.removeValue(forKey: tab)
         if tab.service == .calendar { calendarMonitors.removeValue(forKey: tab.accountID)?.webView.stopLoading() }
@@ -316,6 +331,8 @@ final class EmbeddedWorkspace: ObservableObject {
         stores[account.id] = store
         let browser = BrowserTab(account: account, service: tab.service, store: store)
         browser.skipsYouTubeAds = skipsYouTubeAds
+        browser.downloadCenter = downloadCenter
+        browser.downloadWindow = { [weak self] in self?.mainWindow }
         browser.onMailto = { [weak self] url in self?.receive(url) }
         browser.onSignInChange = { [weak self] needed in self?.updateSignIn(needed, for: account.id) }
         browser.webView.pageZoom = serviceZoom[tab.service] ?? PageZoom.standard
@@ -491,8 +508,122 @@ final class EmbeddedWorkspace: ObservableObject {
         if !enabled { cancelMediaDownload(); showingVideoOptions = false; pendingVideoSelection = false; videoOptionsURL = nil }
     }
 
+    var shareableVideoURL: URL? {
+        guard !security.blocksAccess, selection?.service == .youtube else { return nil }
+        return YouTubeMedia.videoURL(currentBrowser?.url)
+    }
+
+    func copyVideoLink() {
+        guard let url = shareableVideoURL else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+    }
+
+    func openVideoInYouTube() {
+        guard let url = shareableVideoURL, let tab = selection, let browser = browsers[tab] else { return }
+        Task { @MainActor [weak self, weak browser] in
+            guard let self, let browser, !self.security.blocksAccess, self.browsers[tab] === browser else { return }
+            // Native pause is idempotent and also works while the player is popped out.
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                browser.webView.pauseAllMediaPlayback { continuation.resume() }
+            }
+            guard !self.security.blocksAccess, self.browsers[tab] === browser else { return }
+            browser.refreshVideoPlayback()
+            if !NSWorkspace.shared.open(url) { self.errorMessage = "YouTube couldn’t be opened in your default browser." }
+        }
+    }
+
     var canSaveMedia: Bool {
         !security.blocksAccess && allowsYouTubeDownloads && !savingMedia && selection?.service == .youtube && YouTubeMedia.videoURL(currentBrowser?.url) != nil
+    }
+
+    func calendarReminderReadiness(account: Account) -> String {
+        if accountsNeedingSignIn.contains(account.id) { return "Sign-in needed — open Calendar for this account." }
+        guard let browser = browsers[WorkspaceTab(accountID: account.id, service: .calendar)] else { return "Calendar is not loaded. Enable alerts or open Calendar." }
+        if let error = browser.errorMessage { return "Calendar page error: " + error }
+        if browser.isLoading { return "Calendar is loading…" }
+        return browser.notificationBridgeReady ? "Calendar page is connected to Mac notifications." : "Calendar connection unverified. Open Calendar and check desktop notification settings."
+    }
+
+    func exportWorkspace() {
+        guard !security.blocksAccess, let window = mainWindow else { return }
+        let backup = WorkspaceBackup(accounts: accounts, tabs: tabs, pins: pins, collapsed: collapsedAccounts,
+            badgeExcluded: dockBadgeExcluded, notifications: notificationSettings, defaultMailAccount: defaultMailAccountID,
+            layout: layout.rawValue, shortcutHints: showsShortcutHints,
+            zoom: Dictionary(uniqueKeysWithValues: serviceZoom.map { ($0.key.rawValue, $0.value) }), videoOpacity: popOutVideoOpacity)
+        let panel = NSSavePanel(); panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = "MailPort-workspace.json"
+        panel.message = "Includes account names, email addresses, pins and their URLs. Keep this file private. Sign-ins, cookies, PIN and downloaded files are excluded."
+        panel.beginSheetModal(for: window.attachedSheet ?? window) { [weak self] response in
+            guard let self, !self.security.blocksAccess, response == .OK, let url = panel.url else { return }
+            do { try backup.encoded().write(to: url, options: .atomic); self.backupStatus = "Workspace exported." }
+            catch { self.errorMessage = error.localizedDescription }
+        }
+    }
+
+    func chooseWorkspaceBackup() {
+        guard !security.blocksAccess, let window = mainWindow else { return }
+        let panel = NSOpenPanel(); panel.allowedContentTypes = [.json]; panel.allowsMultipleSelection = false
+        panel.message = "Restore adds new account profiles. Existing accounts and sign-ins are preserved."
+        panel.beginSheetModal(for: window.attachedSheet ?? window) { [weak self] response in
+            guard let self, !self.security.blocksAccess, response == .OK, let url = panel.url else { return }
+            do {
+                let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                guard size <= 5_000_000 else { throw WorkspaceBackup.Invalid.configuration }
+                try self.previewWorkspaceBackup(Data(contentsOf: url))
+                self.showingSecuritySettings = false
+            } catch { self.errorMessage = error.localizedDescription }
+        }
+    }
+
+    func previewWorkspaceBackup(_ data: Data) throws {
+        guard !security.blocksAccess else { throw CancellationError() }
+        pendingBackup = try WorkspaceBackup.decode(data)
+    }
+
+    func showPendingBackup() { if pendingBackup != nil && !security.blocksAccess { showingBackupRestore = true } }
+    func cancelBackupRestore() { pendingBackup = nil; showingBackupRestore = false }
+
+    func restoreWorkspace(includeAppearance: Bool) {
+        guard !security.blocksAccess, let backup = pendingBackup else { return }
+        do {
+            let imported = try backup.importing(alongside: accounts)
+            let combined = accounts + imported.accounts
+            // The only throwing mutation is the atomic account-list write. Leave current state alone on failure.
+            try accountStore.save(combined)
+            accounts = combined; tabs += imported.tabs; pins += imported.pins
+            collapsedAccounts.formUnion(imported.collapsed); dockBadgeExcluded.formUnion(imported.badgeExcluded)
+            notificationSettings.merge(imported.notifications) { _, new in new }
+            accountsNeedingSignIn.formUnion(imported.accounts.map(\.id))
+            persistTabs(); persistPins(); persistCollapsedAccounts()
+            preferences.set(dockBadgeExcluded.map(\.uuidString), forKey: "dockBadgeExcluded")
+            if let data = try? JSONEncoder().encode(notificationSettings) { preferences.set(data, forKey: "accountNotifications") }
+            if includeAppearance {
+                layout = WorkspaceLayout(rawValue: imported.layout) ?? .sidebar
+                setShowsShortcutHints(imported.shortcutHints)
+                serviceZoom = Dictionary(uniqueKeysWithValues: imported.zoom.compactMap { key, value in GoogleService(rawValue: key).map { ($0, value) } })
+                preferences.set(imported.zoom, forKey: "serviceZoom")
+                for (tab, browser) in browsers { browser.webView.pageZoom = serviceZoom[tab.service] ?? PageZoom.standard }
+                setPopOutVideoOpacity(imported.videoOpacity)
+            }
+            if defaultMailAccountID == nil { setDefaultMailAccount(imported.defaultMailAccount) }
+            backupStatus = "Restored \(imported.accounts.count) accounts. Sign in to each restored account to use it."
+            cancelBackupRestore()
+            prepareTabActivity()
+            if MailPortNotifications.shared.permission == "granted" { prepareCalendarReminders() }
+            if selection == nil, let first = imported.tabs.first { select(first) }
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    func retryDownload(_ id: UUID) {
+        guard !security.blocksAccess else { return }
+        pendingDownloadRetry = id
+        showingDownloads = false
+    }
+    func completeDownloadRetry() {
+        let id = pendingDownloadRetry; pendingDownloadRetry = nil
+        guard !security.blocksAccess, let id else { return }
+        downloadCenter.retry(id)
     }
 
     func cancelMediaDownload() {
@@ -570,10 +701,12 @@ final class EmbeddedWorkspace: ObservableObject {
             basename: videoDownloadBasename ?? YouTubeMedia.suggestedBasename(metadata: [:], url: url))
     }
 
-    private func presentMediaSavePanel(url: URL, audio: Bool, window: NSWindow, height: Int? = nil, basename: String) {
+    private func presentMediaSavePanel(url: URL, audio: Bool, window: NSWindow, height: Int? = nil, basename: String, accountName: String? = nil, directory: URL? = nil) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = audio ? [.mpeg4Audio] : [.mpeg4Movie]
         panel.nameFieldStringValue = basename + (audio ? ".m4a" : ".mp4")
+        panel.directoryURL = directory
+        let label = accountName ?? selectedAccount?.name ?? "YouTube"
         panel.beginSheetModal(for: window) { [weak self] response in
             guard let self, response == .OK, let destination = panel.url,
                   !self.security.blocksAccess, self.allowsYouTubeDownloads, !self.savingMedia else { return }
@@ -581,14 +714,23 @@ final class EmbeddedWorkspace: ObservableObject {
             self.mediaDownload = download
             self.savingMedia = true
             self.mediaStatus = audio ? "Saving audio…" : "Saving video…"
+            let record = self.downloadCenter.begin(account: label, source: "YouTube", destination: destination,
+                cancel: { [weak download] in download?.cancel() }, retry: { [weak self] in
+                    guard let self, !self.security.blocksAccess, self.allowsYouTubeDownloads, !self.savingMedia, let window = self.mainWindow else { return }
+                    self.presentMediaSavePanel(url: url, audio: audio, window: window, height: height,
+                        basename: destination.deletingPathExtension().lastPathComponent, accountName: label, directory: destination.deletingLastPathComponent())
+                })
+            download.onProgress = { [weak self] fraction, detail in self?.downloadCenter.update(record, progress: fraction, detail: detail) }
             Task { @MainActor in
                 defer { self.savingMedia = false; self.mediaDownload = nil }
                 do {
                     try await download.save(url: url, audio: audio, destination: destination, height: height)
+                    self.downloadCenter.complete(record)
                     if !self.security.blocksAccess { self.mediaStatus = "Saved \(destination.lastPathComponent)" }
-                } catch is CancellationError { self.mediaStatus = nil }
+                } catch is CancellationError { self.mediaStatus = nil; self.downloadCenter.cancel(record) }
                 catch {
                     self.mediaStatus = nil
+                    self.downloadCenter.fail(record, error: error.localizedDescription)
                     if !self.security.blocksAccess { self.errorMessage = error.localizedDescription }
                 }
             }

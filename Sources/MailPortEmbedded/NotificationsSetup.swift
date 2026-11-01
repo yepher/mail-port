@@ -7,11 +7,13 @@ struct NotificationsSetup: View {
     @Environment(\.dismiss) private var dismiss
     @State private var accountID: UUID?
     @State private var enabling = false
+    @State private var checkedAt = Date()
 
     private var account: Account? { model.accounts.first { $0.id == accountID } ?? model.selectedAccount ?? model.accounts.first }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        ScrollView { VStack(alignment: .leading, spacing: 20) {
+            Text("Checked \(checkedAt.formatted(date: .omitted, time: .shortened))").font(.caption).foregroundStyle(.secondary)
             Label("Calendar reminders", systemImage: "bell.badge").font(.title2.bold())
             Text("Receive Google Calendar reminders as native Mac notifications. Clicking an alert opens the right account’s Calendar tab.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -54,12 +56,41 @@ struct NotificationsSetup: View {
                     .disabled(notifications.permission != "granted" || account == nil)
                 Text("Tests Mac delivery; a real event verifies Google Calendar.").font(.caption).foregroundStyle(.secondary)
             }
+            GroupBox("Account diagnostics") {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(model.accounts) { account in
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(account.name).font(.headline)
+                            Text(model.calendarReminderReadiness(account: account))
+                            let settings = model.notificationSettings[account.id] ?? AccountNotificationSettings()
+                            Text(settings.isMuted(at: Date()) ? "Reminders are muted for this account." : "Account reminders are not muted.")
+                            if let receipt = notifications.receipts[account.id] {
+                                if let date = receipt.submitted { Text("Calendar alert submitted: \(date.formatted())") }
+                                if let date = receipt.delivered { Text("Calendar alert seen in Notification Center: \(date.formatted())") }
+                                if let date = receipt.testSubmitted { Text("Test submitted: \(date.formatted())") }
+                                if let date = receipt.testDelivered { Text("Test seen in Notification Center: \(date.formatted())") }
+                                if let error = receipt.error { Text(error).foregroundStyle(.red) }
+                            } else { Text("No alerts observed this session.") }
+                        }.font(.caption).frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    Button("Refresh diagnostics") { Task { await notifications.refresh() } }
+                    Text("A submitted alert is accepted by macOS; it does not prove a banner appeared. Notification Center confirmation is checked separately. Tests verify Mac delivery, not Google’s event rules. Focus can suppress banners.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }.padding(9)
+            }
             if let error = notifications.lastError { Text(error).font(.caption).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
             if let delivered = notifications.lastDelivery { Text(delivered).font(.caption).foregroundStyle(.secondary) }
             Text("Calendar pages stay loaded for all saved accounts while alerts are enabled, even when a Calendar tab is closed. Keep MailPort running and signed in. Quitting, sleep, offline periods, or Focus settings can delay or prevent reminders.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
-        }.padding(28).frame(width: 570)
+        }.padding(28) }.frame(width: 620, height: 740)
+            .task {
+                while !Task.isCancelled {
+                    await notifications.refreshDelivered()
+                    checkedAt = Date()
+                    try? await Task.sleep(for: .seconds(2))
+                }
+            }
             .onAppear { accountID = model.selectedAccount?.id ?? model.accounts.first?.id; Task { await notifications.refresh() } }
     }
 }

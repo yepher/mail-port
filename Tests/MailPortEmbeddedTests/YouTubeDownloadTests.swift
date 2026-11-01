@@ -13,6 +13,15 @@ final class YouTubeDownloadTests: XCTestCase {
         return (helper, directory.appendingPathComponent("saved audio.m4a"))
     }
 
+    @MainActor func testHelperProgressReachesNativeObserver() async throws {
+        let (helper, destination) = try fixture(script: "printf 'MAILPORT_PROGRESS: 42.0%%\\n'\nsleep 0.5\nwhile [ \"$1\" != \"--output\" ]; do shift; done\nshift\nprintf 'fixture media' > \"$1\"\n")
+        let download = YouTubeDownload(helper: helper)
+        var fractions: [Double] = []
+        download.onProgress = { fraction, _ in if let fraction { fractions.append(fraction) } }
+        try await download.save(url: URL(string: "https://www.youtube.com/watch?v=abcdefghijk")!, audio: true, destination: destination)
+        XCTAssertTrue(fractions.contains(0.42))
+    }
+
     @MainActor func testSuccessfulDownloadPublishesOnlyCompletedFile() async throws {
         let (helper, destination) = try fixture(script: "while [ \"$1\" != \"--output\" ]; do shift; done\nshift\nprintf 'fixture media' > \"$1\"\n")
         try await YouTubeDownload(helper: helper, ffmpeg: URL(fileURLWithPath: "/usr/bin/true")).save(url: URL(string: "https://www.youtube.com/watch?v=abcdefghijk")!, audio: true, destination: destination)

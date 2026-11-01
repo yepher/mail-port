@@ -74,9 +74,12 @@ final class WebNotificationBridge: NSObject, WKScriptMessageHandler {
         guard let webView = tab?.webView else { return }
         webView.callAsyncJavaScript("window.__mailportNotifications?.permissionChanged(permission, requestID)",
             arguments: ["permission": notifications.permission, "requestID": requestID], in: nil, in: .page, completionHandler: { _ in })
-        webView.callAsyncJavaScript("return [Boolean(window.__mailportNotifications), window.Notification?.permission ?? 'unavailable', document.visibilityState].join(' ')",
-            arguments: [:], in: nil, in: .page, completionHandler: { [logger] result in
-                if case .success(let value) = result, let value = value as? String { logger.info("Notification bridge state: \(value, privacy: .public)") }
+        let expectedURL = webView.url
+        webView.callAsyncJavaScript("return Boolean(window.__mailportNotifications) && window.Notification?.permission === 'granted'",
+            arguments: [:], in: nil, in: .page, completionHandler: { [weak tab] result in
+                guard let tab, tab.webView.url == expectedURL,
+                      tab.webView.url?.host == tab.service.url.host else { return }
+                tab.notificationBridgeReady = (try? result.get()) as? Bool == true
             })
     }
 

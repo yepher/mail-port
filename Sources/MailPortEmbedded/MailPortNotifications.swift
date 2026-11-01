@@ -11,6 +11,14 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
     @Published private(set) var authorization: UNAuthorizationStatus = .notDetermined
     @Published private(set) var lastError: String?
     @Published private(set) var lastDelivery: String?
+    struct Receipt {
+        var submitted: Date?
+        var delivered: Date?
+        var testSubmitted: Date?
+        var testDelivered: Date?
+        var error: String?
+    }
+    @Published private(set) var receipts: [UUID: Receipt] = [:]
     var onPermissionChanged: (() -> Void)?
     var onOpen: ((UUID, GoogleService, String?) -> Void)?
     var settingsForAccount: ((UUID) -> AccountNotificationSettings)?
@@ -20,6 +28,7 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
     private var activity: NSObjectProtocol?
     private var pendingOpen: (UUID, GoogleService, String?)?
     private var privacyLocked = true
+    private var privacyGeneration = UUID()
 
     var permission: String {
         if privacyLocked { return "default" }
@@ -35,18 +44,35 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
 
     func refresh() async {
         authorization = await center?.notificationSettings().authorizationStatus ?? .denied
+        await refreshDelivered()
         updateActivity()
         onPermissionChanged?()
+    }
+
+    func refreshDelivered() async {
+        guard !privacyLocked, let center else { return }
+        let generation = privacyGeneration
+        let delivered = await center.deliveredNotifications()
+        guard privacyGeneration == generation, !privacyLocked else { return }
+        for notification in delivered {
+            let info = notification.request.content.userInfo
+            guard let rawID = info["accountID"] as? String, let id = UUID(uuidString: rawID) else { continue }
+            var receipt = receipts[id] ?? Receipt()
+            if info["test"] as? Bool == true { receipt.testDelivered = max(receipt.testDelivered ?? .distantPast, notification.date) }
+            else if info["service"] as? String == GoogleService.calendar.rawValue { receipt.delivered = max(receipt.delivered ?? .distantPast, notification.date) }
+            receipts[id] = receipt
+        }
     }
 
     func reportError(_ message: String) { lastError = message }
 
     func setPrivacyLocked(_ locked: Bool, clearDelivered: Bool = true) {
         privacyLocked = locked
+        if locked { privacyGeneration = UUID() }
         if locked && clearDelivered {
             center?.removeAllPendingNotificationRequests()
             center?.removeAllDeliveredNotifications()
-            lastDelivery = nil; lastError = nil; pendingOpen = nil
+            lastDelivery = nil; lastError = nil; pendingOpen = nil; receipts.removeAll()
         }
         updateActivity()
     }
@@ -85,8 +111,9 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
         }
     }
 
-    func deliver(_ message: WebNotificationMessage, account: Account, service: GoogleService) async -> String? {
+    func deliver(_ message: WebNotificationMessage, account: Account, service: GoogleService, test: Bool = false) async -> String? {
         guard permission == "granted", let center else { return nil }
+        let generation = privacyGeneration
         let settings = settingsForAccount?(account.id) ?? AccountNotificationSettings()
         guard !settings.isMuted(at: Date()) else { return nil }
         let key = message.tag.isEmpty ? message.id : message.tag
@@ -99,12 +126,22 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
         content.body = text.body
         if !message.silent { content.sound = .default }
         content.threadIdentifier = "\(account.id.uuidString).\(service.rawValue)"
-        content.userInfo = ["accountID": account.id.uuidString, "service": service.rawValue, "webID": message.id]
+        content.userInfo = ["accountID": account.id.uuidString, "service": service.rawValue, "webID": message.id, "test": test]
         do {
             try await center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
-            lastDelivery = "\(service.title) alert for \(account.name) at \(Date().formatted(date: .omitted, time: .shortened))"
+            guard !privacyLocked, privacyGeneration == generation else { center.removeDeliveredNotifications(withIdentifiers: [identifier]); return nil }
+            var receipt = receipts[account.id] ?? Receipt()
+            if test { receipt.testSubmitted = Date() }
+            else if service == .calendar { receipt.submitted = Date() }
+            receipt.error = nil; receipts[account.id] = receipt
+            lastDelivery = "\(service.title) alert submitted for \(account.name) at \(Date().formatted(date: .omitted, time: .shortened))"
             return identifier
-        } catch { lastError = error.localizedDescription; return nil }
+        } catch {
+            guard !privacyLocked, privacyGeneration == generation else { return nil }
+            lastError = error.localizedDescription
+            var receipt = receipts[account.id] ?? Receipt(); receipt.error = error.localizedDescription; receipts[account.id] = receipt
+            return nil
+        }
     }
 
     func close(_ identifier: String) {
@@ -117,7 +154,10 @@ final class MailPortNotifications: NSObject, ObservableObject, UNUserNotificatio
         if settingsForAccount?(account.id).isMuted(at: Date()) == true { lastError = "\(account.name) is muted."; return }
         let message = WebNotificationMessage(["kind": "show", "id": UUID().uuidString,
             "title": "MailPort test reminder", "body": "Notifications are ready. Click to open \(account.name)’s Calendar."])!
-        _ = await deliver(message, account: account, service: .calendar)
+        _ = await deliver(message, account: account, service: .calendar, test: true)
+        // Delivery is asynchronous; verify actual Notification Center presence separately.
+        try? await Task.sleep(for: .milliseconds(500))
+        await refreshDelivered()
     }
 
     func attachOpenHandler(_ handler: @escaping (UUID, GoogleService, String?) -> Void) {

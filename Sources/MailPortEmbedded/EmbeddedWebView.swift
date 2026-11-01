@@ -45,6 +45,12 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     private let navigationLogger = Logger(subsystem: "com.chriswilson.mailport.embedded", category: "BrowserNavigation")
 
     private var observations: [NSKeyValueObservation] = []
+    @Published var notificationBridgeReady = false
+    weak var downloadCenter: DownloadCenter?
+    var downloadWindow: (() -> NSWindow?)?
+    private let downloadOwner = UUID()
+    private var downloadRecords: [ObjectIdentifier: UUID] = [:]
+    private var downloadTimer: Timer?
     private var downloads: [ObjectIdentifier: WKDownload] = [:]
     private var downloadDestinations: [ObjectIdentifier: (temporary: URL, final: URL, replacing: Bool)] = [:]
 
@@ -77,8 +83,11 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         observeState()
         if service == .youtube {
             let timer = Timer(timeInterval: 1, repeats: true) { [weak self] timer in
-                guard let self else { timer.invalidate(); return }
-                self.refreshVideoPlayback()
+                // This timer is installed exclusively on the main run loop.
+                MainActor.assumeIsolated {
+                    guard let self else { timer.invalidate(); return }
+                    self.refreshVideoPlayback()
+                }
             }
             RunLoop.main.add(timer, forMode: .common)
             videoPlaybackTimer = timer
@@ -147,8 +156,11 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         youtubeSkipTimer = nil
         if skipsYouTubeAds {
             let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] timer in
-                guard let self else { timer.invalidate(); return }
-                self.checkYouTubeSkipButton()
+                // This timer is installed exclusively on the main run loop.
+                MainActor.assumeIsolated {
+                    guard let self else { timer.invalidate(); return }
+                    self.checkYouTubeSkipButton()
+                }
             }
             RunLoop.main.add(timer, forMode: .common)
             youtubeSkipTimer = timer
@@ -257,6 +269,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     func forward() { if webView.canGoForward { webView.goForward() } }
 
     func discardForSecurity() {
+        notificationBridgeReady = false
         discardedForSecurity = true
         videoPlaybackTimer?.invalidate(); videoPlaybackTimer = nil
         videoPlayback = .none
@@ -272,6 +285,9 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         observations.forEach { $0.invalidate() }; observations.removeAll()
         for download in downloads.values { download.delegate = nil; download.cancel { _ in } }
         for destination in downloadDestinations.values { try? FileManager.default.removeItem(at: destination.temporary) }
+        downloadCenter?.retire(owner: downloadOwner)
+        downloadTimer?.invalidate(); downloadTimer = nil
+        downloadRecords.removeAll()
         downloads.removeAll(); downloadDestinations.removeAll()
         webView.loadHTMLString("", baseURL: nil)
     }
@@ -403,6 +419,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        notificationBridgeReady = false
         errorMessage = nil
         onActivity?(nil)
         updateState()
@@ -530,21 +547,48 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     }
 
     private func retainDownload(_ download: WKDownload) {
+        guard !discardedForSecurity else { download.cancel { _ in }; return }
         openingAttachment = false
         downloads[ObjectIdentifier(download)] = download
         download.delegate = self
+        if downloadTimer == nil {
+            downloadTimer = Timer(timeInterval: 0.3, repeats: true) { [weak self] timer in
+                // Installed exclusively on the main run loop.
+                MainActor.assumeIsolated {
+                    guard let self else { timer.invalidate(); return }
+                    self.refreshDownloadProgress()
+                }
+            }
+            RunLoop.main.add(downloadTimer!, forMode: .common)
+        }
+    }
+
+    private func refreshDownloadProgress() {
+        for (key, download) in downloads {
+            guard let id = downloadRecords[key] else { continue }
+            let progress = download.progress
+            downloadCenter?.update(id, progress: progress.totalUnitCount > 0 ? progress.fractionCompleted : nil, detail: "Downloading…")
+        }
+        if downloads.isEmpty { downloadTimer?.invalidate(); downloadTimer = nil }
+    }
+
+    private func finishDownloadTracking(_ key: ObjectIdentifier) {
+        downloads.removeValue(forKey: key); downloadDestinations.removeValue(forKey: key)
+        downloadRecords.removeValue(forKey: key)
+        refreshDownloadProgress()
     }
 
     func download(_ download: WKDownload, decideDestinationUsing response: URLResponse,
                   suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
-        guard let window = webView.window else { completionHandler(nil); return }
+        guard !discardedForSecurity, let window = downloadWindow?() ?? webView.window else { completionHandler(nil); return }
         let panel = NSSavePanel()
         let filename = (suggestedFilename as NSString).lastPathComponent
         panel.nameFieldStringValue = filename.isEmpty || filename == "." || filename == ".." ? "Download" : filename
         panel.canCreateDirectories = true
         panel.beginSheetModal(for: window) { [weak self] result in
-            guard let self, result == .OK, let destination = panel.url else {
-                self?.downloads.removeValue(forKey: ObjectIdentifier(download))
+            guard let self, !self.discardedForSecurity, self.downloads[ObjectIdentifier(download)] != nil,
+                  result == .OK, let destination = panel.url else {
+                self?.finishDownloadTracking(ObjectIdentifier(download))
                 completionHandler(nil)
                 return
             }
@@ -555,6 +599,21 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             self.downloadDestinations[ObjectIdentifier(download)] = (
                 temporary, destination, FileManager.default.fileExists(atPath: destination.path)
             )
+            let request = download.originalRequest
+            var retry: (() -> Void)?
+            if let request, request.httpMethod?.uppercased() == "GET", request.url.map(isSecureWebURL) == true {
+                retry = { [weak self] in
+                    guard let self, !self.discardedForSecurity else { return }
+                    self.webView.startDownload(using: request) { [weak self] download in self?.retainDownload(download) }
+                }
+            }
+            self.downloadRecords[ObjectIdentifier(download)] = self.downloadCenter?.begin(
+                account: self.account.name, source: self.service.title, destination: destination, owner: self.downloadOwner,
+                cancel: { [weak self, weak download] in
+                    download?.cancel { _ in }
+                    try? FileManager.default.removeItem(at: temporary)
+                    if let download { self?.finishDownloadTracking(ObjectIdentifier(download)) }
+                }, retry: retry)
             completionHandler(temporary)
         }
     }
@@ -566,7 +625,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
 
     func downloadDidFinish(_ download: WKDownload) {
         let key = ObjectIdentifier(download)
-        defer { downloads.removeValue(forKey: key); downloadDestinations.removeValue(forKey: key) }
+        defer { finishDownloadTracking(key) }
         guard let destination = downloadDestinations[key] else { return }
         do {
             if destination.replacing && FileManager.default.fileExists(atPath: destination.final.path) {
@@ -574,7 +633,9 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             } else {
                 try FileManager.default.moveItem(at: destination.temporary, to: destination.final)
             }
+            if let id = downloadRecords[key] { downloadCenter?.complete(id) }
         } catch {
+            if let id = downloadRecords[key] { downloadCenter?.fail(id, error: error.localizedDescription) }
             errorMessage = "The download finished, but its file couldn’t be saved: \(error.localizedDescription)"
             try? FileManager.default.removeItem(at: destination.temporary)
         }
@@ -585,8 +646,12 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         if let destination = downloadDestinations.removeValue(forKey: key) {
             try? FileManager.default.removeItem(at: destination.temporary)
         }
-        downloads.removeValue(forKey: key)
+        defer { finishDownloadTracking(key) }
         let nsError = error as NSError
+        if let id = downloadRecords[key] {
+            if nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled { downloadCenter?.cancel(id) }
+            else { downloadCenter?.fail(id, error: error.localizedDescription) }
+        }
         if !(nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled) {
             errorMessage = "Download failed: \(error.localizedDescription)"
         }
