@@ -56,6 +56,8 @@ To bring the view back, press ⌘W in its window or select the X. Popped-out vie
 
 ### Control and pop out YouTube videos
 
+Drag a YouTube link from a browser or another app onto a YouTube view to open it in that account. Shared `youtu.be` links and plain-text URLs work too, and playback timestamps are preserved.
+
 A green play indicator beside YouTube identifies the account currently playing video, including in a pop-out. Hover over it to see the video title. The indicator also appears on collapsed account headers and in tab-bar mode, and clears when playback pauses or ends.
 
 While a video is loaded, right-click (or Control-click) MailPort’s Dock icon to play or pause it without bringing MailPort forward. If several accounts have videos loaded, each gets its own controls.

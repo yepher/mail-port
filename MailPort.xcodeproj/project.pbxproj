@@ -40,6 +40,7 @@
 		4E0C8D95E459A60FCCA1339E /* NotificationsSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1923421427A4680301247026 /* NotificationsSetup.swift */; };
 		584B0B80F814A4C646FD32BF /* YouTubeDownload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B067BA938C88D16521ED3CD /* YouTubeDownload.swift */; };
 		5AFA7A3F076262C8937CD392 /* TabActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325430994E30A62DD6956256 /* TabActivity.swift */; };
+		60D01C3EA9EB9C31AAD9B437 /* LinkDropWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997EEAC2B0620AC54C9CA211 /* LinkDropWebView.swift */; };
 		61B33A205D78C271D23ECC5E /* libMailPortCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */; };
 		62C82EC857DD740BDE5B1904 /* EmbeddedWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0F57055B338CBD857C7B9 /* EmbeddedWorkspace.swift */; };
 		66E52A9E5081325D4058B310 /* TranscriptReader.js in Resources */ = {isa = PBXBuildFile; fileRef = 89122E4657495243355BA744 /* TranscriptReader.js */; };
@@ -78,12 +79,15 @@
 		CB33BE43347D0BEE8F6A0FF7 /* WorkspacePin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EC74623562558A49CCED29D /* WorkspacePin.swift */; };
 		CC77DCB12DA1096F87135590 /* GmailCompose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0EF13258A768492CD2840A /* GmailCompose.swift */; };
 		CD9D84A9E0FBDB40147016B5 /* libMailPortSecurity.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DE9D96863BF1E20B6106D395 /* libMailPortSecurity.a */; };
+		CF1064AD1941FE10B2BEE10A /* YouTubeLinkDropTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48FB81128A4D0A393B9E92FE /* YouTubeLinkDropTests.swift */; };
 		D9FE5E45785008457574E66B /* NotificationBridge.js in Resources */ = {isa = PBXBuildFile; fileRef = C9B0F5BDD7978127AF92CDD8 /* NotificationBridge.js */; };
 		DAF5A76CADCB6B4B9ACEEDBC /* DownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 661318140A394CDF349ABAFC /* DownloadsView.swift */; };
 		DFAF825D41E7165A95215876 /* QuickSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FACCDA15101A7799D8BFD17 /* QuickSwitcherView.swift */; };
 		E7D37646C503C4E623642CD6 /* FloatingVideoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 461DD588174F050D93F12266 /* FloatingVideoTests.swift */; };
 		F143CAF226B1A7B683A43B5C /* WorkspaceTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA220AF94AABA60833038D09 /* WorkspaceTab.swift */; };
+		F1D7DCB30511B9DF183AF056 /* YouTubeLinkDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88E5351DDBF2F867F428AE83 /* YouTubeLinkDrop.swift */; };
 		F44CE00AB2B87DAE3D435A54 /* PageZoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A20DDA9B60D18ECE8957876 /* PageZoom.swift */; };
+		F4619DC12D4EA70611ABF713 /* YouTubeLinkDropTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8607B8898F893CFA76156D7 /* YouTubeLinkDropTests.swift */; };
 		FF69A96444726F9FE2AA4F21 /* TabHibernationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8F3CEC80B41C6EB91AF4C37 /* TabHibernationTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -156,6 +160,7 @@
 		3FBFE144135AA7A8A3584E9A /* MailPortEmbeddedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MailPortEmbeddedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		45BB599B680703968A23EC20 /* AppUpdates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdates.swift; sourceTree = "<group>"; };
 		461DD588174F050D93F12266 /* FloatingVideoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingVideoTests.swift; sourceTree = "<group>"; };
+		48FB81128A4D0A393B9E92FE /* YouTubeLinkDropTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeLinkDropTests.swift; sourceTree = "<group>"; };
 		50715162807CABD36652B719 /* YouTubeSkipTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeSkipTests.swift; sourceTree = "<group>"; };
 		5AE957D36DABB2D546B61149 /* YouTubeSkipAds.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = YouTubeSkipAds.js; sourceTree = "<group>"; };
 		5B067BA938C88D16521ED3CD /* YouTubeDownload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeDownload.swift; sourceTree = "<group>"; };
@@ -179,10 +184,12 @@
 		817127550BD5350D2089F6B5 /* EmbeddedWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedWorkspaceView.swift; sourceTree = "<group>"; };
 		85883367DCD92552E5FC5F0B /* WebNotificationBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebNotificationBridge.swift; sourceTree = "<group>"; };
 		87641FCBF1B788076E5B0B3A /* AppSecurity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSecurity.swift; sourceTree = "<group>"; };
+		88E5351DDBF2F867F428AE83 /* YouTubeLinkDrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeLinkDrop.swift; sourceTree = "<group>"; };
 		89122E4657495243355BA744 /* TranscriptReader.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = TranscriptReader.js; sourceTree = "<group>"; };
 		8AE03416BC436D99A09FED90 /* GlobalComposeHotKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalComposeHotKey.swift; sourceTree = "<group>"; };
 		98F4707D712E1B8018D3D066 /* TabActivityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabActivityTests.swift; sourceTree = "<group>"; };
 		995F812918F343A86128DB65 /* WebNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebNotificationTests.swift; sourceTree = "<group>"; };
+		997EEAC2B0620AC54C9CA211 /* LinkDropWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkDropWebView.swift; sourceTree = "<group>"; };
 		9C2DDC586AF731FC2854514C /* WorkspaceNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceNavigationTests.swift; sourceTree = "<group>"; };
 		9DE255287BCD9FEEDE571C2D /* LocalDataReset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDataReset.swift; sourceTree = "<group>"; };
 		A27960EBCECCF096B6929BA6 /* test-notification-bridge.cjs */ = {isa = PBXFileReference; path = "test-notification-bridge.cjs"; sourceTree = "<group>"; };
@@ -211,6 +218,7 @@
 		E2C140DE07BAC971334340C4 /* release.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = release.sh; sourceTree = "<group>"; };
 		E37E0B156A217996992FBDA6 /* PINLockEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINLockEngine.swift; sourceTree = "<group>"; };
 		E5E11ADE61D01F731DD94D7C /* MailPortSecurityTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MailPortSecurityTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E8607B8898F893CFA76156D7 /* YouTubeLinkDropTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeLinkDropTests.swift; sourceTree = "<group>"; };
 		EA215E3D3EADB8F32837B5B2 /* DownloadCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadCenter.swift; sourceTree = "<group>"; };
 		EA220AF94AABA60833038D09 /* WorkspaceTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceTab.swift; sourceTree = "<group>"; };
 		EF6529FFFE31FE5588FCB954 /* QuickSwitch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSwitch.swift; sourceTree = "<group>"; };
@@ -312,6 +320,7 @@
 				995F812918F343A86128DB65 /* WebNotificationTests.swift */,
 				1DAAE99909006D959845C3EE /* WorkspaceBackupTests.swift */,
 				9C2DDC586AF731FC2854514C /* WorkspaceNavigationTests.swift */,
+				48FB81128A4D0A393B9E92FE /* YouTubeLinkDropTests.swift */,
 				35796A32111918D779E422A5 /* YouTubeMediaTests.swift */,
 			);
 			path = MailPortCoreTests;
@@ -348,6 +357,7 @@
 				817127550BD5350D2089F6B5 /* EmbeddedWorkspaceView.swift */,
 				3779D85D8061497BA8920250 /* FloatingVideoController.swift */,
 				8AE03416BC436D99A09FED90 /* GlobalComposeHotKey.swift */,
+				997EEAC2B0620AC54C9CA211 /* LinkDropWebView.swift */,
 				A798B3A79A025DC2AE4A2BFF /* MailPortNotifications.swift */,
 				C335E9A3BA8D85D931256096 /* NotificationScheduleSettings.swift */,
 				1923421427A4680301247026 /* NotificationsSetup.swift */,
@@ -375,6 +385,7 @@
 				C0A4D270D8511BC9A40AAAB8 /* PopOutAndHibernationTests.swift */,
 				0543294F1195DD243413A7C2 /* WorkspaceSidebarTests.swift */,
 				1D3B65C35434B2D3767D9284 /* YouTubeDownloadTests.swift */,
+				E8607B8898F893CFA76156D7 /* YouTubeLinkDropTests.swift */,
 				50715162807CABD36652B719 /* YouTubeSkipTests.swift */,
 			);
 			path = MailPortEmbeddedTests;
@@ -441,6 +452,7 @@
 				66CDC0A5959990355402DB0C /* WorkspaceBackup.swift */,
 				7EC74623562558A49CCED29D /* WorkspacePin.swift */,
 				EA220AF94AABA60833038D09 /* WorkspaceTab.swift */,
+				88E5351DDBF2F867F428AE83 /* YouTubeLinkDrop.swift */,
 				BE034367492853A53B156A66 /* YouTubeMedia.swift */,
 			);
 			path = MailPortCore;
@@ -712,6 +724,7 @@
 				1F519380051D15155025A600 /* EmbeddedWorkspaceView.swift in Sources */,
 				7145898CAAFD3F4D41D4EB33 /* FloatingVideoController.swift in Sources */,
 				929E9CEFCE11F7A3903FF13A /* GlobalComposeHotKey.swift in Sources */,
+				60D01C3EA9EB9C31AAD9B437 /* LinkDropWebView.swift in Sources */,
 				1D85CA61953FFE83A833CB4F /* MailPortNotifications.swift in Sources */,
 				370284E3D7216658A5FCCEEA /* NotificationScheduleSettings.swift in Sources */,
 				4E0C8D95E459A60FCCA1339E /* NotificationsSetup.swift in Sources */,
@@ -738,6 +751,7 @@
 				161A18A6FCF5EB5C476089B2 /* PopOutAndHibernationTests.swift in Sources */,
 				8797DA7BD9EC979BCE36BA35 /* WorkspaceSidebarTests.swift in Sources */,
 				8482361146A5A050902CDB95 /* YouTubeDownloadTests.swift in Sources */,
+				F4619DC12D4EA70611ABF713 /* YouTubeLinkDropTests.swift in Sources */,
 				1AA2B490F408C12F69963C5E /* YouTubeSkipTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -767,6 +781,7 @@
 				A3F51387CEC2F6F3DC6CCDB1 /* WebNotificationTests.swift in Sources */,
 				0CCC21F678BB6E6C41F503F1 /* WorkspaceBackupTests.swift in Sources */,
 				AC157D43348D6F8677B62A20 /* WorkspaceNavigationTests.swift in Sources */,
+				CF1064AD1941FE10B2BEE10A /* YouTubeLinkDropTests.swift in Sources */,
 				7A1487D06BF7C4CBB7175672 /* YouTubeMediaTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -794,6 +809,7 @@
 				82F26ADD9FCB3D5547025F0F /* WorkspaceBackup.swift in Sources */,
 				CB33BE43347D0BEE8F6A0FF7 /* WorkspacePin.swift in Sources */,
 				F143CAF226B1A7B683A43B5C /* WorkspaceTab.swift in Sources */,
+				F1D7DCB30511B9DF183AF056 /* YouTubeLinkDrop.swift in Sources */,
 				C22079B8C0D85750B969392B /* YouTubeMedia.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -75,8 +75,17 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         // WebKit's base UA deliberately freezes OS/engine tokens and omits a
         // Version/Safari suffix. Keep the generated base and MailPort identity.
         configuration.applicationNameForUserAgent = Self.browserIdentity.applicationNameForUserAgent
-        webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 1200, height: 900), configuration: configuration)
+        webView = LinkDropWebView(frame: NSRect(x: 0, y: 0, width: 1200, height: 900), configuration: configuration)
         super.init()
+        if let dropView = webView as? LinkDropWebView, service == .youtube, !activityOnly {
+            dropView.acceptsYouTubeLinks = true
+            dropView.registerForDraggedTypes([.URL, .string])
+            dropView.onYouTubeLinkDrop = { [weak self] url in
+                guard let self, !self.discardedForSecurity else { return false }
+                self.load(url)
+                return true
+            }
+        }
         notificationBridge = WebNotificationBridge(tab: self)
         if !activityOnly { notificationBridge.install(on: contentController) }
         if service == .gmail || service == .calendar || activityOnly {
@@ -318,6 +327,9 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     func discardForSecurity() {
         notificationBridgeReady = false
         discardedForSecurity = true
+        if let dropView = webView as? LinkDropWebView {
+            dropView.acceptsYouTubeLinks = false; dropView.onYouTubeLinkDrop = nil
+        }
         recoveryTimer?.invalidate(); recoveryTimer = nil; needsRecovery = false
         videoPlaybackTimer?.invalidate(); videoPlaybackTimer = nil
         videoPlayback = .none
