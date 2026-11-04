@@ -680,7 +680,7 @@ final class BrowserTab: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             }
             self.downloadRecords[ObjectIdentifier(download)] = self.downloadCenter?.begin(
                 account: self.account.name, source: self.service.title, destination: destination, owner: self.downloadOwner,
-                cancel: { [weak self, weak download] in
+                cancel: { [weak self, weak download = download] in
                     download?.cancel { _ in }
                     try? FileManager.default.removeItem(at: temporary)
                     if let download { self?.finishDownloadTracking(ObjectIdentifier(download)) }

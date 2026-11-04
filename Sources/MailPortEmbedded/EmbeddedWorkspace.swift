@@ -822,6 +822,7 @@ final class EmbeddedWorkspace: ObservableObject {
                 controller.onFrameChange = { [weak self] frame in self?.setPopOutVideoFrame(frame) }
                 controller.onOpacityChange = { [weak self] value in self?.setPopOutVideoOpacity(value) }
                 controller.onReturn = { [weak self] in self?.floatingVideoController = nil; self?.poppedOutVideo = nil }
+                controller.onShowInApp = { [weak self] in self?.showVideo(tabID: tab.id) }
                 controller.onToggle = { [weak self] in self?.controlVideo("toggle", tabID: tab.id) }
                 controller.showWindow(nil)
             } catch {

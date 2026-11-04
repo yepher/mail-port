@@ -179,6 +179,8 @@ final class FloatingVideoController: NSWindowController, NSWindowDelegate {
     private let originalSize: NSSize
     private var returned = false
     var onReturn: (() -> Void)?
+    /// Called after the video is back in its tab when the user asks to return to the app.
+    var onShowInApp: (() -> Void)?
     var onToggle: (() -> Void)?
     var onFrameChange: ((NSRect) -> Void)?
     private let playButton = FloatingVideoButton()
@@ -224,7 +226,7 @@ final class FloatingVideoController: NSWindowController, NSWindowDelegate {
         title.setContentHuggingPriority(.defaultLow, for: .horizontal)
         title.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         playButton.target = self; playButton.action = #selector(togglePlayback)
-        let restore = FloatingVideoButton(image: NSImage(systemSymbolName: "pip.exit", accessibilityDescription: "Return video to tab")!, target: self, action: #selector(returnVideo))
+        let restore = FloatingVideoButton(image: NSImage(systemSymbolName: "pip.exit", accessibilityDescription: "Return video to tab")!, target: self, action: #selector(returnToApp))
         restore.toolTip = "Return video to its MailPort tab"
         for button in [close, playButton, restore] {
             button.bezelStyle = .inline
@@ -271,6 +273,11 @@ final class FloatingVideoController: NSWindowController, NSWindowDelegate {
 
     @objc private func togglePlayback() { onToggle?() }
     @objc private func returnVideo() { close() }
+    @objc func returnToApp() {
+        let show = onShowInApp
+        close()
+        show?()
+    }
     func windowDidMove(_ notification: Notification) { saveFrame() }
     func windowDidResize(_ notification: Notification) { saveFrame() }
     private func saveFrame() {
@@ -288,6 +295,7 @@ final class FloatingVideoController: NSWindowController, NSWindowDelegate {
         webView.autoresizingMask = [.width, .height]
         webView.frame = NSRect(origin: .zero, size: originalSize)
         let callback = onReturn; onReturn = nil; onToggle = nil
+        onShowInApp = nil
         onOpacityChange = nil
         onFrameChange = nil
         callback?()

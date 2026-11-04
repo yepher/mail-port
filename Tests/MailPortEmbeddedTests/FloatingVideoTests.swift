@@ -65,6 +65,24 @@ final class FloatingVideoTests: XCTestCase {
         browser.discardForSecurity()
     }
 
+    @MainActor func testReturnToAppRestoresTheTabBeforeShowingTheApp() {
+        let browser = BrowserTab(account: Account(name: "Fixture"), service: .youtube, store: .nonPersistent(), loadsInitialPage: false)
+        browser.webView.frame = NSRect(x: 0, y: 0, width: 1000, height: 700)
+        let controller = FloatingVideoController(browser: browser, frame: geometry(), screen: nil)
+        var events: [String] = []
+        controller.onReturn = { events.append("return") }
+        controller.onShowInApp = {
+            XCTAssertNil(browser.webView.superview)
+            events.append("show")
+        }
+        controller.returnToApp()
+        XCTAssertEqual(events, ["return", "show"])
+        XCTAssertEqual(browser.webView.frame.size, NSSize(width: 1000, height: 700))
+        controller.close()
+        XCTAssertEqual(events, ["return", "show"])
+        browser.discardForSecurity()
+    }
+
     @MainActor func testHoverControlsDoNotResizeOrReparentTheVideo() {
         let browser = BrowserTab(account: Account(name: "Fixture"), service: .youtube, store: .nonPersistent(), loadsInitialPage: false)
         browser.webView.frame = NSRect(x: 0, y: 0, width: 1000, height: 700)
