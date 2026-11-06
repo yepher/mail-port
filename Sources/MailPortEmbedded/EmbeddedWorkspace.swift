@@ -1277,7 +1277,21 @@ final class EmbeddedWorkspace: ObservableObject {
             let signIn = accountsNeedingSignIn.contains(account.id) ? "needs sign-in" : "signed in"
             lines.append("Account \(index + 1): \(signIn); views: \(open); hibernated: \(asleep); reminders: \(reminderProblem(for: account) == nil ? "ok" : "problem")")
         }
+        if let selection, selection.service == .meet, let browser = currentBrowser {
+            let camera = captureStateDescription(browser.webView.cameraCaptureState)
+            let microphone = captureStateDescription(browser.webView.microphoneCaptureState)
+            lines.append("Meet capture (WebKit): camera \(camera), microphone \(microphone)")
+        }
         return lines.joined(separator: "\n")
+    }
+
+    private func captureStateDescription(_ state: WKMediaCaptureState) -> String {
+        switch state {
+        case .none: return "off"
+        case .active: return "active"
+        case .muted: return "muted"
+        @unknown default: return "unknown"
+        }
     }
 
     func copyDiagnostics() {
