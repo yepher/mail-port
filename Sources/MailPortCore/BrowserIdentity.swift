@@ -8,10 +8,13 @@ import Foundation
 public struct WebKitBrowserIdentity: Equatable, Sendable {
     public let engineBuild: String
     private let appVersion: String
+    /// iPhone, iPad, and Vision Pro pages use mobile Safari's suffix shape.
+    private let mobile: Bool
 
-    public init(engineBuild: String, appVersion: String = "0.2.1") {
+    public init(engineBuild: String, appVersion: String = "0.2.1", mobile: Bool = false) {
         self.engineBuild = engineBuild
         self.appVersion = appVersion
+        self.mobile = mobile
     }
 
     public var safariCompatibilityVersion: String? {
@@ -40,6 +43,7 @@ public struct WebKitBrowserIdentity: Equatable, Sendable {
     public var applicationNameForUserAgent: String {
         let product = "MailPortPreview/\(appVersion)"
         guard let compatibility = safariCompatibilityVersion else { return product }
+        if mobile { return "Version/\(compatibility) Mobile/15E148 Safari/604.1 \(product)" }
         return "Version/\(compatibility) Safari/605.1.15 \(product)"
     }
 }

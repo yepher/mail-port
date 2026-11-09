@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "MailPort",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v14), .iOS(.v17), .visionOS(.v1)],
     products: [.executable(name: "MailPort", targets: ["MailPortEmbedded"])],
     dependencies: [.package(url: "https://github.com/sparkle-project/Sparkle", from: "2.6.0")],
     targets: [

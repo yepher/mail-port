@@ -44,6 +44,7 @@
 		61B33A205D78C271D23ECC5E /* libMailPortCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */; };
 		62C82EC857DD740BDE5B1904 /* EmbeddedWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0F57055B338CBD857C7B9 /* EmbeddedWorkspace.swift */; };
 		66E52A9E5081325D4058B310 /* TranscriptReader.js in Resources */ = {isa = PBXBuildFile; fileRef = 89122E4657495243355BA744 /* TranscriptReader.js */; };
+		6A6CCEE67D4D75EC4AF087FA /* MobileWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD381ACF5DD7051185E5240C /* MobileWorkspace.swift */; };
 		6C4A098096DEEDDB0744FC8C /* DetachedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E91DA46B06BA1806CA9DF41 /* DetachedViewController.swift */; };
 		7145898CAAFD3F4D41D4EB33 /* FloatingVideoController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3779D85D8061497BA8920250 /* FloatingVideoController.swift */; };
 		7358E7B28A7EC1FCD9F74B4F /* TabActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98F4707D712E1B8018D3D066 /* TabActivityTests.swift */; };
@@ -57,6 +58,7 @@
 		9178E564B788B92CC7569A4B /* AppSecurityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D6CA6C5C429FD4DE000D63C /* AppSecurityTests.swift */; };
 		925AD56301191B4E869B7603 /* TabActivityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD894A4A5C039D43139D129C /* TabActivityBridge.swift */; };
 		929E9CEFCE11F7A3903FF13A /* GlobalComposeHotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE03416BC436D99A09FED90 /* GlobalComposeHotKey.swift */; };
+		93944D52E20885BBC1C85DA7 /* MobileBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429F1B58D9EBF80BD0CEAF47 /* MobileBrowser.swift */; };
 		95878881E6CDBAA15EB7466D /* BrowserIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B3651654916A1DBDC3D25B /* BrowserIdentity.swift */; };
 		966F8F4BEC490A4F5AEA209B /* WorkspaceSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1E6CC0461A31076C40435 /* WorkspaceSidebar.swift */; };
 		96FBBDBB5CDEF4DEB0EC7282 /* VideoPlaybackState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10C34CFB79AF115226D50837 /* VideoPlaybackState.swift */; };
@@ -67,13 +69,16 @@
 		A8C25C73D8A76D426E0F8D9B /* BrowserIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0C557486BE2FC14DD683E6 /* BrowserIdentityTests.swift */; };
 		AAFFE8CD2FE710F548CFB173 /* EmbeddedSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8D43D5580218B147D8C18A /* EmbeddedSetup.swift */; };
 		AC157D43348D6F8677B62A20 /* WorkspaceNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C2DDC586AF731FC2854514C /* WorkspaceNavigationTests.swift */; };
+		ACE18361EC35B83A1D3E7A29 /* libMailPortCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */; };
 		B20A539CE753D40A9ACFFCBB /* TabReorderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F41A79D91C725EA5C38DF929 /* TabReorderingTests.swift */; };
+		B5495DDC5CD38E97AADF15C4 /* MobileViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA00E42732E2CC55CED9EB26 /* MobileViews.swift */; };
 		B9BEF2DC254F2060F72396D6 /* BrowserLinkRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 080D34A1103E41D2D768B992 /* BrowserLinkRouting.swift */; };
 		BB0165E58E035A082B624081 /* EmbeddedApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A75C3BADDA3A9DF6FAC90BC8 /* EmbeddedApp.swift */; };
 		BB4D7FB0B44E311EDF747CE2 /* PINLockEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E37E0B156A217996992FBDA6 /* PINLockEngine.swift */; };
 		BE2C9E6C6212B62E8C7C1CDA /* WorkspaceRestoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D3E55E656CC21D77BF5E4C /* WorkspaceRestoreView.swift */; };
 		BF97FE9AA8563AD3275246D0 /* TabClosingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DE6018611FAC4C97006520D /* TabClosingTests.swift */; };
 		C07E8B9BD77AB2AAE1F47721 /* AccountNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11BE17380D8E5E691454D15C /* AccountNotifications.swift */; };
+		C0F8EFB907B455B9ED9ED292 /* libMailPortSecurity.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DE9D96863BF1E20B6106D395 /* libMailPortSecurity.a */; };
 		C13B1149A84BDE10EF029687 /* TabHibernation.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0181538D26E78922CED6221 /* TabHibernation.swift */; };
 		C22079B8C0D85750B969392B /* YouTubeMedia.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE034367492853A53B156A66 /* YouTubeMedia.swift */; };
 		CB33BE43347D0BEE8F6A0FF7 /* WorkspacePin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EC74623562558A49CCED29D /* WorkspacePin.swift */; };
@@ -120,6 +125,20 @@
 			remoteGlobalIDString = 56D559889490329DA95AACD3;
 			remoteInfo = MailPortSecurity;
 		};
+		B0BA7F587418BBB922299715 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 38D7824595B15261C8A2C1A5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AD58E81BE77BDA40720707AF;
+			remoteInfo = MailPortCore;
+		};
+		B2CEE98382DF002A39B94CDE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 38D7824595B15261C8A2C1A5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 56D559889490329DA95AACD3;
+			remoteInfo = MailPortSecurity;
+		};
 		E8CD92750E342EBAFF3805ED /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 38D7824595B15261C8A2C1A5 /* Project object */;
@@ -131,7 +150,7 @@
 
 /* Begin PBXFileReference section */
 		01824EB62237F0A4A6977660 /* PageRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageRecovery.swift; sourceTree = "<group>"; };
-		0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libMailPortCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = archive.ar; path = libMailPortCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		0543294F1195DD243413A7C2 /* WorkspaceSidebarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSidebarTests.swift; sourceTree = "<group>"; };
 		080D34A1103E41D2D768B992 /* BrowserLinkRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserLinkRouting.swift; sourceTree = "<group>"; };
 		0A2AB001E9F3C29AB9EC144B /* MailPortCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MailPortCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -158,6 +177,7 @@
 		3E0C557486BE2FC14DD683E6 /* BrowserIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserIdentityTests.swift; sourceTree = "<group>"; };
 		3FBCD7D5DB9F94634463CF4B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		3FBFE144135AA7A8A3584E9A /* MailPortEmbeddedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MailPortEmbeddedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		429F1B58D9EBF80BD0CEAF47 /* MobileBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileBrowser.swift; sourceTree = "<group>"; };
 		45BB599B680703968A23EC20 /* AppUpdates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdates.swift; sourceTree = "<group>"; };
 		461DD588174F050D93F12266 /* FloatingVideoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingVideoTests.swift; sourceTree = "<group>"; };
 		48FB81128A4D0A393B9E92FE /* YouTubeLinkDropTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeLinkDropTests.swift; sourceTree = "<group>"; };
@@ -178,6 +198,7 @@
 		77BF505FAEE4CB1FC4FDA850 /* EmbeddedCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedCoreTests.swift; sourceTree = "<group>"; };
 		79545A925107BEBB488A2372 /* WebViewHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewHost.swift; sourceTree = "<group>"; };
 		7B4BC0B57397618885A4FF34 /* test-tab-activity.cjs */ = {isa = PBXFileReference; path = "test-tab-activity.cjs"; sourceTree = "<group>"; };
+		7D24B8B3C158BD71011F7396 /* MailPortMobile.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MailPortMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7E8175C9A9BBEC8228AA6A00 /* MailPort.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MailPort.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EC74623562558A49CCED29D /* WorkspacePin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacePin.swift; sourceTree = "<group>"; };
 		7ED48C60F6A41C365D22E4AA /* BrowserLinkRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserLinkRoutingTests.swift; sourceTree = "<group>"; };
@@ -209,12 +230,13 @@
 		C5D3E55E656CC21D77BF5E4C /* WorkspaceRestoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceRestoreView.swift; sourceTree = "<group>"; };
 		C9B0F5BDD7978127AF92CDD8 /* NotificationBridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = NotificationBridge.js; sourceTree = "<group>"; };
 		C9DAF4EE8C34AC2B9CDEAFC1 /* project.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = project.yml; sourceTree = "<group>"; };
+		CD381ACF5DD7051185E5240C /* MobileWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileWorkspace.swift; sourceTree = "<group>"; };
 		D0A1E6CC0461A31076C40435 /* WorkspaceSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSidebar.swift; sourceTree = "<group>"; };
 		D1B82EBF40C9446051E93EB0 /* build.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build.sh; sourceTree = "<group>"; };
 		D2C6F8F6A069CEF2961E41C5 /* HexColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HexColor.swift; sourceTree = "<group>"; };
 		D8F3CEC80B41C6EB91AF4C37 /* TabHibernationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabHibernationTests.swift; sourceTree = "<group>"; };
 		DB61A0D5125C50D38D30BD81 /* test-youtube-skip.cjs */ = {isa = PBXFileReference; path = "test-youtube-skip.cjs"; sourceTree = "<group>"; };
-		DE9D96863BF1E20B6106D395 /* libMailPortSecurity.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libMailPortSecurity.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		DE9D96863BF1E20B6106D395 /* libMailPortSecurity.a */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = archive.ar; path = libMailPortSecurity.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		E2C140DE07BAC971334340C4 /* release.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = release.sh; sourceTree = "<group>"; };
 		E37E0B156A217996992FBDA6 /* PINLockEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINLockEngine.swift; sourceTree = "<group>"; };
 		E5E11ADE61D01F731DD94D7C /* MailPortSecurityTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MailPortSecurityTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -226,6 +248,7 @@
 		F41A79D91C725EA5C38DF929 /* TabReorderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabReorderingTests.swift; sourceTree = "<group>"; };
 		F59CBFC6581D5D2A7DF50864 /* YouTubePlayback.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = YouTubePlayback.js; sourceTree = "<group>"; };
 		F8697441397590C91DCA394C /* YouTubeResolutionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeResolutionView.swift; sourceTree = "<group>"; };
+		FA00E42732E2CC55CED9EB26 /* MobileViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileViews.swift; sourceTree = "<group>"; };
 		FD894A4A5C039D43139D129C /* TabActivityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabActivityBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -235,6 +258,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				61B33A205D78C271D23ECC5E /* libMailPortCore.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5826183067B25FBBE5693FE3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ACE18361EC35B83A1D3E7A29 /* libMailPortCore.a in Frameworks */,
+				C0F8EFB907B455B9ED9ED292 /* libMailPortSecurity.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -292,6 +324,7 @@
 			children = (
 				EB234307E168F343185030DA /* MailPortCore */,
 				7B8A62C4D8F35338165FC43C /* MailPortEmbedded */,
+				EA47F8F501F0945CB98DE1C4 /* MailPortMobile */,
 				17B283135F4A27B32F9FD623 /* MailPortSecurity */,
 			);
 			path = Sources;
@@ -399,6 +432,7 @@
 				7E8175C9A9BBEC8228AA6A00 /* MailPort.app */,
 				0A2AB001E9F3C29AB9EC144B /* MailPortCoreTests.xctest */,
 				3FBFE144135AA7A8A3584E9A /* MailPortEmbeddedTests.xctest */,
+				7D24B8B3C158BD71011F7396 /* MailPortMobile.app */,
 				E5E11ADE61D01F731DD94D7C /* MailPortSecurityTests.xctest */,
 			);
 			name = Products;
@@ -428,6 +462,16 @@
 				5AE957D36DABB2D546B61149 /* YouTubeSkipAds.js */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		EA47F8F501F0945CB98DE1C4 /* MailPortMobile */ = {
+			isa = PBXGroup;
+			children = (
+				429F1B58D9EBF80BD0CEAF47 /* MobileBrowser.swift */,
+				FA00E42732E2CC55CED9EB26 /* MobileViews.swift */,
+				CD381ACF5DD7051185E5240C /* MobileWorkspace.swift */,
+			);
+			path = MailPortMobile;
 			sourceTree = "<group>";
 		};
 		EB234307E168F343185030DA /* MailPortCore */ = {
@@ -539,6 +583,26 @@
 			productReference = 3FBFE144135AA7A8A3584E9A /* MailPortEmbeddedTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		838DF2FA8F0CA3631BF6173B /* MailPortMobile */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 50646EBC85C1B263A59268BE /* Build configuration list for PBXNativeTarget "MailPortMobile" */;
+			buildPhases = (
+				EF6A8151DC186F510D5C065E /* Sources */,
+				5826183067B25FBBE5693FE3 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1446B386F43D7E4D79CF9898 /* PBXTargetDependency */,
+				5C423152405165CD540BAADF /* PBXTargetDependency */,
+			);
+			name = MailPortMobile;
+			packageProductDependencies = (
+			);
+			productName = MailPortMobile;
+			productReference = 7D24B8B3C158BD71011F7396 /* MailPortMobile.app */;
+			productType = "com.apple.product-type.application";
+		};
 		AD58E81BE77BDA40720707AF /* MailPortCore */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 98FD47F5C900203A47C7C81F /* Build configuration list for PBXNativeTarget "MailPortCore" */;
@@ -601,6 +665,10 @@
 						DevelopmentTeam = WDCGJTU726;
 						ProvisioningStyle = Automatic;
 					};
+					838DF2FA8F0CA3631BF6173B = {
+						DevelopmentTeam = WDCGJTU726;
+						ProvisioningStyle = Automatic;
+					};
 					AD58E81BE77BDA40720707AF = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Manual;
@@ -631,6 +699,7 @@
 				AD58E81BE77BDA40720707AF /* MailPortCore */,
 				56D559889490329DA95AACD3 /* MailPortSecurity */,
 				1660AFA2F40D1169BB92A9ED /* MailPort */,
+				838DF2FA8F0CA3631BF6173B /* MailPortMobile */,
 				1C8D27EB798013AEF964D2CD /* MailPortCoreTests */,
 				E97270BDFC6EA96F34E3B90D /* MailPortSecurityTests */,
 				6BDFE996C5FF6E118BBC8DA3 /* MailPortEmbeddedTests */,
@@ -814,6 +883,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		EF6A8151DC186F510D5C065E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				93944D52E20885BBC1C85DA7 /* MobileBrowser.swift in Sources */,
+				B5495DDC5CD38E97AADF15C4 /* MobileViews.swift in Sources */,
+				6A6CCEE67D4D75EC4AF087FA /* MobileWorkspace.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FDA1985BB759210B7F895E97 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -830,6 +909,11 @@
 			target = AD58E81BE77BDA40720707AF /* MailPortCore */;
 			targetProxy = 72D7FBCE36C5EBC9FB88A9D3 /* PBXContainerItemProxy */;
 		};
+		1446B386F43D7E4D79CF9898 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AD58E81BE77BDA40720707AF /* MailPortCore */;
+			targetProxy = B0BA7F587418BBB922299715 /* PBXContainerItemProxy */;
+		};
 		2AB54EDD7909A2E4A49DE7FB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = AD58E81BE77BDA40720707AF /* MailPortCore */;
@@ -839,6 +923,11 @@
 			isa = PBXTargetDependency;
 			target = 1660AFA2F40D1169BB92A9ED /* MailPort */;
 			targetProxy = 4C3E49BE46A8509B6F17ECFA /* PBXContainerItemProxy */;
+		};
+		5C423152405165CD540BAADF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 56D559889490329DA95AACD3 /* MailPortSecurity */;
+			targetProxy = B2CEE98382DF002A39B94CDE /* PBXContainerItemProxy */;
 		};
 		6943D8FA038DF27E2BD1706C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -856,14 +945,18 @@
 		23B3C3357C33A03FD8D1A4FD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.MailPortCore;
-				SDKROOT = macosx;
+				SDKROOT = auto;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
 			};
 			name = Debug;
 		};
@@ -886,6 +979,46 @@
 				SDKROOT = macosx;
 			};
 			name = Release;
+		};
+		2838AB7370534B46CB08416F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WDCGJTU726;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(MAILPORT_DISPLAY_NAME)";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Google Meet and Chat use the camera for video calls.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Google Meet and Chat use the microphone for calls.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MAILPORT_DISPLAY_NAME = "MailPort Dev";
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.mobile.dev;
+				PRODUCT_MODULE_NAME = MailPortMobile;
+				PRODUCT_NAME = MailPort;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+			};
+			name = Debug;
 		};
 		291CBFDDA60383C4DCB4AA87 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -943,15 +1076,16 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+				XROS_DEPLOYMENT_TARGET = 1.0;
 			};
 			name = Debug;
 		};
@@ -978,14 +1112,18 @@
 		6FA137D33CE3F24FDDD5C2B8 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.MailPortSecurity;
-				SDKROOT = macosx;
+				SDKROOT = auto;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
 			};
 			name = Release;
 		};
@@ -1020,28 +1158,36 @@
 		76BBFFA0BAD6E2DF65F87771 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.MailPortSecurity;
-				SDKROOT = macosx;
+				SDKROOT = auto;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
 			};
 			name = Debug;
 		};
 		82AAFF056BE47937E3FEC93A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.MailPortCore;
-				SDKROOT = macosx;
+				SDKROOT = auto;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
 			};
 			name = Release;
 		};
@@ -1084,6 +1230,46 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MailPort.app/Contents/MacOS/MailPort";
 			};
 			name = Debug;
+		};
+		C219EE34FFC0FA6BA0C283A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WDCGJTU726;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(MAILPORT_DISPLAY_NAME)";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Google Meet and Chat use the camera for video calls.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Google Meet and Chat use the microphone for calls.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MAILPORT_DISPLAY_NAME = MailPort;
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.mobile;
+				PRODUCT_MODULE_NAME = MailPortMobile;
+				PRODUCT_NAME = MailPort;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+			};
+			name = Release;
 		};
 		CE32BF26AC32B6782B665A1C /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1155,14 +1341,15 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
+				XROS_DEPLOYMENT_TARGET = 1.0;
 			};
 			name = Release;
 		};
@@ -1232,6 +1419,15 @@
 			buildConfigurations = (
 				291CBFDDA60383C4DCB4AA87 /* Debug */,
 				CEADC5AE1603101E9D921C5A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		50646EBC85C1B263A59268BE /* Build configuration list for PBXNativeTarget "MailPortMobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2838AB7370534B46CB08416F /* Debug */,
+				C219EE34FFC0FA6BA0C283A1 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

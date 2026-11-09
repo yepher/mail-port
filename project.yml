@@ -4,6 +4,8 @@ options:
   bundleIdPrefix: com.chriswilson.mailport
   deploymentTarget:
     macOS: "14.0"
+    iOS: "17.0"
+    visionOS: "1.0"
   createIntermediateGroups: true
 settings:
   base:
@@ -28,12 +30,14 @@ fileGroups:
 targets:
   MailPortCore:
     type: library.static
-    platform: macOS
+    platform: auto
+    supportedDestinations: [macOS, iOS, visionOS]
     sources:
       - path: Sources/MailPortCore
   MailPortSecurity:
     type: library.static
-    platform: macOS
+    platform: auto
+    supportedDestinations: [macOS, iOS, visionOS]
     sources:
       - path: Sources/MailPortSecurity
   MailPort:
@@ -82,6 +86,44 @@ targets:
             env -i HOME="$HOME" PATH="$PATH" xcrun --sdk macosx swift -module-cache-path "$TARGET_TEMP_DIR/ModuleCache" \
               "$SRCROOT/scripts/make-icon.swift" "$TARGET_TEMP_DIR/MailPort.iconset" "$icon"
           fi
+  # iPhone, iPad, and Vision Pro. Shares MailPortCore and MailPortSecurity with the Mac app.
+  MailPortMobile:
+    type: application
+    platform: auto
+    supportedDestinations: [iOS, visionOS]
+    sources:
+      - path: Sources/MailPortMobile
+    dependencies:
+      - target: MailPortCore
+      - target: MailPortSecurity
+    settings:
+      base:
+        PRODUCT_NAME: MailPort
+        PRODUCT_MODULE_NAME: MailPortMobile
+        TARGETED_DEVICE_FAMILY: "1,2,7"
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: $(MAILPORT_DISPLAY_NAME)
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_NSCameraUsageDescription: Google Meet and Chat use the camera for video calls.
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Google Meet and Chat use the microphone for calls.
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: Apple Development
+        DEVELOPMENT_TEAM: WDCGJTU726
+      configs:
+        # Separate bundle identifiers give Debug its own sandbox, so it never touches real accounts.
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.chriswilson.mailport.mobile.dev
+          MAILPORT_DISPLAY_NAME: MailPort Dev
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.chriswilson.mailport.mobile
+          MAILPORT_DISPLAY_NAME: MailPort
   MailPortCoreTests:
     type: bundle.unit-test
     platform: macOS
@@ -133,5 +175,13 @@ schemes:
         - MailPortCoreTests
         - MailPortSecurityTests
         - MailPortEmbeddedTests
+    archive:
+      config: Release
+  MailPortMobile:
+    build:
+      targets:
+        MailPortMobile: all
+    run:
+      config: Debug
     archive:
       config: Release

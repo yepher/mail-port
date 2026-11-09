@@ -71,4 +71,10 @@ final class BrowserIdentityTests: XCTestCase {
             XCTAssertFalse(suffix.contains("Macintosh"))
         }
     }
+
+    func testMobileSuffixUsesMobileSafariShapeAndKeepsAppIdentity() {
+        let identity = WebKitBrowserIdentity(engineBuild: "21624.5.1.11.3", appVersion: "0.7.3", mobile: true)
+        XCTAssertEqual(identity.applicationNameForUserAgent, "Version/26.6 Mobile/15E148 Safari/604.1 MailPortPreview/0.7.3")
+        XCTAssertEqual(WebKitBrowserIdentity(engineBuild: "unknown", mobile: true).applicationNameForUserAgent, "MailPortPreview/0.2.1")
+    }
 }
