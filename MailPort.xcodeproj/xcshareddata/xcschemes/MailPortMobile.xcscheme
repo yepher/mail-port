@@ -20,6 +20,34 @@
                ReferencedContainer = "container:MailPort.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "5BF79ACFFF877E57DC6278B3"
+               BuildableName = "MailPortMobileTests.xctest"
+               BlueprintName = "MailPortMobileTests"
+               ReferencedContainer = "container:MailPort.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "6E2DE7906D1DB674B5F5DB95"
+               BuildableName = "MailPortMobileUITests.xctest"
+               BlueprintName = "MailPortMobileUITests"
+               ReferencedContainer = "container:MailPort.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -37,6 +65,27 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "5BF79ACFFF877E57DC6278B3"
+               BuildableName = "MailPortMobileTests.xctest"
+               BlueprintName = "MailPortMobileTests"
+               ReferencedContainer = "container:MailPort.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "6E2DE7906D1DB674B5F5DB95"
+               BuildableName = "MailPortMobileUITests.xctest"
+               BlueprintName = "MailPortMobileUITests"
+               ReferencedContainer = "container:MailPort.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

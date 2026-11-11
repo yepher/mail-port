@@ -93,20 +93,35 @@ targets:
     supportedDestinations: [iOS, visionOS]
     sources:
       - path: Sources/MailPortMobile
+        excludes:
+          - Resources
+      - path: Sources/MailPortMobile/Resources
+        buildPhase: resources
+      - path: Resources/MobileAssets.xcassets
     dependencies:
       - target: MailPortCore
       - target: MailPortSecurity
+    info:
+      path: Resources/MobileInfo.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
     settings:
       base:
         PRODUCT_NAME: MailPort
         PRODUCT_MODULE_NAME: MailPortMobile
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        "ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xros*]": VisionAppIcon
+        "ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xrsimulator*]": VisionAppIcon
         TARGETED_DEVICE_FAMILY: "1,2,7"
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: $(MAILPORT_DISPLAY_NAME)
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: NO
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
@@ -124,6 +139,37 @@ targets:
         Release:
           PRODUCT_BUNDLE_IDENTIFIER: com.chriswilson.mailport.mobile
           MAILPORT_DISPLAY_NAME: MailPort
+  MailPortMobileUITests:
+    type: bundle.ui-testing
+    platform: auto
+    supportedDestinations: [iOS, visionOS]
+    sources:
+      - path: Tests/MailPortMobileUITests
+    dependencies:
+      - target: MailPortMobile
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: MailPortMobile
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: Apple Development
+        DEVELOPMENT_TEAM: WDCGJTU726
+  MailPortMobileTests:
+    type: bundle.unit-test
+    platform: auto
+    supportedDestinations: [iOS, visionOS]
+    sources:
+      - path: Tests/MailPortMobileTests
+    dependencies:
+      - target: MailPortMobile
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: Apple Development
+        DEVELOPMENT_TEAM: WDCGJTU726
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MailPort.app/MailPort"
+        BUNDLE_LOADER: "$(TEST_HOST)"
   MailPortCoreTests:
     type: bundle.unit-test
     platform: macOS
@@ -181,6 +227,13 @@ schemes:
     build:
       targets:
         MailPortMobile: all
+        MailPortMobileTests: [test]
+        MailPortMobileUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - MailPortMobileTests
+        - MailPortMobileUITests
     run:
       config: Debug
     archive:

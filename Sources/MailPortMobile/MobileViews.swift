@@ -4,10 +4,26 @@ import WebKit
 
 @main
 struct MailPortMobileApp: App {
-    @StateObject private var workspace = MobileWorkspace()
+    @StateObject private var workspace = makeWorkspace()
+
+    private static func makeWorkspace() -> MobileWorkspace {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--mailport-ui-test") {
+            let name = "MailPortSecurityTest-ui-" + UUID().uuidString
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+            let model = MobileWorkspace(directory: directory, preferences: UserDefaults(suiteName: name)!)
+            model.loadsPages = false
+            return model
+        }
+        #endif
+        return MobileWorkspace()
+    }
 
     var body: some Scene {
         WindowGroup { MobileRootView(workspace: workspace) }
+        #if os(visionOS)
+        .defaultSize(width: 1100, height: 800)
+        #endif
     }
 }
 
@@ -15,13 +31,16 @@ struct MobileRootView: View {
     @ObservedObject var workspace: MobileWorkspace
     @State private var editing: Account?
     @State private var removing: Account?
+    @State private var openingServicesFor: Account?
+    @State private var showingSettings = false
+    @State private var compactColumn = NavigationSplitViewColumn.sidebar
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(preferredCompactColumn: $compactColumn) {
             sidebar
         } detail: {
             if let tab = workspace.selection, let account = workspace.account(for: tab) {
-                BrowserScreen(browser: workspace.browser(for: tab), account: account) { url, name in
+                BrowserScreen(browser: workspace.browser(for: tab), account: account, showSettings: { showingSettings = true }) { url, name in
                     workspace.pin(url, named: name, in: tab) != nil
                 }
                 .id(tab)
@@ -35,8 +54,18 @@ struct MobileRootView: View {
                 }
             }
         }
+        .onChange(of: workspace.selection) { _, selection in
+            compactColumn = selection == nil ? .sidebar : .detail
+        }
+        .sheet(isPresented: $showingSettings) { MobileSettingsView(workspace: workspace) }
         .sheet(item: $editing) { account in
             AccountEditor(account: account, isNew: workspace.account(forID: account.id) == nil) { try workspace.save($0) }
+        }
+        .sheet(item: $openingServicesFor) { account in
+            ServicePicker(account: account, services: workspace.closedServices(for: account)) { service in
+                workspace.open(service, in: account)
+                compactColumn = .detail
+            }
         }
         .confirmationDialog("Remove \(removing?.name ?? "")?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
                             titleVisibility: .visible, presenting: removing) { account in
@@ -54,7 +83,9 @@ struct MobileRootView: View {
             ForEach(workspace.accounts) { account in
                 Section {
                     ForEach(workspace.tabs(for: account)) { tab in
-                        Label(tab.service.shortTitle, systemImage: tab.service.symbol)
+                        NavigationLink(value: tab) {
+                            Label(tab.service.shortTitle, systemImage: tab.service.symbol)
+                        }
                             .tag(tab)
                             .swipeActions {
                                 if workspace.canClose(tab) {
@@ -68,7 +99,7 @@ struct MobileRootView: View {
                             }
                     }
                     ForEach(workspace.pins(for: account)) { pin in
-                        Button { workspace.openPin(pin) } label: {
+                        Button { workspace.openPin(pin); compactColumn = .detail } label: {
                             Label {
                                 Text(pin.name).foregroundStyle(.primary)
                             } icon: {
@@ -84,10 +115,8 @@ struct MobileRootView: View {
                     }
                     let closed = workspace.closedServices(for: account)
                     if !closed.isEmpty {
-                        Menu {
-                            ForEach(closed) { service in
-                                Button(service.title, systemImage: service.symbol) { workspace.open(service, in: account) }
-                            }
+                        Button {
+                            openingServicesFor = account
                         } label: {
                             Label("Open Service", systemImage: "plus.circle").foregroundStyle(.secondary)
                         }
@@ -97,6 +126,10 @@ struct MobileRootView: View {
                                   edit: { editing = account },
                                   remove: { removing = account })
                 }
+                .disabled(workspace.removingAccountIDs.contains(account.id))
+            }
+            Section {
+                Button("Settings", systemImage: "gearshape") { showingSettings = true }
             }
         }
         .navigationTitle("MailPort")
@@ -104,6 +137,31 @@ struct MobileRootView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button("Add Account", systemImage: "person.crop.circle.badge.plus") { editing = Account(name: "") }
             }
+        }
+    }
+}
+
+private struct ServicePicker: View {
+    let account: Account
+    let services: [GoogleService]
+    let open: (GoogleService) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var search = ""
+
+    var body: some View {
+        NavigationStack {
+            List(services.filter { search.isEmpty || $0.title.localizedCaseInsensitiveContains(search) }) { service in
+                Button {
+                    open(service)
+                    dismiss()
+                } label: {
+                    Label(service.title, systemImage: service.symbol)
+                }
+            }
+            .searchable(text: $search, prompt: "Find a service")
+            .navigationTitle("Open Service")
+            .safeAreaInset(edge: .top) { Text(account.name).font(.headline).padding(8) }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
         }
     }
 }
@@ -138,11 +196,13 @@ private struct AccountHeader: View {
 struct BrowserScreen: View {
     @ObservedObject var browser: MobileBrowser
     let account: Account
+    let showSettings: () -> Void
     /// Saves a page under this account. False when the page can't be pinned.
     let pin: (URL, String) -> Bool
     @Environment(\.openURL) private var openURL
     @State private var pinning: URL?
     @State private var pinName = ""
+    @State private var showingDownloads = false
 
     var body: some View {
         WebViewContainer(webView: browser.webView)
@@ -171,6 +231,8 @@ struct BrowserScreen: View {
                     Menu {
                         Button("Reload", systemImage: "arrow.clockwise") { browser.reload() }
                         Button("Go to \(browser.service.shortTitle) Home", systemImage: "house") { browser.goHome() }
+                        Button("Downloads", systemImage: "arrow.down.circle") { showingDownloads = true }
+                        Button("Settings", systemImage: "gearshape", action: showSettings)
                         if let url = browser.url, WorkspacePin.canPin(url, in: browser.service) {
                             Button("Pin This Page", systemImage: "pin") {
                                 pinName = String(browser.title.prefix(WorkspacePin.maximumNameLength))
@@ -186,6 +248,11 @@ struct BrowserScreen: View {
                     }
                 }
             }
+            .onChange(of: browser.savedDownloads.count) { old, new in if new > old { showingDownloads = true } }
+            .sheet(isPresented: $showingDownloads) { MobileDownloadsView(browser: browser) }
+            .alert("Download Failed", isPresented: Binding(get: { browser.downloadError != nil }, set: { if !$0 { browser.downloadError = nil } })) {
+                Button("OK", role: .cancel) { browser.downloadError = nil }
+            } message: { Text(browser.downloadError ?? "") }
             .alert("Pin This Page", isPresented: Binding(get: { pinning != nil }, set: { if !$0 { pinning = nil } })) {
                 TextField("Name", text: $pinName)
                 Button("Cancel", role: .cancel) {}
@@ -198,6 +265,36 @@ struct BrowserScreen: View {
 }
 
 /// Hosts a page that outlives this view, so switching services never reloads it.
+struct MobileDownloadsView: View {
+    @ObservedObject var browser: MobileBrowser
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            List {
+                if browser.activeDownloadCount > 0 {
+                    ProgressView("Downloading \(browser.activeDownloadCount) files…")
+                    Button("Cancel Downloads", role: .destructive) { browser.cancelDownloads() }
+                }
+                ForEach(browser.savedDownloads) { file in
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(file.url.lastPathComponent).font(.headline)
+                        ShareLink("Save or Share…", item: file.url)
+                    }.swipeActions {
+                        Button("Remove", role: .destructive) { browser.removeDownload(file) }
+                    }
+                }
+                if browser.savedDownloads.isEmpty && browser.activeDownloadCount == 0 {
+                    Text("Files you download from this view appear here.").foregroundStyle(.secondary)
+                }
+                Text("Use Save or Share to keep a file in Files. Temporary downloads are removed when you close this service or remove its account.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .navigationTitle("Downloads")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
+    }
+}
+
 struct WebViewContainer: UIViewRepresentable {
     let webView: WKWebView
 
@@ -284,5 +381,28 @@ extension Account {
     var swiftUIColor: Color {
         guard let hex = hexColor else { return color.swiftUIColor }
         return Color(red: Double(hex.red) / 255, green: Double(hex.green) / 255, blue: Double(hex.blue) / 255)
+    }
+}
+
+private struct MobileSettingsView: View {
+    @ObservedObject var workspace: MobileWorkspace
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Toggle("Automatically skip skippable ads", isOn: Binding(
+                        get: { workspace.skipsYouTubeAds }, set: { workspace.setSkipsYouTubeAds($0) }))
+                        .accessibilityIdentifier("youtubeAutoSkipAds")
+                } header: {
+                    Text("YouTube · Experimental")
+                } footer: {
+                    Text("Tries YouTube’s Skip button when it becomes available. Some players require a manual tap on iPhone, iPad, and Apple Vision Pro. Unskippable ads still play. This setting applies to all accounts on this device.")
+                }
+            }
+            .navigationTitle("Settings")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
     }
 }

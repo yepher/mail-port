@@ -8,7 +8,7 @@ func color(_ hex: UInt32, alpha: CGFloat = 1) -> NSColor {
             alpha: alpha)
 }
 
-func drawIcon(size: Int) throws -> Data {
+func drawIcon(size: Int, style: String = "mac") throws -> Data {
     guard let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: size,
         pixelsHigh: size, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
         isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
@@ -21,91 +21,140 @@ func drawIcon(size: Int) throws -> Data {
     context.shouldAntialias = true
     context.cgContext.scaleBy(x: CGFloat(size) / 1024, y: CGFloat(size) / 1024)
 
-    let tile = NSBezierPath(roundedRect: NSRect(x: 58, y: 58, width: 908, height: 908),
-                            xRadius: 207, yRadius: 207)
-    let shadow = NSShadow()
-    shadow.shadowColor = color(0x061827, alpha: 0.3)
-    shadow.shadowBlurRadius = 24
-    shadow.shadowOffset = NSSize(width: 0, height: -10)
-    shadow.set()
-    color(0x123B50).setFill()
-    tile.fill()
-    NSShadow().set()
-    NSGradient(starting: color(0x147F87), ending: color(0x10243D))!
-        .draw(in: tile, angle: -45)
+    if style != "foreground" {
+        let tile = style == "mac" ? NSBezierPath(roundedRect: NSRect(x: 58, y: 58, width: 908, height: 908),
+                                xRadius: 207, yRadius: 207)
+            : NSBezierPath(rect: NSRect(x: 0, y: 0, width: 1024, height: 1024))
+        let shadow = NSShadow()
+        shadow.shadowColor = color(0x061827, alpha: 0.3)
+        shadow.shadowBlurRadius = 24
+        shadow.shadowOffset = NSSize(width: 0, height: -10)
+        shadow.set()
+        color(0x123B50).setFill()
+        tile.fill()
+        NSShadow().set()
+        NSGradient(starting: color(0x147F87), ending: color(0x10243D))!
+            .draw(in: tile, angle: -45)
 
-    NSGraphicsContext.saveGraphicsState()
-    tile.addClip()
-    color(0x42B5AC, alpha: 0.14).setFill()
-    NSBezierPath(ovalIn: NSRect(x: -230, y: 390, width: 930, height: 930)).fill()
-    color(0xFFFFFF, alpha: 0.05).setFill()
-    NSBezierPath(ovalIn: NSRect(x: 610, y: -310, width: 840, height: 840)).fill()
-    NSGraphicsContext.restoreGraphicsState()
+        NSGraphicsContext.saveGraphicsState()
+        tile.addClip()
+        color(0x42B5AC, alpha: 0.14).setFill()
+        NSBezierPath(ovalIn: NSRect(x: -230, y: 390, width: 930, height: 930)).fill()
+        color(0xFFFFFF, alpha: 0.05).setFill()
+        NSBezierPath(ovalIn: NSRect(x: 610, y: -310, width: 840, height: 840)).fill()
+        NSGraphicsContext.restoreGraphicsState()
 
-    let ring = NSBezierPath(roundedRect: NSRect(x: 66, y: 66, width: 892, height: 892),
-                            xRadius: 200, yRadius: 200)
-    color(0xFFFFFF, alpha: 0.12).setStroke()
-    ring.lineWidth = 3
-    ring.stroke()
+        if style == "mac" {
+            let ring = NSBezierPath(roundedRect: NSRect(x: 66, y: 66, width: 892, height: 892),
+                                    xRadius: 200, yRadius: 200)
+            color(0xFFFFFF, alpha: 0.12).setStroke()
+            ring.lineWidth = 3
+            ring.stroke()
+        }
+    }
 
-    let envelope = NSBezierPath(roundedRect: NSRect(x: 208, y: 290, width: 608, height: 438),
-                                xRadius: 60, yRadius: 60)
-    let envelopeShadow = NSShadow()
-    envelopeShadow.shadowColor = color(0x061827, alpha: 0.22)
-    envelopeShadow.shadowBlurRadius = 28
-    envelopeShadow.shadowOffset = NSSize(width: 0, height: -16)
-    envelopeShadow.set()
-    color(0xF5FAFB).setFill()
-    envelope.fill()
-    NSShadow().set()
+    if style != "background" {
 
-    let folds = NSBezierPath()
-    folds.move(to: NSPoint(x: 233, y: 318))
-    folds.line(to: NSPoint(x: 428, y: 508))
-    folds.move(to: NSPoint(x: 791, y: 318))
-    folds.line(to: NSPoint(x: 596, y: 508))
-    folds.lineWidth = 16
-    folds.lineCapStyle = .round
-    color(0xBCD9DE).setStroke()
-    folds.stroke()
+        let envelope = NSBezierPath(roundedRect: NSRect(x: 208, y: 290, width: 608, height: 438),
+                                    xRadius: 60, yRadius: 60)
+        let envelopeShadow = NSShadow()
+        envelopeShadow.shadowColor = color(0x061827, alpha: 0.22)
+        envelopeShadow.shadowBlurRadius = 28
+        envelopeShadow.shadowOffset = NSSize(width: 0, height: -16)
+        envelopeShadow.set()
+        color(0xF5FAFB).setFill()
+        envelope.fill()
+        NSShadow().set()
 
-    let flap = NSBezierPath()
-    flap.move(to: NSPoint(x: 232, y: 685))
-    flap.line(to: NSPoint(x: 468, y: 499))
-    flap.curve(to: NSPoint(x: 556, y: 499),
-               controlPoint1: NSPoint(x: 496, y: 477),
-               controlPoint2: NSPoint(x: 528, y: 477))
-    flap.line(to: NSPoint(x: 792, y: 685))
-    flap.lineWidth = 22
-    flap.lineCapStyle = .round
-    flap.lineJoinStyle = .round
-    color(0x246979).setStroke()
-    flap.stroke()
+        let folds = NSBezierPath()
+        folds.move(to: NSPoint(x: 233, y: 318))
+        folds.line(to: NSPoint(x: 428, y: 508))
+        folds.move(to: NSPoint(x: 791, y: 318))
+        folds.line(to: NSPoint(x: 596, y: 508))
+        folds.lineWidth = 16
+        folds.lineCapStyle = .round
+        color(0xBCD9DE).setStroke()
+        folds.stroke()
 
-    let accent = NSBezierPath(ovalIn: NSRect(x: 708, y: 669, width: 154, height: 154))
-    color(0x0F3D52).setStroke()
-    accent.lineWidth = 15
-    accent.stroke()
-    NSGradient(starting: color(0xFFBF79), ending: color(0xF28A53))!
-        .draw(in: accent, angle: -90)
-    let horizon = NSBezierPath()
-    horizon.move(to: NSPoint(x: 754, y: 745))
-    horizon.line(to: NSPoint(x: 808, y: 745))
-    horizon.lineWidth = 12
-    horizon.lineCapStyle = .round
-    color(0xFFFFFF, alpha: 0.95).setStroke()
-    horizon.stroke()
+        let flap = NSBezierPath()
+        flap.move(to: NSPoint(x: 232, y: 685))
+        flap.line(to: NSPoint(x: 468, y: 499))
+        flap.curve(to: NSPoint(x: 556, y: 499),
+                   controlPoint1: NSPoint(x: 496, y: 477),
+                   controlPoint2: NSPoint(x: 528, y: 477))
+        flap.line(to: NSPoint(x: 792, y: 685))
+        flap.lineWidth = 22
+        flap.lineCapStyle = .round
+        flap.lineJoinStyle = .round
+        color(0x246979).setStroke()
+        flap.stroke()
 
+        let accent = NSBezierPath(ovalIn: NSRect(x: 708, y: 669, width: 154, height: 154))
+        color(0x0F3D52).setStroke()
+        accent.lineWidth = 15
+        accent.stroke()
+        NSGradient(starting: color(0xFFBF79), ending: color(0xF28A53))!
+            .draw(in: accent, angle: -90)
+        let horizon = NSBezierPath()
+        horizon.move(to: NSPoint(x: 754, y: 745))
+        horizon.line(to: NSPoint(x: 808, y: 745))
+        horizon.lineWidth = 12
+        horizon.lineCapStyle = .round
+        color(0xFFFFFF, alpha: 0.95).setStroke()
+        horizon.stroke()
+
+    }
     context.flushGraphics()
     NSGraphicsContext.restoreGraphicsState()
-    guard let data = bitmap.representation(using: .png, properties: [:]) else {
+    let output: NSBitmapImageRep
+    if style == "mobile" || style == "background" {
+        // A padded RGB context supports drawing while declaring the result opaque.
+        guard let opaque = CGContext(data: nil, width: size, height: size, bitsPerComponent: 8,
+            bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue), let source = bitmap.cgImage else {
+            throw NSError(domain: "MailPort.Icon", code: 3)
+        }
+        opaque.draw(source, in: CGRect(x: 0, y: 0, width: size, height: size))
+        output = NSBitmapImageRep(cgImage: opaque.makeImage()!)
+    } else {
+        output = bitmap
+    }
+    guard let data = output.representation(using: .png, properties: [:]) else {
         throw NSError(domain: "MailPort.Icon", code: 2)
     }
     return data
 }
 
+// Commit the generated catalog so builds do not need a host-side drawing step.
+if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--mobile" {
+    let catalog = URL(fileURLWithPath: CommandLine.arguments[2], isDirectory: true)
+    let info: [String: Any] = ["author": "xcode", "version": 1]
+    func json(_ value: [String: Any], at directory: URL) throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys])
+            .write(to: directory.appendingPathComponent("Contents.json"))
+    }
+    try json(["info": info], at: catalog)
+    let ios = catalog.appendingPathComponent("AppIcon.appiconset")
+    try json(["info": info, "images": [["filename": "AppIcon.png", "idiom": "universal", "platform": "ios", "size": "1024x1024"]]], at: ios)
+    // App Store icons must have no alpha channel, even when every pixel is opaque.
+    try drawIcon(size: 1024, style: "mobile").write(to: ios.appendingPathComponent("AppIcon.png"))
+    let vision = catalog.appendingPathComponent("VisionAppIcon.solidimagestack")
+    let layers = ["Front", "Back"]
+    try json(["info": info, "layers": layers.map { ["filename": $0 + ".solidimagestacklayer"] }], at: vision)
+    for layer in layers {
+        let directory = vision.appendingPathComponent(layer + ".solidimagestacklayer")
+        try json(["info": info], at: directory)
+        let content = directory.appendingPathComponent("Content.imageset")
+        try json(["info": info, "images": [["filename": "Icon.png", "idiom": "vision", "scale": "2x"]]], at: content)
+        try drawIcon(size: 1024, style: layer == "Front" ? "foreground" : "background")
+            .write(to: content.appendingPathComponent("Icon.png"))
+    }
+    exit(0)
+}
+
 guard (2...3).contains(CommandLine.arguments.count) else {
-    fputs("Usage: make-icon.swift OUTPUT.iconset [FALLBACK.icns]\n", stderr)
+    fputs("Usage: make-icon.swift OUTPUT.iconset [FALLBACK.icns] | --mobile OUTPUT.xcassets\n", stderr)
     exit(1)
 }
 let directory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)

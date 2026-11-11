@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		024CDE773EC540315734EF6C /* WebNotificationBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85883367DCD92552E5FC5F0B /* WebNotificationBridge.swift */; };
 		046358AA7B270128A6A6D67D /* AppUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45BB599B680703968A23EC20 /* AppUpdates.swift */; };
+		06ED746F2AA022AB0277F525 /* MobileNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53105010D42CD6EC1C231A32 /* MobileNavigationTests.swift */; };
 		08E3AC649706768CE09EB887 /* GoogleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F493D0D90D9E3BC92778D2F /* GoogleService.swift */; };
 		0BC8FD71CC4FFFC66775C17C /* YouTubeSkipAds.js in Resources */ = {isa = PBXBuildFile; fileRef = 5AE957D36DABB2D546B61149 /* YouTubeSkipAds.js */; };
 		0CCC21F678BB6E6C41F503F1 /* WorkspaceBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DAAE99909006D959845C3EE /* WorkspaceBackupTests.swift */; };
@@ -40,6 +41,7 @@
 		4E0C8D95E459A60FCCA1339E /* NotificationsSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1923421427A4680301247026 /* NotificationsSetup.swift */; };
 		584B0B80F814A4C646FD32BF /* YouTubeDownload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B067BA938C88D16521ED3CD /* YouTubeDownload.swift */; };
 		5AFA7A3F076262C8937CD392 /* TabActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325430994E30A62DD6956256 /* TabActivity.swift */; };
+		5FBE667A471322A18CC7FA6D /* MobileWorkspaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C608248D58BC63A8DE231D0 /* MobileWorkspaceTests.swift */; };
 		60D01C3EA9EB9C31AAD9B437 /* LinkDropWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997EEAC2B0620AC54C9CA211 /* LinkDropWebView.swift */; };
 		61B33A205D78C271D23ECC5E /* libMailPortCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */; };
 		62C82EC857DD740BDE5B1904 /* EmbeddedWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A0F57055B338CBD857C7B9 /* EmbeddedWorkspace.swift */; };
@@ -48,6 +50,7 @@
 		6C4A098096DEEDDB0744FC8C /* DetachedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E91DA46B06BA1806CA9DF41 /* DetachedViewController.swift */; };
 		7145898CAAFD3F4D41D4EB33 /* FloatingVideoController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3779D85D8061497BA8920250 /* FloatingVideoController.swift */; };
 		7358E7B28A7EC1FCD9F74B4F /* TabActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98F4707D712E1B8018D3D066 /* TabActivityTests.swift */; };
+		79D4553DDEBED42E5FA5CD60 /* YouTubeSkipAds.js in Resources */ = {isa = PBXBuildFile; fileRef = 95E9578564368B6AFB634852 /* YouTubeSkipAds.js */; };
 		7A1487D06BF7C4CBB7175672 /* YouTubeMediaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35796A32111918D779E422A5 /* YouTubeMediaTests.swift */; };
 		7DAC619BC36B6D7CCE646A4A /* SecurityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B412E7924DA1FB249B8D3F6C /* SecurityViews.swift */; };
 		82A8EC640AD55D0D4520CFB2 /* PINLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8BF2579E9F516506906FA6 /* PINLockTests.swift */; };
@@ -55,6 +58,7 @@
 		8482361146A5A050902CDB95 /* YouTubeDownloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D3B65C35434B2D3767D9284 /* YouTubeDownloadTests.swift */; };
 		8797DA7BD9EC979BCE36BA35 /* WorkspaceSidebarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0543294F1195DD243413A7C2 /* WorkspaceSidebarTests.swift */; };
 		8929BFFA38B43BB736DA518B /* libMailPortCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0282DB979F9A2F7A375B9E2F /* libMailPortCore.a */; };
+		8A933DC089E1523EF1A5B453 /* MobileAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 70FD97F63654799EE90248F7 /* MobileAssets.xcassets */; };
 		9178E564B788B92CC7569A4B /* AppSecurityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D6CA6C5C429FD4DE000D63C /* AppSecurityTests.swift */; };
 		925AD56301191B4E869B7603 /* TabActivityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD894A4A5C039D43139D129C /* TabActivityBridge.swift */; };
 		929E9CEFCE11F7A3903FF13A /* GlobalComposeHotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE03416BC436D99A09FED90 /* GlobalComposeHotKey.swift */; };
@@ -111,6 +115,13 @@
 			remoteGlobalIDString = 1660AFA2F40D1169BB92A9ED;
 			remoteInfo = MailPort;
 		};
+		5FAC8EA616206A6C3FD60E1E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 38D7824595B15261C8A2C1A5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 838DF2FA8F0CA3631BF6173B;
+			remoteInfo = MailPortMobile;
+		};
 		72D7FBCE36C5EBC9FB88A9D3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 38D7824595B15261C8A2C1A5 /* Project object */;
@@ -124,6 +135,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 56D559889490329DA95AACD3;
 			remoteInfo = MailPortSecurity;
+		};
+		8C33AB4282CED45123C5F50B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 38D7824595B15261C8A2C1A5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 838DF2FA8F0CA3631BF6173B;
+			remoteInfo = MailPortMobile;
 		};
 		B0BA7F587418BBB922299715 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -157,6 +175,7 @@
 		10C34CFB79AF115226D50837 /* VideoPlaybackState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlaybackState.swift; sourceTree = "<group>"; };
 		11BE17380D8E5E691454D15C /* AccountNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountNotifications.swift; sourceTree = "<group>"; };
 		1923421427A4680301247026 /* NotificationsSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsSetup.swift; sourceTree = "<group>"; };
+		1C608248D58BC63A8DE231D0 /* MobileWorkspaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileWorkspaceTests.swift; sourceTree = "<group>"; };
 		1D3B65C35434B2D3767D9284 /* YouTubeDownloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeDownloadTests.swift; sourceTree = "<group>"; };
 		1D6CA6C5C429FD4DE000D63C /* AppSecurityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSecurityTests.swift; sourceTree = "<group>"; };
 		1DAAE99909006D959845C3EE /* WorkspaceBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceBackupTests.swift; sourceTree = "<group>"; };
@@ -182,6 +201,7 @@
 		461DD588174F050D93F12266 /* FloatingVideoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingVideoTests.swift; sourceTree = "<group>"; };
 		48FB81128A4D0A393B9E92FE /* YouTubeLinkDropTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeLinkDropTests.swift; sourceTree = "<group>"; };
 		50715162807CABD36652B719 /* YouTubeSkipTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeSkipTests.swift; sourceTree = "<group>"; };
+		53105010D42CD6EC1C231A32 /* MobileNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileNavigationTests.swift; sourceTree = "<group>"; };
 		5AE957D36DABB2D546B61149 /* YouTubeSkipAds.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = YouTubeSkipAds.js; sourceTree = "<group>"; };
 		5B067BA938C88D16521ED3CD /* YouTubeDownload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeDownload.swift; sourceTree = "<group>"; };
 		5F493D0D90D9E3BC92778D2F /* GoogleService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleService.swift; sourceTree = "<group>"; };
@@ -194,6 +214,8 @@
 		6A20DDA9B60D18ECE8957876 /* PageZoom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageZoom.swift; sourceTree = "<group>"; };
 		6DE6018611FAC4C97006520D /* TabClosingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabClosingTests.swift; sourceTree = "<group>"; };
 		6FACCDA15101A7799D8BFD17 /* QuickSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSwitcherView.swift; sourceTree = "<group>"; };
+		70FD97F63654799EE90248F7 /* MobileAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = MobileAssets.xcassets; sourceTree = "<group>"; };
+		737EA6B5B1E5264A6F1DB500 /* MailPortMobileUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MailPortMobileUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		77B3651654916A1DBDC3D25B /* BrowserIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserIdentity.swift; sourceTree = "<group>"; };
 		77BF505FAEE4CB1FC4FDA850 /* EmbeddedCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedCoreTests.swift; sourceTree = "<group>"; };
 		79545A925107BEBB488A2372 /* WebViewHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewHost.swift; sourceTree = "<group>"; };
@@ -203,11 +225,13 @@
 		7EC74623562558A49CCED29D /* WorkspacePin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacePin.swift; sourceTree = "<group>"; };
 		7ED48C60F6A41C365D22E4AA /* BrowserLinkRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserLinkRoutingTests.swift; sourceTree = "<group>"; };
 		817127550BD5350D2089F6B5 /* EmbeddedWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedWorkspaceView.swift; sourceTree = "<group>"; };
+		8570BF92946411E39A9CCAD4 /* MobileInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = MobileInfo.plist; sourceTree = "<group>"; };
 		85883367DCD92552E5FC5F0B /* WebNotificationBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebNotificationBridge.swift; sourceTree = "<group>"; };
 		87641FCBF1B788076E5B0B3A /* AppSecurity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSecurity.swift; sourceTree = "<group>"; };
 		88E5351DDBF2F867F428AE83 /* YouTubeLinkDrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeLinkDrop.swift; sourceTree = "<group>"; };
 		89122E4657495243355BA744 /* TranscriptReader.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = TranscriptReader.js; sourceTree = "<group>"; };
 		8AE03416BC436D99A09FED90 /* GlobalComposeHotKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalComposeHotKey.swift; sourceTree = "<group>"; };
+		95E9578564368B6AFB634852 /* YouTubeSkipAds.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = YouTubeSkipAds.js; sourceTree = "<group>"; };
 		98F4707D712E1B8018D3D066 /* TabActivityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabActivityTests.swift; sourceTree = "<group>"; };
 		995F812918F343A86128DB65 /* WebNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebNotificationTests.swift; sourceTree = "<group>"; };
 		997EEAC2B0620AC54C9CA211 /* LinkDropWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkDropWebView.swift; sourceTree = "<group>"; };
@@ -243,6 +267,7 @@
 		E8607B8898F893CFA76156D7 /* YouTubeLinkDropTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeLinkDropTests.swift; sourceTree = "<group>"; };
 		EA215E3D3EADB8F32837B5B2 /* DownloadCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadCenter.swift; sourceTree = "<group>"; };
 		EA220AF94AABA60833038D09 /* WorkspaceTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceTab.swift; sourceTree = "<group>"; };
+		ED1A8FB179AAF14DA9A62436 /* MailPortMobileTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MailPortMobileTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF6529FFFE31FE5588FCB954 /* QuickSwitch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSwitch.swift; sourceTree = "<group>"; };
 		F0181538D26E78922CED6221 /* TabHibernation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabHibernation.swift; sourceTree = "<group>"; };
 		F41A79D91C725EA5C38DF929 /* TabReorderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabReorderingTests.swift; sourceTree = "<group>"; };
@@ -305,6 +330,8 @@
 			children = (
 				A36E6DDB10D0E6BECF1DB843 /* Info.plist */,
 				2CE8703A72E5A438F9188E42 /* MailPort.entitlements */,
+				70FD97F63654799EE90248F7 /* MobileAssets.xcassets */,
+				8570BF92946411E39A9CCAD4 /* MobileInfo.plist */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -314,6 +341,8 @@
 			children = (
 				5C21BAE0639389ABA4D81D3A /* MailPortCoreTests */,
 				8D9697C39F8CF79B4C8D5702 /* MailPortEmbeddedTests */,
+				DE493463645DCC044E15D944 /* MailPortMobileTests */,
+				9E84F2DDFBAE0B1051DCD261 /* MailPortMobileUITests */,
 				43086ABF6E8BE48D24CA3FCD /* MailPortSecurityTests */,
 			);
 			path = Tests;
@@ -433,9 +462,19 @@
 				0A2AB001E9F3C29AB9EC144B /* MailPortCoreTests.xctest */,
 				3FBFE144135AA7A8A3584E9A /* MailPortEmbeddedTests.xctest */,
 				7D24B8B3C158BD71011F7396 /* MailPortMobile.app */,
+				ED1A8FB179AAF14DA9A62436 /* MailPortMobileTests.xctest */,
+				737EA6B5B1E5264A6F1DB500 /* MailPortMobileUITests.xctest */,
 				E5E11ADE61D01F731DD94D7C /* MailPortSecurityTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		9E84F2DDFBAE0B1051DCD261 /* MailPortMobileUITests */ = {
+			isa = PBXGroup;
+			children = (
+				53105010D42CD6EC1C231A32 /* MobileNavigationTests.swift */,
+			);
+			path = MailPortMobileUITests;
 			sourceTree = "<group>";
 		};
 		9F807A73FC0A5610BED7ECEB /* scripts */ = {
@@ -464,12 +503,29 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		C49CE01486977D2F971C5585 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				95E9578564368B6AFB634852 /* YouTubeSkipAds.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		DE493463645DCC044E15D944 /* MailPortMobileTests */ = {
+			isa = PBXGroup;
+			children = (
+				1C608248D58BC63A8DE231D0 /* MobileWorkspaceTests.swift */,
+			);
+			path = MailPortMobileTests;
+			sourceTree = "<group>";
+		};
 		EA47F8F501F0945CB98DE1C4 /* MailPortMobile */ = {
 			isa = PBXGroup;
 			children = (
 				429F1B58D9EBF80BD0CEAF47 /* MobileBrowser.swift */,
 				FA00E42732E2CC55CED9EB26 /* MobileViews.swift */,
 				CD381ACF5DD7051185E5240C /* MobileWorkspace.swift */,
+				C49CE01486977D2F971C5585 /* Resources */,
 			);
 			path = MailPortMobile;
 			sourceTree = "<group>";
@@ -565,6 +621,24 @@
 			productReference = DE9D96863BF1E20B6106D395 /* libMailPortSecurity.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		5BF79ACFFF877E57DC6278B3 /* MailPortMobileTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2E2ECE66F5E667D0DF9041D3 /* Build configuration list for PBXNativeTarget "MailPortMobileTests" */;
+			buildPhases = (
+				E069B76E2978E076B85F6CBD /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				63B8B488A75AD5252B36BB1B /* PBXTargetDependency */,
+			);
+			name = MailPortMobileTests;
+			packageProductDependencies = (
+			);
+			productName = MailPortMobileTests;
+			productReference = ED1A8FB179AAF14DA9A62436 /* MailPortMobileTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		6BDFE996C5FF6E118BBC8DA3 /* MailPortEmbeddedTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 54F0AEDB768F6CA80AB0511E /* Build configuration list for PBXNativeTarget "MailPortEmbeddedTests" */;
@@ -583,11 +657,30 @@
 			productReference = 3FBFE144135AA7A8A3584E9A /* MailPortEmbeddedTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		6E2DE7906D1DB674B5F5DB95 /* MailPortMobileUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FFD54758408696B8A837A94C /* Build configuration list for PBXNativeTarget "MailPortMobileUITests" */;
+			buildPhases = (
+				93F7936D9FD4A74476E567FC /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FD065DDB8942E0A1C228B245 /* PBXTargetDependency */,
+			);
+			name = MailPortMobileUITests;
+			packageProductDependencies = (
+			);
+			productName = MailPortMobileUITests;
+			productReference = 737EA6B5B1E5264A6F1DB500 /* MailPortMobileUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		838DF2FA8F0CA3631BF6173B /* MailPortMobile */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 50646EBC85C1B263A59268BE /* Build configuration list for PBXNativeTarget "MailPortMobile" */;
 			buildPhases = (
 				EF6A8151DC186F510D5C065E /* Sources */,
+				91523FE068D694B79AD8CE8C /* Resources */,
 				5826183067B25FBBE5693FE3 /* Frameworks */,
 			);
 			buildRules = (
@@ -661,9 +754,18 @@
 						DevelopmentTeam = "";
 						ProvisioningStyle = Manual;
 					};
+					5BF79ACFFF877E57DC6278B3 = {
+						DevelopmentTeam = WDCGJTU726;
+						ProvisioningStyle = Automatic;
+					};
 					6BDFE996C5FF6E118BBC8DA3 = {
 						DevelopmentTeam = WDCGJTU726;
 						ProvisioningStyle = Automatic;
+					};
+					6E2DE7906D1DB674B5F5DB95 = {
+						DevelopmentTeam = WDCGJTU726;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 838DF2FA8F0CA3631BF6173B;
 					};
 					838DF2FA8F0CA3631BF6173B = {
 						DevelopmentTeam = WDCGJTU726;
@@ -700,6 +802,8 @@
 				56D559889490329DA95AACD3 /* MailPortSecurity */,
 				1660AFA2F40D1169BB92A9ED /* MailPort */,
 				838DF2FA8F0CA3631BF6173B /* MailPortMobile */,
+				6E2DE7906D1DB674B5F5DB95 /* MailPortMobileUITests */,
+				5BF79ACFFF877E57DC6278B3 /* MailPortMobileTests */,
 				1C8D27EB798013AEF964D2CD /* MailPortCoreTests */,
 				E97270BDFC6EA96F34E3B90D /* MailPortSecurityTests */,
 				6BDFE996C5FF6E118BBC8DA3 /* MailPortEmbeddedTests */,
@@ -717,6 +821,15 @@
 				66E52A9E5081325D4058B310 /* TranscriptReader.js in Resources */,
 				1B28F971807EBCD3649CA928 /* YouTubePlayback.js in Resources */,
 				0BC8FD71CC4FFFC66775C17C /* YouTubeSkipAds.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		91523FE068D694B79AD8CE8C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8A933DC089E1523EF1A5B453 /* MobileAssets.xcassets in Resources */,
+				79D4553DDEBED42E5FA5CD60 /* YouTubeSkipAds.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -883,6 +996,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		93F7936D9FD4A74476E567FC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				06ED746F2AA022AB0277F525 /* MobileNavigationTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E069B76E2978E076B85F6CBD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5FBE667A471322A18CC7FA6D /* MobileWorkspaceTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EF6A8151DC186F510D5C065E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -929,6 +1058,11 @@
 			target = 56D559889490329DA95AACD3 /* MailPortSecurity */;
 			targetProxy = B2CEE98382DF002A39B94CDE /* PBXContainerItemProxy */;
 		};
+		63B8B488A75AD5252B36BB1B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 838DF2FA8F0CA3631BF6173B /* MailPortMobile */;
+			targetProxy = 8C33AB4282CED45123C5F50B /* PBXContainerItemProxy */;
+		};
 		6943D8FA038DF27E2BD1706C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 56D559889490329DA95AACD3 /* MailPortSecurity */;
@@ -938,6 +1072,11 @@
 			isa = PBXTargetDependency;
 			target = 56D559889490329DA95AACD3 /* MailPortSecurity */;
 			targetProxy = 038E1E05C83187227E0D0C94 /* PBXContainerItemProxy */;
+		};
+		FD065DDB8942E0A1C228B245 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 838DF2FA8F0CA3631BF6173B /* MailPortMobile */;
+			targetProxy = 5FAC8EA616206A6C3FD60E1E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -984,16 +1123,19 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xros*]" = VisionAppIcon;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xrsimulator*]" = VisionAppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WDCGJTU726;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/MobileInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(MAILPORT_DISPLAY_NAME)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Google Meet and Chat use the camera for video calls.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Google Meet and Chat use the microphone for calls.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -1089,6 +1231,30 @@
 			};
 			name = Debug;
 		};
+		325BD399FB7ABC39E0F1CF91 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = WDCGJTU726;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.MailPortMobileUITests;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = MailPortMobile;
+			};
+			name = Debug;
+		};
 		34674BAEEA415ED37EFBC960 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1106,6 +1272,78 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.MailPortEmbeddedTests;
 				SDKROOT = macosx;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MailPort.app/Contents/MacOS/MailPort";
+			};
+			name = Release;
+		};
+		4C584D55AD9E21D059963027 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = WDCGJTU726;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.MailPortMobileTests;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MailPort.app/MailPort";
+			};
+			name = Debug;
+		};
+		6B02700D6BA9CCF39AB800F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = WDCGJTU726;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.MailPortMobileUITests;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = MailPortMobile;
+			};
+			name = Release;
+		};
+		6B2323E1B8DDEA5370A4124D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = WDCGJTU726;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.chriswilson.mailport.MailPortMobileTests;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MailPort.app/MailPort";
 			};
 			name = Release;
 		};
@@ -1235,16 +1473,19 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xros*]" = VisionAppIcon;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xrsimulator*]" = VisionAppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WDCGJTU726;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/MobileInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(MAILPORT_DISPLAY_NAME)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Google Meet and Chat use the camera for video calls.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Google Meet and Chat use the microphone for calls.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -1405,6 +1646,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		2E2ECE66F5E667D0DF9041D3 /* Build configuration list for PBXNativeTarget "MailPortMobileTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C584D55AD9E21D059963027 /* Debug */,
+				6B2323E1B8DDEA5370A4124D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		3582F8A3AD02B4DD9ED2F713 /* Build configuration list for PBXNativeTarget "MailPort" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1473,6 +1723,15 @@
 			buildConfigurations = (
 				76BBFFA0BAD6E2DF65F87771 /* Debug */,
 				6FA137D33CE3F24FDDD5C2B8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FFD54758408696B8A837A94C /* Build configuration list for PBXNativeTarget "MailPortMobileUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				325BD399FB7ABC39E0F1CF91 /* Debug */,
+				6B02700D6BA9CCF39AB800F0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

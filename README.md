@@ -22,6 +22,16 @@ MailPort needs macOS 14 or later on Apple silicon.
 
 MailPort then keeps itself up to date. If your copy is version 0.6.1 or earlier, repeat these steps once to get the version that can.
 
+## iPhone, iPad, and Apple Vision Pro preview
+
+The device port is available to build from source with the **MailPortMobile** Xcode scheme. It targets iOS 17 or later and visionOS 1 or later. Select an iPhone, iPad, or Apple Vision Pro simulator, or your development device, then run the scheme. Debug uses the separate MailPort Dev app sandbox.
+
+The preview supports separate account sign-ins, services, per-account pins, browser navigation, sharing links, and website downloads. **Open Service** searches the available Google services. Downloads appear under the page’s **More > Downloads** menu, where **Save or Share** can save them to Files. Temporary downloads are removed when their service closes. iPhone uses compact navigation, while iPad and Vision Pro use the sidebar when space permits. This preview uses one workspace window.
+
+Mobile **Settings** is available in the account sidebar and the page’s **More** menu. YouTube ad skipping is off by default; the experimental option tries available Skip buttons, but some mobile players still require a manual tap.
+
+Desktop notification schedules, the PIN lock, and the Mac’s floating-video controls are still to be ported. Google sign-in, calls, and video playback require testing on physical devices.
+
 ## Using MailPort
 
 ### Add an account

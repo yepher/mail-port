@@ -36,6 +36,10 @@ xcodegen generate
 
 Signing settings changed only in Xcode are lost when the project is regenerated, so put lasting changes in `project.yml`.
 
+### Build and test the device port
+
+Select the **MailPortMobile** scheme and an iPhone, iPad, or Apple Vision Pro simulator. Run with ⌘R and test with ⌘U. The scheme includes model/browser tests and a UI flow through account creation, service selection and Downloads. Test profiles use fictional accounts, disable remote page loading, and exercise file saving with a local blob. For physical devices, choose your development team in Signing & Capabilities.
+
 ### Your real data stays separate
 
 Debug builds never open the real profile, whatever their bundle identifier. They use `MailPortSecurityTest-securityqa` in Application Support, or `MAILPORT_PREVIEW_DATA_DIR`. You'll sign in again the first time, and MailPort Dev can run beside your installed copy.
